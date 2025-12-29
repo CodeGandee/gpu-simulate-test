@@ -1,0 +1,29 @@
+[project]
+authors = [{name = "igamenovoer", email = "igamenovoer@xx.com"}]
+name = "gpu-simulate-test"
+requires-python = ">= 3.11"
+version = "0.1.0"
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[tool.pixi.pypi-dependencies]
+gpu_simulate_test = { path = ".", editable = true }
+mdutils = ">=1.8.1,<2"
+scipy = ">=1.16.3,<2"
+torch = "==2.9.1+cu128"
+transformers = ">=4,<5"
+diffusers = ">=0,<1"
+
+[tool.pixi.pypi-options]
+extra-index-urls = ["https://download.pytorch.org/whl/cu128"]
+
+[tool.pixi.tasks]
+
+[tool.pixi.dependencies]
+python = "3.13.*"

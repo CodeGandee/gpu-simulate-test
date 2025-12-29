@@ -1,0 +1,9 @@
+[submodule "magic-context"]
+	path = magic-context
+	url = git@github.com:igamenovoer/magic-context.git
+	branch = main
+[submodule "extern/vidur"]
+	path = extern/vidur
+	url = https://github.com/microsoft/vidur
+	branch = main
+	shallow = true
