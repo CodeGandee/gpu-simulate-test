@@ -233,6 +233,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/34/db/b10e48aa8fff7407e67470363eac595018441cf32d5e1001567a7aeba5d2/websocket_client-1.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2e/54/647ade08bf0db230bfea292f893923872fd20be6ac6f53b2b936ba839d75/zipp-3.23.0-py3-none-any.whl
       - pypi: ./
+      - pypi: ./extern/tracked/sarathi-serve
       - pypi: ./extern/tracked/vidur
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
@@ -941,7 +942,7 @@ packages:
 - pypi: ./
   name: gpu-simulate-test
   version: 0.1.0
-  sha256: f56bfe5f89b90ddb93ec3930f443d1a45dec47134562bb2576b855a21a7962a5
+  sha256: 637c0f2e7407a0d7e7c93461c6b89d67de76be15b4a62238024fb97746d51e80
   requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/2b/94/8c12319a6369434e7a184b987e8e9f3b49a114c489b8315f029e24de4837/grpcio-1.76.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
   name: grpcio
@@ -3071,6 +3072,36 @@ packages:
   - safetensors[testing] ; extra == 'all'
   - safetensors[all] ; extra == 'dev'
   requires_python: '>=3.9'
+- pypi: ./extern/tracked/sarathi-serve
+  name: sarathi
+  version: 0.1.8
+  sha256: 2ffa6223d60c0232284706c584c843120c35864d0921db4c7e46a7dca5a5f4e9
+  requires_dist:
+  - ninja
+  - psutil
+  - ray>=2.5.1
+  - pandas
+  - pyarrow
+  - sentencepiece
+  - numpy
+  - torch
+  - transformers>=4.37.0
+  - matplotlib
+  - plotly-express
+  - seaborn
+  - wandb
+  - kaleido
+  - ddsketch
+  - jupyterlab
+  - flashinfer-python>=0.4.1
+  - pillow
+  - tiktoken
+  - grpcio
+  - uvicorn
+  - fastapi
+  - openai
+  - tqdm
+  requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/01/ce/9c495a516894f78af80b5579fc45f5578e4fc8470eb7bcbce940fb21c391/scalesim-3.0.0-py3-none-any.whl
   name: scalesim
   version: 3.0.0

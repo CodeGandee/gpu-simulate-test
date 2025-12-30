@@ -15,5 +15,5 @@ branch = main
 	shallow = true
 [submodule "extern/tracked/sarathi-serve"]
 	path = extern/tracked/sarathi-serve
-	url = https://github.com/microsoft/sarathi-serve
-	branch = main
+	url = https://github.com/imsight-forks/sarathi-serve
+	branch = hz-dev
