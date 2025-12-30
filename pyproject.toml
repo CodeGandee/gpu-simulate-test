@@ -14,6 +14,7 @@ platforms = ["linux-64"]
 
 [tool.pixi.pypi-dependencies]
 gpu_simulate_test = { path = ".", editable = true }
+vidur = { path = "extern/tracked/vidur", editable = true }
 mdutils = "*"
 scipy = "*"
 torch = "==2.9.1+cu128"

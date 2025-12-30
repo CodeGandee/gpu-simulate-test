@@ -233,6 +233,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/34/db/b10e48aa8fff7407e67470363eac595018441cf32d5e1001567a7aeba5d2/websocket_client-1.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2e/54/647ade08bf0db230bfea292f893923872fd20be6ac6f53b2b936ba839d75/zipp-3.23.0-py3-none-any.whl
       - pypi: ./
+      - pypi: ./extern/tracked/vidur
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
   sha256: fe51de6107f9edc7aa4f786a70f4a883943bc9d39b3bb7307c04c41410990726
@@ -940,7 +941,7 @@ packages:
 - pypi: ./
   name: gpu-simulate-test
   version: 0.1.0
-  sha256: 5e39da9d0b7e9ad92328a5beed2ce6d8f0b12c0d559c7623ca6f1b3a8b61f5bf
+  sha256: f56bfe5f89b90ddb93ec3930f443d1a45dec47134562bb2576b855a21a7962a5
   requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/2b/94/8c12319a6369434e7a184b987e8e9f3b49a114c489b8315f029e24de4837/grpcio-1.76.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
   name: grpcio
@@ -4160,6 +4161,11 @@ packages:
   - uvloop>=0.15.1 ; platform_python_implementation != 'PyPy' and sys_platform != 'cygwin' and sys_platform != 'win32' and extra == 'standard'
   - watchfiles>=0.13 ; extra == 'standard'
   - websockets>=10.4 ; extra == 'standard'
+  requires_python: '>=3.10'
+- pypi: ./extern/tracked/vidur
+  name: vidur
+  version: 0.0.1
+  sha256: 04da2407f1388174f6941eeb1f99259c762d8282870cb16c2b6827a0453e5065
   requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/5c/ee/9a8bb9a39cc1f09c3060456cc79565110226dc4099a719af5c63432da21d/wandb-0.23.1-py3-none-manylinux_2_28_x86_64.whl
   name: wandb
