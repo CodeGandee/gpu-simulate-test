@@ -7,3 +7,8 @@
 	url = https://github.com/microsoft/vidur
 	branch = main
 	shallow = true
+[submodule "extern/LLMCompass"]
+	path = extern/LLMCompass
+	url = https://github.com/PrincetonUniversity/LLMCompass.git
+	branch = main
+	shallow = true
