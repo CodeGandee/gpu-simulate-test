@@ -1,0 +1,4 @@
+# Ignore local "orphan" checkouts, but keep docs/metadata directly under orphan/.
+/orphan/*/
+/orphan/*/**
+

@@ -1,14 +1,15 @@
 [submodule "magic-context"]
-	path = magic-context
-	url = git@github.com:igamenovoer/magic-context.git
-	branch = main
-[submodule "extern/vidur"]
-	path = extern/vidur
+path = magic-context
+url = git@github.com:igamenovoer/magic-context.git
+branch = main
+
+[submodule "extern/tracked/vidur"]
+	path = extern/tracked/vidur
 	url = https://github.com/microsoft/vidur
 	branch = main
 	shallow = true
-[submodule "extern/LLMCompass"]
-	path = extern/LLMCompass
+[submodule "extern/tracked/LLMCompass"]
+	path = extern/tracked/LLMCompass
 	url = https://github.com/PrincetonUniversity/LLMCompass.git
 	branch = main
 	shallow = true

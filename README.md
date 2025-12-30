@@ -63,7 +63,7 @@ Other candidates:
 ## Repo Layout
 
 - `src/gpu_simulate_test/`: Python package code (src layout).
-- `extern/`: third-party code (git submodules, e.g. `extern/vidur/`).
+- `extern/`: third-party code (git submodules under `extern/tracked/`).
 - `models/`: external model references (symlink-based, not committed).
 - `datasets/`: external dataset references (symlink-based, not committed).
 - `context/`: project notes, runbooks, and experiment/repro docs.

@@ -9,7 +9,10 @@ and `datasets/`.
 
 ## Contents
 
-- `extern/vidur/`: Vidur (Microsoft) — https://github.com/microsoft/vidur
+Submodules live under `extern/tracked/`:
+
+- `extern/tracked/vidur/`: Vidur (Microsoft) — https://github.com/microsoft/vidur
+- `extern/tracked/LLMCompass/`: LLMCompass (Princeton) — https://github.com/PrincetonUniversity/LLMCompass
 
 ## Clone / Setup
 

@@ -4,7 +4,7 @@
 
 - `src/gpu_simulate_test/`: Python package code (installed editable via Pixi).
 - `context/`: design notes, runbooks, and reproducibility docs for simulator experiments.
-- `extern/vidur/`: Git submodule for the Vidur simulator.
+- `extern/tracked/vidur/`: Git submodule for the Vidur simulator.
 - `magic-context/`: Git submodule used for repo “context”/workflow tooling.
 - `pyproject.toml` + `pixi.lock` + `.pixi/`: Pixi-managed dev environment (Python + PyPI deps).
 - `tmp/`: local scratch output (ignored by git). `/.codex/` is also ignored.

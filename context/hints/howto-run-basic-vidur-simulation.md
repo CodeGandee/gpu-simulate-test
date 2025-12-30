@@ -4,7 +4,7 @@
 - **Purpose**: Quick steps and example commands for running a basic LLM inference simulation with Vidur (Microsoft’s inference system simulator).
 - **Status**: Active
 - **Date**: 2025-12-29
-- **Dependencies**: `extern/vidur` submodule; Python environment compatible with Vidur; optional Weights & Biases (wandb) account.
+- **Dependencies**: `extern/tracked/vidur` submodule; Python environment compatible with Vidur; optional Weights & Biases (wandb) account.
 - **Target**: Developers and AI assistants working on this repo.
 
 ## What Vidur simulates (at a glance)
@@ -17,7 +17,7 @@ Key ideas:
 
 ## Basic “does it run?” simulation
 
-From the Vidur repo root (`extern/vidur/`):
+From the Vidur repo root (`extern/tracked/vidur/`):
 
 ```sh
 python -m vidur.main -h
@@ -86,4 +86,3 @@ python -m vidur.main \
 - Vidur paper (MLSys’24): https://arxiv.org/abs/2405.05465
 - Metric definitions: https://github.com/microsoft/vidur/blob/main/docs/metrics.md
 - Profiling guide (adding models/SKUs): https://github.com/microsoft/vidur/blob/main/docs/profiling.md
-
