@@ -37,3 +37,10 @@ No test suite is committed yet. If you add tests:
 
 - Commits: short, imperative, sentence-case subjects (e.g., “Ignore tmp and .codex”).
 - PRs: include a brief description, reproduction steps/commands run (e.g., `pixi install`), and link any related issues or experiment notes in `context/`.
+
+## Active Technologies
+- Python 3.13 (Pixi) + `pixi`, `torch==2.9.1+cu128`, `transformers`, `pandas`, `matplotlib`, Vidur (`extern/tracked/vidur` editable), Sarathi-Serve (`extern/tracked/sarathi-serve` editable) (001-compare-vidur-real-timing)
+- Files under `/data1/huangzhe/code/gpu-simulate-test/tmp/` (CSV + JSON + Markdown reports) (001-compare-vidur-real-timing)
+
+## Recent Changes
+- 001-compare-vidur-real-timing: Added Python 3.13 (Pixi) + `pixi`, `torch==2.9.1+cu128`, `transformers`, `pandas`, `matplotlib`, Vidur (`extern/tracked/vidur` editable), Sarathi-Serve (`extern/tracked/sarathi-serve` editable)

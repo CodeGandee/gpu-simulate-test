@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/gpu-simulate-test/workload_meta.schema.json",
+  "title": "WorkloadMeta",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "workload_id",
+    "model",
+    "seed",
+    "tokenizer_ref",
+    "created_at",
+    "git_commit"
+  ],
+  "properties": {
+    "workload_id": { "type": "string", "minLength": 1 },
+    "model": { "type": "string", "minLength": 1 },
+    "seed": { "type": "integer" },
+    "tokenizer_ref": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "git_commit": { "type": "string", "minLength": 1 }
+  }
+}

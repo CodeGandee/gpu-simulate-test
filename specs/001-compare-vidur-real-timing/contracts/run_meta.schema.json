@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/gpu-simulate-test/run_meta.schema.json",
+  "title": "RunMeta",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "run_id",
+    "run_type",
+    "model",
+    "workload_dir",
+    "started_at",
+    "ended_at",
+    "git_commit",
+    "env",
+    "params"
+  ],
+  "properties": {
+    "run_id": { "type": "string", "minLength": 1 },
+    "run_type": { "type": "string", "enum": ["real", "vidur"] },
+    "backend": { "type": "string", "enum": ["sarathi", "transformers"] },
+    "model": { "type": "string", "minLength": 1 },
+    "workload_dir": { "type": "string", "minLength": 1 },
+    "hardware": { "type": "object" },
+    "started_at": { "type": "string", "minLength": 1 },
+    "ended_at": { "type": "string", "minLength": 1 },
+    "git_commit": { "type": "string", "minLength": 1 },
+    "env": { "type": "object" },
+    "params": { "type": "object" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "run_type": { "const": "real" } } },
+      "then": { "required": ["backend"] }
+    }
+  ]
+}
