@@ -31,9 +31,24 @@ kaleido = "*"
 ddsketch = "*"
 plotly_express = "*"
 fasteners = "*"
+fastapi = "*"
+flashinfer-python = ">=0.4.1"
+grpcio = "*"
+jupyterlab = "*"
+ninja = "*"
+openai = "*"
+pillow = "*"
+psutil = "*"
+pyarrow = "*"
+ray = ">=2.5.1"
+sentencepiece = "*"
+tiktoken = "*"
+tqdm = "*"
+uvicorn = "*"
 
 [tool.pixi.pypi-options]
 extra-index-urls = ["https://download.pytorch.org/whl/cu128"]
+index-strategy = "unsafe-best-match"
 
 [tool.pixi.tasks]
 
