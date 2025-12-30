@@ -13,3 +13,7 @@ branch = main
 	url = https://github.com/PrincetonUniversity/LLMCompass.git
 	branch = main
 	shallow = true
+[submodule "extern/tracked/sarathi-serve"]
+	path = extern/tracked/sarathi-serve
+	url = https://github.com/microsoft/sarathi-serve
+	branch = main
