@@ -1,146 +1,107 @@
 # Data Model: Compare Vidur vs real Qwen3 A100 timing
 
 **Feature**: `001-compare-vidur-real-timing`  
-**Date**: 2025-12-30  
-**Spec**: `/data1/huangzhe/code/gpu-simulate-test/specs/001-compare-vidur-real-timing/spec.md`
+**Repo root**: `/data1/huangzhe/code/gpu-simulate-test`  
+**Principle**: All persisted artifacts are filesystem-first and written under `/data1/huangzhe/code/gpu-simulate-test/tmp/` by default.
 
-This feature is file/artifact-driven. “Entities” map directly to on-disk artifacts under `tmp/`.
+## Entities
 
-## Entity: WorkloadSpec (directory)
+### WorkloadSpec (directory)
 
-**Location**: `/data1/huangzhe/code/gpu-simulate-test/tmp/workloads/<workload_id>/`
+**Path**: `/data1/huangzhe/code/gpu-simulate-test/tmp/workloads/<workload_id>/`
 
-Fields (stored in `workload_meta.json`):
+**Files**:
+- `prompts.jsonl`: one JSON object per line, at minimum containing a stable `prompt_id` and prompt `text`.
+- `trace_lengths.csv`: per-request token counts derived from the chosen tokenizer.
+- `trace_intervals.csv`: per-request deterministic arrival schedule.
+- `workload_meta.json`: provenance and config snapshot pointer.
 
-- `workload_id` (string): Stable identifier for the workload directory.
-- `model` (string): e.g. `Qwen/Qwen3-0.6B`.
-- `seed` (int): RNG seed used for deterministic generation.
-- `tokenizer_ref` (string): e.g. `/data1/huangzhe/code/gpu-simulate-test/models/qwen3-0.6b/source-data/`.
-- `created_at` (string, ISO8601).
-- `git_commit` (string): commit hash for provenance.
+### TraceLengthsRow (CSV row)
 
-Related files:
+**File**: `trace_lengths.csv`  
+**Primary key**: `request_id`
 
-- `prompts.jsonl`: prompt set (JSON objects).
-- `trace_lengths.csv`: request-level token lengths.
-- `trace_intervals.csv`: request arrival schedule.
+**Fields (minimum)**:
+- `request_id`: integer, 0..N-1
+- `prompt_id`: string (join key back to `prompts.jsonl`)
+- `num_prefill_tokens`: integer (>= 0)
+- `num_decode_tokens`: integer (>= 0; requested decode length)
 
-Identity:
+### TraceIntervalsRow (CSV row)
 
-- `workload_id` is globally unique within `tmp/workloads/`.
+**File**: `trace_intervals.csv`  
+**Primary key**: `request_id`
 
-## Entity: Prompt (row in `prompts.jsonl`)
+**Fields (minimum)**:
+- `request_id`: integer, 0..N-1
+- `inter_arrival_ns`: integer nanoseconds (>= 0), relative to previous request
+- `arrival_time_ns`: integer nanoseconds (>= 0), relative to workload start; must equal cumulative sum of `inter_arrival_ns`
 
-Fields:
+### RunMetadata (JSON document)
 
-- `prompt_id` (int): 0-based.
-- `prompt` (string): raw text.
-- `meta` (object, optional): any extra fields (source, tags).
+**File**: `run_meta.json`  
+**Used by**: real runs + Vidur runs + comparison runs
 
-Relationship:
+**Fields (minimum)**:
+- `schema_version`: string (e.g., `"v1"`)
+- `run_type`: string (`"real" | "vidur" | "compare" | "vidur_profile"`)
+- `run_id`: string (directory name)
+- `started_at`: ISO-8601 string
+- `ended_at`: ISO-8601 string
+- `git_commit`: string
+- `git_dirty`: bool (optional)
+- `model`: string
+- `hardware`: object (optional; recommended)
+- `hydra`: object: `{ "config_path": string, "config_name": string }`
+- Stage-specific fields:
+  - `workload_dir` (real/vidur)
+  - `backend` (real)
+  - `profiling_root` (vidur/vidur_profile)
+  - `real_run_dir`, `sim_run_dir` (compare)
 
-- `Prompt.prompt_id` joins to `TraceLengths.prompt_id`.
+### RequestMetricsRow (CSV row)
 
-## Entity: TraceLengths (row in `trace_lengths.csv`)
+**File**: `request_metrics.csv`  
+**Primary key**: `request_id`
 
-Fields:
+**Fields (minimum)**:
+- `request_id`: integer
+- `arrival_time_ns`: integer nanoseconds (relative to run start, monotonic)
+- `first_token_time_ns`: integer nanoseconds (relative to run start, monotonic)
+- `ttft_ns`: integer nanoseconds (>= 0)
+- `num_prefill_tokens`: integer (>= 0)
+- `num_decode_tokens`: integer (>= 0; requested decode length)
+- `num_decode_tokens_actual`: integer (>= 0; may be < requested due to early stop)
 
-- `request_id` (int): 0-based.
-- `prompt_id` (int): 0-based, references `prompts.jsonl`.
-- `num_prefill_tokens` (int): tokenizer-derived prompt length (>=1).
-- `num_decode_tokens` (int): requested decode tokens (>=1).
+**Optional fields (recommended)**:
+- `prompt_id`: string
 
-Relationship:
+### TokenMetricsRow (CSV row, long format)
 
-- `request_id` joins to `TraceIntervals.request_id`.
-- `prompt_id` joins to `Prompt.prompt_id`.
+**File**: `token_metrics.csv`  
+**Primary key**: (`request_id`, `token_idx`)
 
-## Entity: TraceIntervals (row in `trace_intervals.csv`)
+**Fields (minimum)**:
+- `request_id`: integer
+- `token_index`: integer (0..`num_decode_tokens_actual-1`)
+- `token_time_ns`: integer nanoseconds (relative to run start, monotonic; timestamps at token emission)
+ - `token_latency_ns`: integer nanoseconds (for `token_index > 0`, delta between consecutive `token_time_ns`)
 
-Fields:
+**Derived fields (not required to persist)**:
+- `token_latency_ns`: `token_time_ns[t] - token_time_ns[t-1]` for `t > 0` (if not already persisted)
 
-- `request_id` (int): 0-based.
-- `arrival_time_ns` (int): nanoseconds since workload start.
-- `inter_arrival_ns` (int): delta from previous request (first row `0`).
+### ComparisonReport (directory)
 
-Invariants:
+**Path**: `/data1/huangzhe/code/gpu-simulate-test/tmp/comparisons/<comparison_id>/`
 
-- `arrival_time_ns` is non-decreasing.
-- `arrival_time_ns[i] == sum(inter_arrival_ns[: i + 1])` (consistency-by-construction).
+**Files (minimum)**:
+- `summary.md`: includes P50/P90/P99 for TTFT + per-token latency, and notes on alignment/early-stop handling
+- `tables/*.csv`: percentile tables and/or CDF samples for programmatic review
+- `figs/*.(png|pdf|html)`: plots for TTFT and per-token latency (real vs sim)
+- `run_meta.json`: comparison provenance (points to both input run dirs)
 
-## Entity: RunMetadata (file: `run_meta.json`)
+## Invariants
 
-**Location**:
-
-- Real: `/data1/huangzhe/code/gpu-simulate-test/tmp/real_runs/<run_id>/run_meta.json`
-- Vidur: `/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_runs/<run_id>/run_meta.json`
-
-Fields:
-
-- `run_id` (string)
-- `run_type` (string enum): `real` | `vidur`
-- `backend` (string enum, real only): `sarathi` | `transformers`
-- `model` (string)
-- `workload_dir` (string, absolute path)
-- `hardware` (object): e.g. `{"gpu_name": "...", "gpu_count": 1}`
-- `started_at` / `ended_at` (string, ISO8601)
-- `git_commit` (string)
-- `env` (object): key runtime versions (python/torch/cuda/driver)
-- `params` (object): run knobs (dtype, batch limits, scheduler knobs, etc.)
-
-Identity:
-
-- `run_id` is globally unique within `tmp/{real_runs,vidur_runs}/`.
-
-## Entity: RequestMetrics (row in `request_metrics.csv`)
-
-**Location**:
-
-- Real: `/data1/huangzhe/code/gpu-simulate-test/tmp/real_runs/<run_id>/request_metrics.csv`
-- Vidur: `/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_runs/<run_id>/request_metrics.csv`
-
-Fields:
-
-- `request_id` (int)
-- `arrival_time_ns` (int)
-- `first_token_time_ns` (int)
-- `ttft_ns` (int): `first_token_time_ns - arrival_time_ns`
-- `completion_time_ns` (int, optional): timestamp of last token (or request end)
-- `num_prefill_tokens` (int)
-- `num_decode_tokens` (int): requested
-- `num_decode_tokens_actual` (int): produced (real) or requested (vidur proxy)
-- `status` (string enum): `ok` | `error`
-- `error_type` / `error_msg` (string, optional)
-
-Relationship:
-
-- `request_id` joins to `TokenMetrics.request_id`.
-
-## Entity: TokenMetrics (row in `token_metrics.csv`)
-
-**Location**:
-
-- Real: `/data1/huangzhe/code/gpu-simulate-test/tmp/real_runs/<run_id>/token_metrics.csv`
-- Vidur: `/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_runs/<run_id>/token_metrics.csv`
-
-Fields:
-
-- `request_id` (int)
-- `token_index` (int): 0-based decode token index.
-- `token_time_ns` (int): monotonic timestamp when token is produced/considered complete.
-- `token_latency_ns` (int): delta from previous token completion time (for `token_index==0`, this may equal `ttft_ns` or be left blank depending on the chosen convention).
-- `token_id` (int, optional): token id if available (real runs; backend-dependent).
-
-## Entity: ComparisonReport (directory)
-
-**Location**: `/data1/huangzhe/code/gpu-simulate-test/tmp/comparisons/<run_id>/`
-
-Artifacts:
-
-- `summary.md`: narrative + percentile tables.
-- Plot images (CDF/percentile curves) for TTFT and per-token latency.
-- Optional CSV tables with computed percentiles for reproducibility.
-
-Relationship:
-
-- References one real run directory and one vidur run directory.
+- All timestamp columns use **integer nanoseconds** relative to run start (monotonic clock).
+- `arrival_time_ns` in `trace_intervals.csv` must equal `cumsum(inter_arrival_ns)`.
+- Comparisons must align per-token series using `num_decode_tokens_actual` (truncate simulator token series to actual real token count per request).

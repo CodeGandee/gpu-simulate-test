@@ -1,65 +1,72 @@
-# Research Notes: Compare Vidur vs real Qwen3 A100 timing
+# Research: Hydra-managed experiment configs
 
-**Feature**: `001-compare-vidur-real-timing`  
-**Date**: 2025-12-30  
-**Spec**: `/data1/huangzhe/code/gpu-simulate-test/specs/001-compare-vidur-real-timing/spec.md`
-
-## Sources Consulted
-
-- Sarathi usage notes: `/data1/huangzhe/code/gpu-simulate-test/context/summaries/howto-use-sarathi-serve.md`
-- Vidur usage notes: `/data1/huangzhe/code/gpu-simulate-test/context/summaries/howto-use-vidur.md`
-- Vidur trace replay generator: `/data1/huangzhe/code/gpu-simulate-test/extern/tracked/vidur/vidur/request_generator/trace_replay_request_generator.py`
-- Vidur predictor profiling path overrides: `/data1/huangzhe/code/gpu-simulate-test/extern/tracked/vidur/vidur/config/config.py`
-- Vidur metrics capabilities (token-level distributions are aggregated): `/data1/huangzhe/code/gpu-simulate-test/extern/tracked/vidur/vidur/metrics/metrics_store.py`
+**Feature**: Compare Vidur vs real Qwen3 A100 timing (`001-compare-vidur-real-timing`)  
+**Repo root**: `/data1/huangzhe/code/gpu-simulate-test`  
+**Goal**: Replace “long CLI flag lists” with composable Hydra configs while keeping Pixi-first, reproducible runs and `tmp/`-scoped artifacts.
 
 ## Decisions
 
-### Decision: Real backend strategy (`real-bench --backend`)
+### D1: Use Hydra as the primary configuration interface for all experiment entrypoints
 
-- **Decision**: Implement `real-bench --backend sarathi|transformers`, but treat `transformers` as the Qwen3 ground-truth path initially.
-- **Rationale**: The current Sarathi-Serve submodule does not register Qwen3 (`Qwen3ForCausalLM`) per `/data1/huangzhe/code/gpu-simulate-test/context/summaries/howto-use-sarathi-serve.md`. A `transformers` runner can benchmark Qwen3 without patching `extern/`.
+- **Decision**: All experiment commands (`workload-spec`, `real-bench`, `vidur-profile`, `vidur-sim`, `compare-runs`) are Hydra apps.
+- **Rationale**:
+  - Composable config groups replace complex CLI arg surfaces.
+  - Hydra snapshots the fully-resolved config into each run directory (reproducibility).
+  - Sweeps/multi-runs become first-class for “try knobs, compare outputs” workflows.
 - **Alternatives considered**:
-  - Patch Sarathi-Serve to add Qwen3 support (higher fidelity scheduler alignment, but increases scope and introduces `extern/` modifications).
-  - Use another serving engine (e.g., vLLM) (not currently tracked as a submodule; increases dependency surface).
+  - `argparse`/`click` with many flags: hard to keep consistent across multiple commands; poor provenance.
+  - Ad-hoc YAML/JSON config loading: reinvents composition/overrides, no standard run directory behavior.
 
-### Decision: Canonical time representation (workload + metrics)
+### D2: Keep `configs/` as the Hydra config tree root
 
-- **Decision**: Use integer nanoseconds (`*_ns`) relative to run start (monotonic) for all workload schedules and metrics files.
-- **Rationale**: Avoids float rounding and clock skew; supports precise joins/validation; easy to convert to seconds where needed.
+- **Decision**: Use repository `/data1/huangzhe/code/gpu-simulate-test/configs/` as the Hydra config root (instead of introducing a new top-level `conf/`).
+- **Rationale**: `configs/` already exists and is explicitly described as “hydra-based experiments configs”; minimizing churn keeps this feature focused.
 - **Alternatives considered**:
-  - Float seconds (human-readable but introduces precision pitfalls).
-  - Epoch timestamps (harder to reproduce across machines; depends on wall clock sync).
+  - Rename to `conf/` to match common Hydra tutorials: rejected for unnecessary repo-wide migration during this feature.
 
-### Decision: Canonical workload spec vs Vidur-native input
+### D3: Stage-specific output directories are owned by Hydra (`hydra.run.dir`)
 
-- **Decision**: Keep the repo’s canonical workload spec as `trace_lengths.csv` + `trace_intervals.csv` (ns), and have `vidur-sim` generate a Vidur trace-replay CSV as an intermediate input.
-- **Rationale**: Vidur’s built-in `TRACE_REPLAY` generator expects a single CSV with `arrived_at` (seconds) and token lengths. Generating the intermediate file preserves the “one canonical source of truth” while avoiding changes to Vidur internals.
+- **Decision**: Each command sets `hydra.run.dir` to the desired stage directory under `tmp/`, so outputs and config snapshots are colocated:
+  - Workload spec: `${repo_root}/tmp/workloads/<workload_id>/`
+  - Real run: `${repo_root}/tmp/real_runs/<run_id>/`
+  - Vidur sim: `${repo_root}/tmp/vidur_runs/<run_id>/`
+  - Comparison: `${repo_root}/tmp/comparisons/<comparison_id>/`
+  - Vidur profiling bundle: `${repo_root}/tmp/vidur_profiling/<hardware_id>/<model_id>/` (optionally timestamped)
+- **Rationale**:
+  - Aligns directly with the feature spec artifact layout and the repo constitution (“outputs go to `tmp/`”).
+  - Makes each run directory self-contained (artifacts + config provenance).
 - **Alternatives considered**:
-  - Use Vidur’s `TraceRequestIntervalGenerator` (`arrival_time` datetime-based CSV) (does not match our `*_ns` workload schedule).
-  - Patch Vidur to accept our trace formats directly (violates “adapters, not forks” unless justified).
+  - A single global output root with nested stage folders managed manually: rejected because it duplicates what Hydra already does well.
 
-### Decision: Vidur profiling root support
+### D4: Prefer `hydra.job.chdir=true` + explicit absolute paths
 
-- **Decision**: Implement `vidur-profile` + `vidur-sim` wrappers that accept `--profiling-root` and pass absolute predictor input templates to Vidur (compute/attention/network/cpu overhead) using the `execution_time_predictor_config_*_input_file` knobs.
-- **Rationale**: Vidur defaults to `./data/profiling/...` paths, which are CWD-dependent. Overriding these templates allows running from repo root reproducibly.
+- **Decision**: Run each job inside its output directory (`hydra.job.chdir=true`) and ensure all input paths are absolute (or derived from `${hydra:runtime.cwd}` in config).
+- **Rationale**:
+  - Encourages “run dir is the world” behavior; fewer accidental writes to repo root.
+  - Makes relative-output behavior consistent across stages.
 - **Alternatives considered**:
-  - `cd extern/tracked/vidur` before running Vidur (CWD coupling persists; violates the spec’s intent for explicit profiling roots).
+  - `hydra.job.chdir=false` (run from repo root): simpler path semantics but easier to accidentally write logs/artifacts outside the run directory.
 
-### Decision: Token metrics for Vidur runs (`token_metrics.csv`)
+### D5: Use structured configs for type safety and config validation
 
-- **Decision**: Generate `token_metrics.csv` for Vidur by expanding per-request averages from Vidur’s `request_metrics.csv`, anchored to the workload arrival times:
-  - `ttft_ns` derived from Vidur `prefill_e2e_time` (seconds) × 1e9.
-  - `per_token_latency_ns` derived from Vidur `decode_time_execution_plus_preemption_normalized` (seconds/token) × 1e9.
-  - `token_time_ns[i] = arrival_time_ns + ttft_ns + i * per_token_latency_ns` for `i ∈ [0, num_decode_tokens_requested)`.
-- **Rationale**: Vidur’s built-in token-level tracking is stored as aggregated distributions (CDF sketches), not per-request token timestamps. Expanding per-request averages yields a deterministic, comparable proxy in a long-format token file without patching Vidur.
+- **Decision**: Define Hydra structured configs (Python `@dataclass`) for:
+  - Common run metadata (model id, hardware id, git revision, timestamps)
+  - Workload generation (seed, arrival process, tokenizer/model reference)
+  - Real benchmark backend selection and knobs
+  - Vidur profiling/sim inputs (profiling root, model id, GPU topology knobs)
+- **Rationale**:
+  - Prevents silent typos in overrides (`cfg.key` validation).
+  - Keeps config/schema evolution readable and diffable.
 - **Alternatives considered**:
-  - Parse Vidur’s internal token-completion distributions/CDFs (loses per-request structure; not “one row per token”).
-  - Modify Vidur to export per-token/per-request timestamps (requires changes under `extern/`).
+  - Unstructured dict configs: rejected because this repo prioritizes “readable, typed Python”.
 
-### Decision: Early stopping alignment (real vs sim)
+## Implications for the implementation plan
 
-- **Decision**: Allow early stop in real runs; record `num_decode_tokens_actual`; compare per-token metrics by truncating simulated token series to the real token count on a per-request basis.
-- **Rationale**: Forcing exact token counts across backends is fragile and can distort “real” behavior. Truncation keeps comparisons meaningful and consistent.
-- **Alternatives considered**:
-  - Disable EOS/stops and force fixed decode length (not always possible across stacks; changes semantics).
-  - Drop early-stopped requests (biases distributions).
+- **CLI UX**: Commands remain `pixi run <task>` but “configuration” moves into `configs/` presets + minimal Hydra overrides.
+- **Reproducibility**: Each run directory captures:
+  - Hydra-resolved config snapshot (via Hydra output)
+  - `run_meta.json` (explicit, machine-readable provenance aligned with the feature spec)
+- **Documentation**: `quickstart.md` should show:
+  - “choose preset” (e.g., `model=qwen3_a100`) rather than “pass 15 flags”
+  - where run outputs live under `tmp/`
+

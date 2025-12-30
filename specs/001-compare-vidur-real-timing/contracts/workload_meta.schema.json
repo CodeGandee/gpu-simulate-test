@@ -5,19 +5,42 @@
   "type": "object",
   "additionalProperties": true,
   "required": [
+    "schema_version",
     "workload_id",
     "model",
     "seed",
     "tokenizer_ref",
     "created_at",
-    "git_commit"
+    "git_commit",
+    "paths",
+    "hydra"
   ],
   "properties": {
+    "schema_version": { "type": "string", "minLength": 1 },
     "workload_id": { "type": "string", "minLength": 1 },
     "model": { "type": "string", "minLength": 1 },
     "seed": { "type": "integer" },
     "tokenizer_ref": { "type": "string", "minLength": 1 },
     "created_at": { "type": "string", "minLength": 1 },
-    "git_commit": { "type": "string", "minLength": 1 }
+    "git_commit": { "type": "string", "minLength": 1 },
+    "paths": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["prompts", "trace_lengths", "trace_intervals"],
+      "properties": {
+        "prompts": { "type": "string", "minLength": 1 },
+        "trace_lengths": { "type": "string", "minLength": 1 },
+        "trace_intervals": { "type": "string", "minLength": 1 }
+      }
+    },
+    "hydra": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["config_path", "config_name"],
+      "properties": {
+        "config_path": { "type": "string", "minLength": 1 },
+        "config_name": { "type": "string", "minLength": 1 }
+      }
+    }
   }
 }

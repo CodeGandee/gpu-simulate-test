@@ -5,33 +5,60 @@
   "type": "object",
   "additionalProperties": true,
   "required": [
+    "schema_version",
     "run_id",
     "run_type",
     "model",
-    "workload_dir",
     "started_at",
     "ended_at",
     "git_commit",
     "env",
-    "params"
+    "params",
+    "hydra"
   ],
   "properties": {
+    "schema_version": { "type": "string", "minLength": 1 },
     "run_id": { "type": "string", "minLength": 1 },
-    "run_type": { "type": "string", "enum": ["real", "vidur"] },
+    "run_type": { "type": "string", "enum": ["real", "vidur", "compare", "vidur_profile"] },
     "backend": { "type": "string", "enum": ["sarathi", "transformers"] },
     "model": { "type": "string", "minLength": 1 },
     "workload_dir": { "type": "string", "minLength": 1 },
+    "profiling_root": { "type": "string", "minLength": 1 },
+    "real_run_dir": { "type": "string", "minLength": 1 },
+    "sim_run_dir": { "type": "string", "minLength": 1 },
     "hardware": { "type": "object" },
     "started_at": { "type": "string", "minLength": 1 },
     "ended_at": { "type": "string", "minLength": 1 },
     "git_commit": { "type": "string", "minLength": 1 },
+    "git_dirty": { "type": "boolean" },
     "env": { "type": "object" },
-    "params": { "type": "object" }
+    "params": { "type": "object" },
+    "hydra": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["config_path", "config_name"],
+      "properties": {
+        "config_path": { "type": "string", "minLength": 1 },
+        "config_name": { "type": "string", "minLength": 1 }
+      }
+    }
   },
   "allOf": [
     {
       "if": { "properties": { "run_type": { "const": "real" } } },
-      "then": { "required": ["backend"] }
+      "then": { "required": ["backend", "workload_dir"] }
+    },
+    {
+      "if": { "properties": { "run_type": { "const": "vidur" } } },
+      "then": { "required": ["workload_dir", "profiling_root"] }
+    },
+    {
+      "if": { "properties": { "run_type": { "const": "compare" } } },
+      "then": { "required": ["real_run_dir", "sim_run_dir"] }
+    },
+    {
+      "if": { "properties": { "run_type": { "const": "vidur_profile" } } },
+      "then": { "required": ["profiling_root"] }
     }
   ]
 }

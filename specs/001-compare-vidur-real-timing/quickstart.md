@@ -1,80 +1,74 @@
-# Quickstart: Compare Vidur vs real Qwen3 A100 timing
+# Quickstart: Compare Vidur vs real Qwen3 A100 timing (Hydra configs)
 
 **Feature**: `001-compare-vidur-real-timing`  
-**Date**: 2025-12-30  
-**Spec**: `/data1/huangzhe/code/gpu-simulate-test/specs/001-compare-vidur-real-timing/spec.md`
+**Repo root**: `/data1/huangzhe/code/gpu-simulate-test`
 
-## Prerequisites
+## Setup
 
-- Repo: `/data1/huangzhe/code/gpu-simulate-test`
-- Submodules initialized: `git submodule update --init --recursive`
-- Pixi env created: `pixi install`
-- A100 available for real timing runs (for `torch.cuda.is_available()`).
-- Qwen3 tokenizer/config reference available under:
-  - `/data1/huangzhe/code/gpu-simulate-test/models/qwen3-0.6b/source-data/`
+```bash
+cd /data1/huangzhe/code/gpu-simulate-test
+git submodule update --init --recursive
+pixi install
+```
 
-## Smoke checks (today, pre-feature)
+## End-to-end baseline (workload → real → sim → report)
 
-- Vidur “it runs” smoke (from Vidur submodule root; CWD-dependent):
-  - See `/data1/huangzhe/code/gpu-simulate-test/context/summaries/howto-use-vidur.md`
-- Sarathi “it runs” smoke:
-  - See `/data1/huangzhe/code/gpu-simulate-test/context/summaries/howto-use-sarathi-serve.md`
+> These commands assume Pixi tasks exist for each stage and each stage is a Hydra app with presets under `/data1/huangzhe/code/gpu-simulate-test/configs/compare_vidur_real/`.
 
-## End-to-end baseline (after implementation)
-
-All outputs are written under `/data1/huangzhe/code/gpu-simulate-test/tmp/`.
-
-1) Generate a deterministic workload:
+### 1) Generate workload spec (deterministic)
 
 ```bash
 pixi run workload-spec \
-  --model Qwen/Qwen3-0.6B \
-  --prompts /data1/huangzhe/code/gpu-simulate-test/tmp/prompts.jsonl \
-  --out /data1/huangzhe/code/gpu-simulate-test/tmp/workloads/<workload_id>
+  workload.prompts=/data1/huangzhe/code/gpu-simulate-test/tmp/prompts/example.prompts.jsonl \
+  workload.seed=123 \
+  model=qwen3_0_6b
 ```
 
-2) Run the real benchmark (Qwen3 ground-truth via `transformers` backend):
+**Outputs**: `/data1/huangzhe/code/gpu-simulate-test/tmp/workloads/<workload_id>/`
+
+### 2) Run real benchmark on A100 (choose backend)
 
 ```bash
 pixi run real-bench \
-  --backend transformers \
-  --workload /data1/huangzhe/code/gpu-simulate-test/tmp/workloads/<workload_id> \
-  --out /data1/huangzhe/code/gpu-simulate-test/tmp/real_runs/<run_id>
+  backend=transformers \
+  workload.workload_dir=/data1/huangzhe/code/gpu-simulate-test/tmp/workloads/<workload_id>
 ```
 
-3) Generate Vidur profiling inputs (one-time per model+device):
+**Outputs**: `/data1/huangzhe/code/gpu-simulate-test/tmp/real_runs/<run_id>/`
+
+### 3) Generate Vidur profiling bundle (one-time per model+hardware)
 
 ```bash
 pixi run vidur-profile \
-  --model Qwen/Qwen3-0.6B \
-  --profiling-root /data1/huangzhe/code/gpu-simulate-test/tmp/vidur_profiling
+  model=qwen3_0_6b \
+  hardware=a100 \
+  profiling.root=/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_profiling/a100/qwen3_0_6b
 ```
 
-4) Run Vidur simulation from repo root:
+### 4) Run Vidur simulation from repo root
 
 ```bash
 pixi run vidur-sim \
-  --workload /data1/huangzhe/code/gpu-simulate-test/tmp/workloads/<workload_id> \
-  --profiling-root /data1/huangzhe/code/gpu-simulate-test/tmp/vidur_profiling \
-  --out /data1/huangzhe/code/gpu-simulate-test/tmp/vidur_runs/<run_id>
+  model=qwen3_0_6b \
+  hardware=a100 \
+  profiling.root=/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_profiling/a100/qwen3_0_6b \
+  workload.workload_dir=/data1/huangzhe/code/gpu-simulate-test/tmp/workloads/<workload_id>
 ```
 
-5) Compare real vs sim and produce a report:
+**Outputs**: `/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_runs/<run_id>/`
+
+### 5) Compare one real run vs one sim run
 
 ```bash
 pixi run compare-runs \
-  --real /data1/huangzhe/code/gpu-simulate-test/tmp/real_runs/<run_id> \
-  --sim /data1/huangzhe/code/gpu-simulate-test/tmp/vidur_runs/<run_id> \
-  --out /data1/huangzhe/code/gpu-simulate-test/tmp/comparisons/<run_id>
+  real_run_dir=/data1/huangzhe/code/gpu-simulate-test/tmp/real_runs/<run_id> \
+  sim_run_dir=/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_runs/<run_id>
 ```
 
-## Output checklist
+**Outputs**: `/data1/huangzhe/code/gpu-simulate-test/tmp/comparisons/<comparison_id>/summary.md`
 
-- Workload:
-  - `prompts.jsonl`, `trace_lengths.csv`, `trace_intervals.csv`, `workload_meta.json`
-- Real:
-  - `request_metrics.csv`, `token_metrics.csv`, `run_meta.json`, `summary.md`
-- Vidur:
-  - `request_metrics.csv`, `token_metrics.csv`, `run_meta.json`, `summary.md`
-- Comparison:
-  - `summary.md` + plots + percentile tables
+## Notes
+
+- All timing fields are integer nanoseconds relative to run start (monotonic).
+- If the real run early-stops, comparisons align per-token series using `num_decode_tokens_actual` (sim tokens are truncated per request).
+

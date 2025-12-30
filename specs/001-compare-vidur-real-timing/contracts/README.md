@@ -1,15 +1,8 @@
-# Contracts: Compare Vidur vs real Qwen3 A100 timing
+# Contracts (file formats)
 
-These contracts define the canonical on-disk file formats used by the workflow.
+These contracts define the minimal on-disk interfaces between stages in this feature. All artifacts are written under `/data1/huangzhe/code/gpu-simulate-test/tmp/` by default.
 
-All timestamps are **integer nanoseconds** (`*_ns`) relative to the run/workload start and should be interpreted as monotonic time.
-
-## Files
-
-- Workload spec:
-  - `/data1/huangzhe/code/gpu-simulate-test/specs/001-compare-vidur-real-timing/contracts/workload_spec.md`
-  - `/data1/huangzhe/code/gpu-simulate-test/specs/001-compare-vidur-real-timing/contracts/workload_meta.schema.json`
-- Run outputs:
-  - `/data1/huangzhe/code/gpu-simulate-test/specs/001-compare-vidur-real-timing/contracts/run_meta.schema.json`
-  - `/data1/huangzhe/code/gpu-simulate-test/specs/001-compare-vidur-real-timing/contracts/request_metrics.md`
-  - `/data1/huangzhe/code/gpu-simulate-test/specs/001-compare-vidur-real-timing/contracts/token_metrics.md`
+- `workload_spec.md`: workload spec directory layout + trace file schemas
+- `request_metrics.md`: per-request metrics schema (real + sim)
+- `token_metrics.md`: per-token metrics schema (real + sim)
+- `run_meta.json.md`: run provenance schema (real + sim + compare)

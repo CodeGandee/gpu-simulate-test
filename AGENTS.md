@@ -41,6 +41,8 @@ No test suite is committed yet. If you add tests:
 ## Active Technologies
 - Python 3.13 (Pixi) + `pixi`, `torch==2.9.1+cu128`, `transformers`, `pandas`, `matplotlib`, Vidur (`extern/tracked/vidur` editable), Sarathi-Serve (`extern/tracked/sarathi-serve` editable) (001-compare-vidur-real-timing)
 - Files under `/data1/huangzhe/code/gpu-simulate-test/tmp/` (CSV + JSON + Markdown reports) (001-compare-vidur-real-timing)
+- Python 3.13 (Pixi) + `hydra-core` (configs + provenance), `torch==2.9.1+cu128` (real timing harness), `transformers` (optional real backend), `vidur` (editable submodule dependency), `pandas`/`pyarrow` (metrics I/O), `matplotlib`/`seaborn`/`plotly` (plots) (001-compare-vidur-real-timing)
+- Files under `/data1/huangzhe/code/gpu-simulate-test/tmp/` (CSV + JSON + Markdown + plots); no DB (001-compare-vidur-real-timing)
 
 ## Recent Changes
 - 001-compare-vidur-real-timing: Added Python 3.13 (Pixi) + `pixi`, `torch==2.9.1+cu128`, `transformers`, `pandas`, `matplotlib`, Vidur (`extern/tracked/vidur` editable), Sarathi-Serve (`extern/tracked/sarathi-serve` editable)
