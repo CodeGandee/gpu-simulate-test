@@ -5,7 +5,7 @@ branch = main
 
 [submodule "extern/tracked/vidur"]
 	path = extern/tracked/vidur
-	url = https://github.com/microsoft/vidur
+	url = https://github.com/imsight-forks/vidur
 	branch = main
 	shallow = true
 [submodule "extern/tracked/LLMCompass"]
