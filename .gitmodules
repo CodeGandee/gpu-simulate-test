@@ -7,7 +7,6 @@ branch = main
 	path = extern/tracked/vidur
 	url = https://github.com/imsight-forks/vidur
 	branch = hz-dev
-	shallow = true
 [submodule "extern/tracked/LLMCompass"]
 	path = extern/tracked/LLMCompass
 	url = https://github.com/PrincetonUniversity/LLMCompass.git
