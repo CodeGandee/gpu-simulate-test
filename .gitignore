@@ -87,7 +87,8 @@ venv.bak/
 
 # IDEs/editors
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
 *.swp
 
 # Type checkers / linters
