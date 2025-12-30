@@ -14,11 +14,23 @@ platforms = ["linux-64"]
 
 [tool.pixi.pypi-dependencies]
 gpu_simulate_test = { path = ".", editable = true }
-mdutils = ">=1.8.1,<2"
-scipy = ">=1.16.3,<2"
+mdutils = "*"
+scipy = "*"
 torch = "==2.9.1+cu128"
-transformers = ">=4,<5"
-diffusers = ">=0,<1"
+transformers = "*"
+diffusers = "*"
+torchvision = "*"
+scalesim = "*"
+matplotlib = "*"
+seaborn = "*"
+numpy = "*"
+pandas = "*"
+scikit-learn = "*"
+wandb = "*"
+kaleido = "*"
+ddsketch = "*"
+plotly_express = "*"
+fasteners = "*"
 
 [tool.pixi.pypi-options]
 extra-index-urls = ["https://download.pytorch.org/whl/cu128"]
