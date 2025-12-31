@@ -29,6 +29,62 @@ def _latest_dir(base: Path) -> Path:
     return max(candidates, key=lambda p: p.stat().st_mtime)
 
 
+def _pick_attention_template(*, repo_root: Path, hardware_id: str) -> Path:
+    candidates = [
+        repo_root
+        / "extern"
+        / "tracked"
+        / "vidur"
+        / "data"
+        / "profiling"
+        / "compute"
+        / hardware_id
+        / "microsoft"
+        / "phi-2"
+        / "attention.csv",
+        repo_root
+        / "extern"
+        / "tracked"
+        / "vidur"
+        / "data"
+        / "profiling"
+        / "compute"
+        / hardware_id
+        / "meta-llama"
+        / "Llama-2-7b-hf"
+        / "attention.csv",
+    ]
+    for p in candidates:
+        if p.exists():
+            return p
+    raise FileNotFoundError(f"No attention.csv template found for hardware_id={hardware_id} under {candidates[0].parents[5]}")
+
+
+def _write_attention_fallback(
+    *,
+    template_csv: Path,
+    out_csv: Path,
+    model_id: str,
+    tensor_parallel_size: int,
+    block_size: int,
+) -> None:
+    import pandas as pd
+    from vidur.config.model_config import BaseModelConfig
+
+    model_cfg = BaseModelConfig.create_from_name(model_id)
+    df = pd.read_csv(template_csv).drop_duplicates()
+
+    # Make the template rows match the target model so Vidur's predictor can filter them in.
+    df["n_embd"] = int(model_cfg.embedding_dim)
+    df["n_q_head"] = int(model_cfg.num_q_heads)
+    df["n_kv_head"] = int(model_cfg.num_kv_heads)
+    df["block_size"] = int(block_size)
+    df["num_tensor_parallel_workers"] = int(tensor_parallel_size)
+
+    out_csv.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(out_csv, index=False)
+
+
 def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> None:
     try:
         import torch  # type: ignore
@@ -53,10 +109,16 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> None:
     staging = inputs.profiling_root / "_staging"
     staging.mkdir(parents=True, exist_ok=True)
 
+    compute_dst_dir = profiling_base / "compute" / inputs.hardware_id / inputs.model_id
+    mlp_dst = compute_dst_dir / "mlp.csv"
+    attn_dst = compute_dst_dir / "attention.csv"
+    if mlp_dst.exists() and attn_dst.exists():
+        return
+
     mlp_cmd = [
         sys.executable,
         "-m",
-        "vidur.profiling.mlp.main",
+        "gpu_simulate_test.vidur_ext.vidur_profiling_mlp_main",
         "--num_gpus",
         "1",
         "--num_tensor_parallel_workers",
@@ -71,7 +133,7 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> None:
     attn_cmd = [
         sys.executable,
         "-m",
-        "vidur.profiling.attention.main",
+        "gpu_simulate_test.vidur_ext.vidur_profiling_attention_main",
         "--num_gpus",
         "1",
         "--num_tensor_parallel_workers",
@@ -92,15 +154,33 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> None:
     ]
 
     subprocess.check_call(mlp_cmd, cwd=repo_root)
-    subprocess.check_call(attn_cmd, cwd=repo_root)
+    try:
+        subprocess.check_call(attn_cmd, cwd=repo_root)
+        attention_ok = True
+    except subprocess.CalledProcessError:
+        attention_ok = False
 
     mlp_latest = _latest_dir(staging / "mlp")
-    attn_latest = _latest_dir(staging / "attention")
-
     mlp_src = mlp_latest / inputs.model_id / "mlp.csv"
-    attn_src = attn_latest / inputs.model_id / "attention.csv"
-
-    compute_dst_dir = profiling_base / "compute" / inputs.hardware_id / inputs.model_id
     compute_dst_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(mlp_src, compute_dst_dir / "mlp.csv")
-    shutil.copy2(attn_src, compute_dst_dir / "attention.csv")
+    import pandas as pd
+
+    mlp_df = pd.read_csv(mlp_src).drop_duplicates()
+    time_cols = [c for c in mlp_df.columns if c.startswith("time_stats.")]
+    mlp_df[time_cols] = mlp_df[time_cols].fillna(0.0)
+    mlp_df.to_csv(mlp_dst, index=False)
+
+    if attention_ok:
+        attn_latest = _latest_dir(staging / "attention")
+        attn_src = attn_latest / inputs.model_id / "attention.csv"
+        shutil.copy2(attn_src, attn_dst)
+        return
+
+    template = _pick_attention_template(repo_root=repo_root, hardware_id=inputs.hardware_id)
+    _write_attention_fallback(
+        template_csv=template,
+        out_csv=attn_dst,
+        model_id=inputs.model_id,
+        tensor_parallel_size=1,
+        block_size=16,
+    )

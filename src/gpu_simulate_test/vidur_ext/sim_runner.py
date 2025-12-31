@@ -201,6 +201,7 @@ def run_vidur_sim(inputs: VidurSimInputs, *, out_dir: Path, run_meta: dict) -> N
 
     simulator = Simulator(sim_cfg)
     simulator.run()
+    simulator.metric_store.plot()
 
     raw_dir = Path(sim_cfg.metrics_config.output_dir)
     raw_request_metrics = raw_dir / "request_metrics.csv"
