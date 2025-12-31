@@ -48,6 +48,58 @@ reference” pattern (docs + bootstrap scripts are committed; the actual data is
 
 Both bootstrap scripts support `EXTERNAL_REF_ROOT` to point at your local storage root.
 
+### Vidur paper LLMs (reference + stats)
+
+The Vidur (MLSys'24) paper submodule (`extern/tracked/vidur`) evaluates across these LLMs, and you’ll see these names/IDs show up in configs/notes in this repo:
+
+| Paper name | Vidur/HF model id | Params | Layers | Embedding | Attn heads | Attention type | ModelScope |
+|---|---|---:|---:|---:|---:|---|---|
+| LLaMA2-7B | `meta-llama/Llama-2-7b-hf` | 7B | 32 | 4096 | 32 | Multi-Head Attention | https://modelscope.cn/models/meta-llama/Llama-2-7b-hf |
+| LLaMA2-70B | `meta-llama/Llama-2-70b-hf` | 70B | 80 | 8192 | 64 | Group-Head Attention | https://modelscope.cn/models/meta-llama/Llama-2-70b-hf |
+| InternLM-20B | `internlm/internlm-20b` | 20B | 60 | 5120 | 40 | Multi-Head Attention | https://modelscope.cn/models/internlm/internlm-20b |
+| Qwen-72B | `Qwen/Qwen-72B` | 72B | 80 | 8192 | 64 | Multi-Head Attention | https://modelscope.cn/models/Qwen/Qwen-72B |
+
+Stats source: Vidur’s config-explorer demo page (`extern/tracked/vidur/vidur/config_optimizer/analyzer/dashboard/intro_page.py`).
+
+### Downloading with ModelScope
+
+ModelScope SDK supports downloading a full model repo snapshot via `snapshot_download` (official docs: https://modelscope.cn/docs/%E6%A8%A1%E5%9E%8B%E7%9A%84%E4%B8%8B%E8%BD%BD).
+
+1) Install the SDK:
+
+```bash
+pixi run python -m pip install -U modelscope
+```
+
+2) (Optional) set an access token (needed for gated/private models):
+
+```bash
+export MODELSCOPE_API_TOKEN="..."
+```
+
+Token page: https://modelscope.cn/my/myaccesstoken
+
+3) Download a model into your external storage (pick a `local_dir` under your `EXTERNAL_REF_ROOT` / scratch disk):
+
+```bash
+pixi run python -c "from modelscope.hub.snapshot_download import snapshot_download; print(snapshot_download('Qwen/Qwen-72B', local_dir='PATH/TO/Qwen-72B'))"
+```
+
+Examples (one per model):
+
+```bash
+pixi run python -c "from modelscope.hub.snapshot_download import snapshot_download; print(snapshot_download('meta-llama/Llama-2-7b-hf', local_dir='PATH/TO/Llama-2-7b-hf'))"
+pixi run python -c "from modelscope.hub.snapshot_download import snapshot_download; print(snapshot_download('meta-llama/Llama-2-70b-hf', local_dir='PATH/TO/Llama-2-70b-hf'))"
+pixi run python -c "from modelscope.hub.snapshot_download import snapshot_download; print(snapshot_download('internlm/internlm-20b', local_dir='PATH/TO/internlm-20b'))"
+pixi run python -c "from modelscope.hub.snapshot_download import snapshot_download; print(snapshot_download('Qwen/Qwen-72B', local_dir='PATH/TO/Qwen-72B'))"
+```
+
+Notes:
+- `snapshot_download(..., local_dir=...)` downloads the repo into that directory; `cache_dir=...` uses the ModelScope cache layout.
+- You can filter downloads with `allow_patterns=` / `ignore_patterns=` (e.g., only `*.safetensors` + configs).
+- LLaMA2 checkpoints are typically license-gated; you may need to accept the upstream license terms before downloads succeed.
+- 70B/72B checkpoints are very large; plan disk space and download time accordingly.
+
 ## Simulators
 
 First simulator to try:
