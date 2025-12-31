@@ -218,5 +218,9 @@ pixi run pytest tests/unit/test_artifact_schemas.py
 
 ## Implementation Summary
 
-TODO (fill after implementation).
-
+- Implemented package skeleton under `src/gpu_simulate_test/` (`cli/`, `config/`, `io/`, `workloads/`, `real_bench/`, `vidur_ext/`, `analysis/`).
+- Added shared structured dataclasses in `src/gpu_simulate_test/config/base.py` and an OmegaConf resolver (`stable_id`) in `src/gpu_simulate_test/config/resolvers.py`.
+- Implemented artifact IO helpers (`read/write_csv`, `read/write_json`, schema column checks, stable IDs) in `src/gpu_simulate_test/io/artifacts.py` plus provenance helpers in `src/gpu_simulate_test/io/provenance.py`.
+- Created Hydra config tree under `configs/compare_vidur_real/` (stage configs + `model/`, `hardware/`, `workload/`, `backend/`, `vidur/` groups).
+- Added Pixi tasks in `pyproject.toml` for stage entrypoints.
+- Validation: `pixi run pytest tests/unit/test_artifact_schemas.py`.

@@ -49,5 +49,5 @@ graph LR
 
 ## Implementation Summary
 
-TODO (fill after implementation).
-
+- Updated `specs/001-compare-vidur-real-timing/quickstart.md` with the exact `pixi run ...` commands and correct Hydra override keys.
+- Added troubleshooting runbook notes in `context/runbooks/001-compare-vidur-real-timing-troubleshooting.md` (missing GPU, missing profiling data, tokenization mismatch, early-stop alignment).

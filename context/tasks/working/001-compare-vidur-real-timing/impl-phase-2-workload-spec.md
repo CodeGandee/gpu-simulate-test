@@ -261,5 +261,9 @@ pixi run python tests/manual/test_workload_spec_smoke.py \
 
 ## Implementation Summary
 
-TODO (fill after implementation).
-
+- Implemented deterministic arrival schedule generation in `src/gpu_simulate_test/workloads/arrival_schedule.py` (`build_trace_intervals`, integer ns timestamps).
+- Implemented prompts JSONL IO in `src/gpu_simulate_test/workloads/prompts.py`.
+- Implemented token length extraction in `src/gpu_simulate_test/workloads/token_lengths.py` (HuggingFace tokenizer loader + `compute_trace_lengths`).
+- Implemented Hydra entrypoint `src/gpu_simulate_test/cli/workload_spec.py` to write `prompts.jsonl`, `trace_lengths.csv`, `trace_intervals.csv`, and `workload_meta.json` per `specs/001-compare-vidur-real-timing/contracts/workload_spec.md`.
+- Added unit validation `tests/unit/test_workload_spec_determinism.py` and manual smoke script `tests/manual/test_workload_spec_smoke.py`.
+- Validation: `pixi run pytest tests/unit/test_workload_spec_determinism.py`.

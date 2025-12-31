@@ -1,0 +1,3 @@
+hardware_id: a100
+device: cuda:0
+

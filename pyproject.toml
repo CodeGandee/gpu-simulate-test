@@ -53,6 +53,11 @@ extra-index-urls = ["https://download.pytorch.org/whl/cu128"]
 index-strategy = "unsafe-best-match"
 
 [tool.pixi.tasks]
+workload-spec = "python -m gpu_simulate_test.cli.workload_spec"
+real-bench = "python -m gpu_simulate_test.cli.real_bench"
+vidur-profile = "python -m gpu_simulate_test.cli.vidur_profile"
+vidur-sim = "python -m gpu_simulate_test.cli.vidur_sim"
+compare-runs = "python -m gpu_simulate_test.cli.compare_runs"
 
 [tool.pixi.dependencies]
 python = "3.13.*"

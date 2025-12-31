@@ -115,5 +115,6 @@ pixi run python tests/manual/test_vidur_profile_smoke.py \
 
 ## Implementation Summary
 
-TODO (fill after implementation).
-
+- Implemented profiling runner wrapper in `src/gpu_simulate_test/vidur_ext/profile_runner.py` (stages outputs under `<profiling_root>/data/profiling/...`; uses Vidur profiling modules for compute profiling).
+- Implemented Hydra entrypoint `src/gpu_simulate_test/cli/vidur_profile.py` (fails fast if GPU unavailable; writes `run_meta.json`).
+- Added manual smoke script `tests/manual/test_vidur_profile_smoke.py`.

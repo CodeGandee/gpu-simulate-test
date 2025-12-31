@@ -112,5 +112,6 @@ pixi run python tests/manual/test_compare_runs_smoke.py         # CPU-only if in
 
 ## Implementation Summary
 
-TODO (fill after implementation).
-
+- Implemented end-to-end Hydra + Pixi workflow: `workload-spec` → `real-bench` → `vidur-profile` → `vidur-sim` → `compare-runs`.
+- All stages write artifacts under `tmp/` with standardized contracts (`request_metrics.csv`, `token_metrics.csv`, `run_meta.json`) and deterministic workload traces.
+- Added unit tests for core invariants (artifact schemas, workload determinism, Vidur prereqs, compare alignment) and manual smoke scripts per stage under `tests/manual/`.

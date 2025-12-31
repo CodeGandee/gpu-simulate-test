@@ -1,0 +1,20 @@
+defaults:
+  - model: qwen3_0_6b
+  - hardware: a100
+  - backend: transformers
+  - workload: default
+  - _self_
+
+paths:
+  repo_root: ${hydra:runtime.cwd}
+  tmp_root: ${paths.repo_root}/tmp
+
+output:
+  run_id: ${stable_id:real,${backend.name},${model.model_id},${hardware.hardware_id},${workload.workload_id}}
+
+hydra:
+  run:
+    dir: ${paths.tmp_root}/real_runs/${output.run_id}
+  job:
+    chdir: true
+

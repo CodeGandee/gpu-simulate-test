@@ -1,0 +1,3 @@
+model_id: Qwen/Qwen3-0.6B
+tokenizer_ref: ${paths.repo_root}/models/qwen3-0.6b/source-data
+

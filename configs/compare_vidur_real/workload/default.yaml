@@ -1,0 +1,12 @@
+prompts: ${paths.tmp_root}/prompts/example.prompts.jsonl
+seed: 123
+num_decode_tokens: 64
+arrival:
+  kind: fixed_interval
+  seed: ${workload.seed}
+  inter_arrival_ns: 0
+  poisson_rate_per_s: 1.0
+
+workload_id: ${stable_id:workload,${model.model_id},${workload.seed},${workload.prompts},${workload.num_decode_tokens},${workload.arrival.kind}}
+workload_dir: ${paths.tmp_root}/workloads/${workload.workload_id}
+

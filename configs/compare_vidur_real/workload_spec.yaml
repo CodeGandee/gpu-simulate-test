@@ -1,0 +1,18 @@
+defaults:
+  - model: qwen3_0_6b
+  - workload: default
+  - _self_
+
+paths:
+  repo_root: ${hydra:runtime.cwd}
+  tmp_root: ${paths.repo_root}/tmp
+
+output:
+  workload_id: ${workload.workload_id}
+
+hydra:
+  run:
+    dir: ${workload.workload_dir}
+  job:
+    chdir: true
+

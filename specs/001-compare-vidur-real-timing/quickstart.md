@@ -21,6 +21,7 @@ pixi install
 pixi run workload-spec \
   workload.prompts=/data1/huangzhe/code/gpu-simulate-test/tmp/prompts/example.prompts.jsonl \
   workload.seed=123 \
+  workload.num_decode_tokens=64 \
   model=qwen3_0_6b
 ```
 
@@ -42,7 +43,7 @@ pixi run real-bench \
 pixi run vidur-profile \
   model=qwen3_0_6b \
   hardware=a100 \
-  profiling.root=/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_profiling/a100/qwen3_0_6b
+  vidur.profiling.root=/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_profiling/a100/qwen3_0_6b
 ```
 
 ### 4) Run Vidur simulation from repo root
@@ -51,7 +52,7 @@ pixi run vidur-profile \
 pixi run vidur-sim \
   model=qwen3_0_6b \
   hardware=a100 \
-  profiling.root=/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_profiling/a100/qwen3_0_6b \
+  vidur.profiling.root=/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_profiling/a100/qwen3_0_6b \
   workload.workload_dir=/data1/huangzhe/code/gpu-simulate-test/tmp/workloads/<workload_id>
 ```
 
@@ -71,4 +72,3 @@ pixi run compare-runs \
 
 - All timing fields are integer nanoseconds relative to run start (monotonic).
 - If the real run early-stops, comparisons align per-token series using `num_decode_tokens_actual` (sim tokens are truncated per request).
-

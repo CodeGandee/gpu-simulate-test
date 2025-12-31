@@ -1,0 +1,19 @@
+defaults:
+  - _self_
+
+paths:
+  repo_root: ${hydra:runtime.cwd}
+  tmp_root: ${paths.repo_root}/tmp
+
+real_run_dir: ${paths.tmp_root}/real_runs/REPLACE_ME
+sim_run_dir: ${paths.tmp_root}/vidur_runs/REPLACE_ME
+
+output:
+  comparison_id: ${stable_id:compare,${real_run_dir},${sim_run_dir}}
+
+hydra:
+  run:
+    dir: ${paths.tmp_root}/comparisons/${output.comparison_id}
+  job:
+    chdir: true
+

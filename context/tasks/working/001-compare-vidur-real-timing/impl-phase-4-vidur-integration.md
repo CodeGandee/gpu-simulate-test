@@ -203,5 +203,8 @@ git status --porcelain extern/tracked/vidur
 
 ## Implementation Summary
 
-TODO (fill after implementation).
-
+- Implemented profiling-root validation in `src/gpu_simulate_test/vidur_ext/profiling_root.py` + unit tests in `tests/unit/test_vidur_sim_prereqs.py`.
+- Implemented Qwen3 Vidur model registration (no submodule edits) in `src/gpu_simulate_test/vidur_ext/qwen3_model_config.py` and a thin wrapper in `src/gpu_simulate_test/vidur_ext/run_vidur.py`.
+- Implemented Vidur simulation runner + postprocessing into standardized `request_metrics.csv`/`token_metrics.csv` in `src/gpu_simulate_test/vidur_ext/sim_runner.py`.
+- Implemented Hydra entrypoint `src/gpu_simulate_test/cli/vidur_sim.py` and manual smoke script `tests/manual/test_vidur_sim_smoke.py`.
+- Validation: `pixi run pytest tests/unit/test_vidur_sim_prereqs.py`.

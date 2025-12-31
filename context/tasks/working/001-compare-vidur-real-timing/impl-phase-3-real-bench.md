@@ -245,4 +245,10 @@ pixi run python tests/manual/test_real_bench_smoke.py \
 
 ## Implementation Summary
 
-TODO (fill after implementation).
+- Implemented workload loader + replay helpers in `src/gpu_simulate_test/real_bench/replay.py` (joins `prompts.jsonl` + trace CSVs into per-request specs).
+- Added backend interface in `src/gpu_simulate_test/real_bench/backends/base.py`.
+- Implemented `transformers` adapter in `src/gpu_simulate_test/real_bench/backends/transformers_backend.py` (per-token timing via a custom streamer).
+- Implemented `sarathi` adapter in `src/gpu_simulate_test/real_bench/backends/sarathi_backend.py` (per-token timing via `LLMEngine.step()` deltas).
+- Implemented standardized metrics writer in `src/gpu_simulate_test/real_bench/metrics.py` and Hydra entrypoint `src/gpu_simulate_test/cli/real_bench.py`.
+- Added unit schema validation `tests/unit/test_real_metrics_schema.py` and manual smoke script `tests/manual/test_real_bench_smoke.py`.
+- Validation: `pixi run pytest tests/unit/test_real_metrics_schema.py`.

@@ -193,5 +193,9 @@ pixi run python tests/manual/test_compare_runs_smoke.py \
 
 ## Implementation Summary
 
-TODO (fill after implementation).
-
+- Implemented metrics loaders in `src/gpu_simulate_test/analysis/load_metrics.py`.
+- Implemented early-stop token alignment + percentile helpers in `src/gpu_simulate_test/analysis/compare.py` (sim tokens truncated using real `num_decode_tokens_actual`).
+- Implemented plotting in `src/gpu_simulate_test/analysis/plots.py` and report writer in `src/gpu_simulate_test/analysis/report.py` (writes `summary.md`, `tables/*.csv`, `figs/*.png`).
+- Implemented Hydra entrypoint `src/gpu_simulate_test/cli/compare_runs.py` and manual smoke script `tests/manual/test_compare_runs_smoke.py`.
+- Added unit test `tests/unit/test_compare_alignment.py`.
+- Validation: `pixi run pytest tests/unit/test_compare_alignment.py`.
