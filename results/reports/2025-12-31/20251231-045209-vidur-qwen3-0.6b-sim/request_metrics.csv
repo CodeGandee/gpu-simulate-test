@@ -1,0 +1,5 @@
+request_id,arrival_time_ns,first_token_time_ns,ttft_ns,completion_time_ns,num_prefill_tokens,num_decode_tokens,num_decode_tokens_actual,status
+0,0,2204013,2204013,121967428,12,64,64,ok
+1,0,2204013,2204013,121967428,10,64,64,ok
+2,0,2204013,2204013,121967428,15,64,64,ok
+3,0,2204013,2204013,121967428,16,64,64,ok
