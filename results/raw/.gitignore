@@ -1,0 +1,7 @@
+# Ignore all raw outputs by default (can be large).
+*
+
+# Keep the ignore file (and any optional documentation) tracked.
+!.gitignore
+!README.md
+
