@@ -1,0 +1,46 @@
+site_name: gpu-simulate-test
+site_description: "Docs for experiments and tooling (MkDocs Material)"
+
+repo_url: https://github.com/CodeGandee/gpu-simulate-test
+repo_name: CodeGandee/gpu-simulate-test
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.indexes
+    - navigation.footer
+    - content.code.copy
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.highlight
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Manual:
+      - manual/index.md
+      - Setup: manual/setup.md
+      - Run Workflow: manual/run-workflow.md
+      - Artifacts: manual/artifacts.md
+      - Troubleshooting: manual/troubleshooting.md
+  - Developer:
+      - developer/index.md
+      - Features (Tasks): developer/features.md
+      - Architecture: developer/architecture.md
+      - Hydra Configs: developer/configs.md
+      - Data Contracts: developer/contracts.md
+      - Testing: developer/testing.md
+

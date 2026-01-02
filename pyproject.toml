@@ -3,6 +3,7 @@ authors = [{name = "igamenovoer", email = "igamenovoer@xx.com"}]
 name = "gpu-simulate-test"
 requires-python = ">= 3.11"
 version = "0.1.0"
+dependencies = ["mkdocs-material>=9.7.1,<10"]
 
 [build-system]
 build-backend = "hatchling.build"
@@ -59,6 +60,8 @@ real-bench = "python -m gpu_simulate_test.cli.real_bench"
 vidur-profile = "python -m gpu_simulate_test.cli.vidur_profile"
 vidur-sim = "python -m gpu_simulate_test.cli.vidur_sim"
 compare-runs = "python -m gpu_simulate_test.cli.compare_runs"
+docs-serve = "mkdocs serve -a 127.0.0.1:8000"
+docs-build = "mkdocs build --strict"
 
 [tool.pixi.dependencies]
 python = "3.13.*"
