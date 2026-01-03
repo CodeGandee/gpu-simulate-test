@@ -1,0 +1,45 @@
+{
+  "created_at": "2026-01-02T13:48:41.629612+00:00",
+  "git_commit": "a404d11154a12bf176aa0a155548de7a82f93a3e",
+  "git_dirty": true,
+  "hydra": {
+    "config_name": "workload_spec",
+    "config_path": "configs/compare_vidur_real"
+  },
+  "model": "Qwen/Qwen3-0.6B",
+  "params": {
+    "model": {
+      "model_id": "Qwen/Qwen3-0.6B",
+      "tokenizer_ref": "/data1/huangzhe/code/gpu-simulate-test/models/qwen3-0.6b/source-data"
+    },
+    "output": {
+      "workload_id": "workload_633751838c"
+    },
+    "paths": {
+      "repo_root": "/data1/huangzhe/code/gpu-simulate-test",
+      "tmp_root": "/data1/huangzhe/code/gpu-simulate-test/tmp"
+    },
+    "workload": {
+      "arrival": {
+        "inter_arrival_ns": 2000000000,
+        "kind": "fixed_interval",
+        "poisson_rate_per_s": 1.0,
+        "seed": 123
+      },
+      "num_decode_tokens": 64,
+      "prompts": "/data1/huangzhe/code/gpu-simulate-test/tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/prompts.jsonl",
+      "seed": 123,
+      "workload_dir": "/data1/huangzhe/code/gpu-simulate-test/tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/workload",
+      "workload_id": "workload_633751838c"
+    }
+  },
+  "paths": {
+    "prompts": "/data1/huangzhe/code/gpu-simulate-test/tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/workload/prompts.jsonl",
+    "trace_intervals": "/data1/huangzhe/code/gpu-simulate-test/tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/workload/trace_intervals.csv",
+    "trace_lengths": "/data1/huangzhe/code/gpu-simulate-test/tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/workload/trace_lengths.csv"
+  },
+  "schema_version": "v1",
+  "seed": 123,
+  "tokenizer_ref": "/data1/huangzhe/llm-models/qwen3-0.6b/qwen/Qwen3-0___6B",
+  "workload_id": "workload_633751838c"
+}

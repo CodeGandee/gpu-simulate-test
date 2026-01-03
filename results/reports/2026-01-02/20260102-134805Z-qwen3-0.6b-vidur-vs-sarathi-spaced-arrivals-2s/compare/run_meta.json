@@ -1,0 +1,38 @@
+{
+  "ended_at": "2026-01-02T13:51:47.658151+00:00",
+  "env": {
+    "cuda_available": true,
+    "cuda_device_name": "NVIDIA A100-SXM4-80GB",
+    "cwd": "/data1/huangzhe/code/gpu-simulate-test/tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/compare",
+    "platform": "Linux-6.8.0-90-generic-x86_64-with-glibc2.39",
+    "python": "3.13.11",
+    "torch": "2.9.1+cu128"
+  },
+  "git_commit": "a404d11154a12bf176aa0a155548de7a82f93a3e",
+  "git_dirty": true,
+  "hydra": {
+    "config_name": "compare_runs",
+    "config_path": "configs/compare_vidur_real"
+  },
+  "params": {
+    "output": {
+      "comparison_id": "compare_e1bc1e2ed0"
+    },
+    "paths": {
+      "repo_root": "/data1/huangzhe/code/gpu-simulate-test",
+      "tmp_root": "/data1/huangzhe/code/gpu-simulate-test/tmp"
+    },
+    "real_run_dir": "/data1/huangzhe/code/gpu-simulate-test/tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/real_run",
+    "sim_run_dir": "/data1/huangzhe/code/gpu-simulate-test/tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/vidur_run"
+  },
+  "real_run_dir": "/data1/huangzhe/code/gpu-simulate-test/tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/real_run",
+  "run_id": "compare_e1bc1e2ed0",
+  "run_type": "compare",
+  "schema_version": "v1",
+  "sim_run_dir": "/data1/huangzhe/code/gpu-simulate-test/tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/vidur_run",
+  "started_at": "2026-01-02T13:51:47.658139+00:00",
+  "tables": {
+    "token_latency_percentiles_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/compare/tables/token_latency_percentiles.csv",
+    "ttft_percentiles_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/compare/tables/ttft_percentiles.csv"
+  }
+}

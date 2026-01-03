@@ -1,0 +1,8 @@
+{"prompt_id":"p0","text":"Write one sentence about GPUs and inference latency."}
+{"prompt_id":"p1","text":"Give a short definition of a transformer model."}
+{"prompt_id":"p2","text":"Explain the difference between prefill and decode in LLM inference."}
+{"prompt_id":"p3","text":"In one paragraph, describe what a latency simulator is used for."}
+{"prompt_id":"p4","text":"List three factors that can affect TTFT for an LLM."}
+{"prompt_id":"p5","text":"Write a short explanation of batching in LLM serving."}
+{"prompt_id":"p6","text":"Describe KV cache in one sentence."}
+{"prompt_id":"p7","text":"Explain why profiling data matters for latency simulation."}

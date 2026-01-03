@@ -1,0 +1,26 @@
+model:
+  model_id: Qwen/Qwen3-0.6B
+  tokenizer_ref: ${paths.repo_root}/models/qwen3-0.6b/source-data
+hardware:
+  hardware_id: a100
+  device: cuda:0
+workload:
+  prompts: ${paths.tmp_root}/prompts/example.prompts.jsonl
+  seed: 123
+  num_decode_tokens: 64
+  arrival:
+    kind: fixed_interval
+    seed: ${workload.seed}
+    inter_arrival_ns: 0
+    poisson_rate_per_s: 1.0
+  workload_id: ${stable_id:workload,${model.model_id},${workload.seed},${workload.prompts},${workload.num_decode_tokens},${workload.arrival.kind}}
+  workload_dir: /data1/huangzhe/code/gpu-simulate-test/tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/workload
+vidur:
+  model_key: qwen3_0_6b
+  profiling:
+    root: /data1/huangzhe/code/gpu-simulate-test/tmp/vidur_profiling/a100/qwen3_0_6b
+paths:
+  repo_root: ${hydra:runtime.cwd}
+  tmp_root: ${paths.repo_root}/tmp
+output:
+  run_id: ${stable_id:vidur,${model.model_id},${hardware.hardware_id},${workload.workload_id},${vidur.profiling.root}}
