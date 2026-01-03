@@ -16,17 +16,29 @@
   - `configs/compare_vidur_real/backend/` (real-backend knobs needed for alignment)
 - **Outputs**:
   - Trace artifacts: `tmp/paper_fidelity/traces/<scenario_name>/trace.csv` (+ trace metadata)
+  - Trace inputs: accept either `trace.csv` or the legacy split files (`trace_lengths.csv` + `trace_intervals.csv`)
   - Simulator metrics: `tmp/paper_fidelity/runs/<scenario_name>/sim/request_metrics.csv`
   - Real metrics: `tmp/paper_fidelity/runs/<scenario_name>/real/request_metrics.csv`
   - Scoring + report: `results/reports/<date>/paper_fidelity/<scenario_name>/summary.md` (+ optional plots)
+- **Default baseline scenario**: LLaMA2-7B + arXiv summarization trace
 - **Validation**:
   - Automated: scorer unit tests with fixed fixtures under `tests/test_paper_fidelity_scorer.py`
   - Manual: a “known-good” baseline scenario run that produces a complete `summary.md` and required CSVs
 - **External assets** (if any):
   - Model references as documented in `models/README.md`
   - Vidur profiling bundles from `extern/tracked/vidur`
-  - Real inference engine baseline used for comparison (must support concurrent request injection and server-side timing)
-  - Optional secondary engine baseline for cross-checking results (if available)
+  - Real inference engine baseline for paper reproduction: Sarathi-Serve (vLLM-derived; used by Vidur’s open-source profiling path)
+  - Optional secondary engine baseline for cross-checking: upstream vLLM (version-pinned per scenario)
+
+## Clarifications
+
+### Session 2026-01-03
+
+- Q: Real baseline engine for MVP → A: Sarathi-Serve required (vLLM optional later)
+- Q: Canonical workload trace format (for this feature) → A: Support both; prefer `trace.csv` for new outputs
+- Q: Overload criterion for capacity discovery → A: Overloaded if tail/P99 scheduling delay > 5s
+- Q: Default pass/warn/fail thresholds for fidelity error → A: Pass ≤5%, Warn 5–9%, Fail >9%
+- Q: Default “baseline scenario” for the first repro → A: LLaMA2-7B + arXiv summarization trace
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -63,7 +75,7 @@ As a contributor validating Vidur fidelity, I want a single documented workflow 
 
 ### User Story 2 - Standardized trace generation and validation (Priority: P1)
 
-As a contributor, I want to generate or validate workload traces in a single standardized schema so that both simulation and real execution consume the same request stream definition.
+As a contributor, I want to generate or validate workload traces in a single standardized schema (while still accepting legacy trace layouts) so that both simulation and real execution consume the same request stream definition.
 
 **Why this priority**: Fidelity evaluation is not meaningful if simulation and real runs are driven by different workload representations.
 
@@ -73,6 +85,7 @@ As a contributor, I want to generate or validate workload traces in a single sta
 
 1. **Given** a workload definition without explicit arrival times, **When** I generate a trace at a specified request rate and seed, **Then** I get a trace file with required columns and deterministic content for the same inputs.
 2. **Given** an existing trace file, **When** I validate it, **Then** the system either confirms it is usable or returns a clear, actionable validation error.
+3. **Given** a legacy workload trace provided as split files, **When** I validate or run the workflow, **Then** it is accepted (or rejected) using the same schema rules as `trace.csv`.
 
 ---
 
@@ -93,7 +106,7 @@ As a contributor, I want to run the simulator on a standardized trace while pres
 
 ### User Story 4 - Real execution replay with aligned timing boundaries (Priority: P2)
 
-As a contributor, I want to replay the same trace against a real inference engine under load and collect request lifecycle timestamps so that I can compute the paper-aligned real metrics and compare them to simulation.
+As a contributor, I want to replay the same trace against the Sarathi-Serve baseline engine under load and collect request lifecycle timestamps so that I can compute the paper-aligned real metrics and compare them to simulation.
 
 **Why this priority**: Without system-level real timings under concurrent load, the simulator-vs-real gap cannot be evaluated for dynamic workloads.
 
@@ -146,7 +159,8 @@ As a contributor, I want the system to score simulation vs real outputs using th
 
 ### Assumptions
 
-- A “baseline scenario” exists that can be run on at least one supported development machine with access to required model assets and a compatible GPU runtime.
+- Baseline scenario for MVP: LLaMA2-7B + arXiv summarization trace (paper-aligned); runnable on at least one supported development machine with access to required model assets and a compatible GPU runtime.
+- Real baseline engine for paper reproduction is Sarathi-Serve; upstream vLLM comparisons are best-effort and may require extra version pinning and configuration alignment.
 - The primary goal is to reproduce methodology and simulator-vs-real error bands for a small, representative slice (not the full-scale paper evaluation).
 - Real-vs-sim comparisons are only valid when both sides use the same trace definition and comparable metric boundaries.
 
@@ -162,39 +176,43 @@ As a contributor, I want the system to score simulation vs real outputs using th
 - **85% operating point**: A request rate equal to 85% of the capacity request rate.
 - **Median / P50**: The value where 50% of requests are faster and 50% are slower.
 - **Tail / P95**: The value where 95% of requests are faster and 5% are slower.
+- **Tail / P99**: The value where 99% of requests are faster and 1% are slower.
+- **Scheduling delay**: The time between a request’s arrival and when it begins processing.
 - **Percent error**: The relative difference between simulation and real measurements, computed as `abs(sim - real) / real`.
 
 ### Functional Requirements
 
-- **FR-001**: System MUST define and validate a single standardized trace schema that both simulation and real execution consume.
+- **FR-001**: System MUST define and validate a single standardized trace schema that both simulation and real execution consume, and support both `trace.csv` and the legacy split trace files as inputs (with `trace.csv` preferred for new outputs).
 - **FR-002**: System MUST support generating dynamic traces from token-length distributions using a deterministic arrival process with a user-specified seed and request rate.
 - **FR-003**: System MUST support a static workload mode that represents “all requests arrive at time zero” for the purpose of static fidelity evaluation.
 - **FR-004**: System MUST run simulation using a specified profiling bundle source and produce request-level metrics that include the normalized latency fields required for paper-aligned scoring.
-- **FR-005**: System MUST run real execution replay driven by the same trace arrivals and produce request-level metrics with timestamps sufficient to compute (a) scheduling delay, (b) execution time excluding scheduling delay, and (c) end-to-end latency.
+- **FR-005**: System MUST run real execution replay driven by the same trace arrivals using the Sarathi-Serve baseline engine for paper reproduction, and produce request-level metrics with timestamps sufficient to compute (a) scheduling delay, (b) execution time excluding scheduling delay, and (c) end-to-end latency.
 - **FR-006**: System MUST compute percentile summaries (at minimum median/P50 and tail/P95) for the static and dynamic metrics for both simulation and real outputs.
 - **FR-007**: System MUST compute percent error between simulation and real percentile summaries as `abs(sim - real) / real`, reported separately for each metric and percentile.
-- **FR-008**: System MUST implement a capacity discovery workflow that outputs (a) an estimated capacity request rate and (b) the derived 85% capacity operating point for a scenario, along with the overload criterion used.
-- **FR-009**: System MUST generate a human-readable report that includes: scenario definition, commands run, artifact locations, percentile summaries, percent error, and a pass/fail summary against configurable error thresholds.
+- **FR-008**: System MUST implement a capacity discovery workflow that outputs (a) an estimated capacity request rate and (b) the derived 85% capacity operating point for a scenario, using an overload criterion defined as “overloaded if tail/P99 scheduling delay > 5 seconds” (configurable), and record the criterion used.
+- **FR-009**: System MUST generate a human-readable report that includes: scenario definition, commands run, artifact locations, percentile summaries, percent error, and a pass/warn/fail summary against configurable error thresholds (default: Pass ≤5%, Warn 5–9%, Fail >9%).
 - **FR-010**: System MUST support a scoring-only workflow that consumes existing sim/real metrics artifacts and produces the same report tables without re-running simulation or real execution.
 - **FR-011**: System MUST store large run artifacts outside tracked source directories (e.g., under `tmp/`), and keep tracked outputs limited to documentation and small summary artifacts.
 - **FR-012**: System MUST fail fast with actionable error messages when required external assets (profiling bundles, model assets, real engine prerequisites) are missing.
 - **FR-013**: System MUST record enough provenance to allow a different contributor to reproduce the same report on the same machine (scenario ID, seeds, run timestamps, and artifact paths).
+- **FR-014**: System MUST include a built-in baseline scenario matching the paper-aligned repro target (LLaMA2-7B + arXiv summarization trace) that can run end-to-end for both static and dynamic workloads.
 
 ### Acceptance Criteria
 
-- **AC-001 (FR-001)**: A trace missing any required column or containing invalid values (negative tokens, unsorted arrivals, NaN/inf timestamps) is rejected with an actionable validation error; a valid trace is accepted.
+- **AC-001 (FR-001)**: `trace.csv` and legacy split traces are validated against the same schema rules; a trace missing any required column or containing invalid values (negative tokens, unsorted arrivals, NaN/inf timestamps) is rejected with an actionable validation error; a valid trace is accepted.
 - **AC-002 (FR-002)**: Given the same token-length inputs, request rate, and seed, trace generation produces identical output across repeated runs.
 - **AC-003 (FR-003)**: In static workload mode, all generated requests have arrival time 0 (or the same timestamp) and the trace is still schema-valid.
 - **AC-004 (FR-004)**: A simulation run produces a request-level metrics artifact that contains the normalized latency fields required for the static and dynamic fidelity score.
-- **AC-005 (FR-005)**: A real replay run produces a request-level metrics artifact with timestamps sufficient to compute scheduling delay, execution time excluding scheduling delay, and end-to-end latency.
+- **AC-005 (FR-005)**: A real replay run (Sarathi-Serve baseline for paper reproduction) produces a request-level metrics artifact with timestamps sufficient to compute scheduling delay, execution time excluding scheduling delay, and end-to-end latency.
 - **AC-006 (FR-006)**: The scorer reports median/P50 and tail/P95 summaries for each required metric for both simulation and real runs.
 - **AC-007 (FR-007)**: For every reported percentile summary, percent error is computed as `abs(sim - real) / real` and is consistent with a hand-calculated spot check.
-- **AC-008 (FR-008)**: Capacity discovery emits a capacity request rate and the derived 85% operating point, and records the overload criterion and measurements used to reach the result.
-- **AC-009 (FR-009)**: The generated report contains scenario definition, commands run, artifact locations, percentile summaries, percent error, and a configurable pass/fail threshold evaluation.
+- **AC-008 (FR-008)**: Capacity discovery emits a capacity request rate and the derived 85% operating point, uses (or records) the overload criterion “overloaded if tail/P99 scheduling delay > 5 seconds”, and records the measurements used to reach the result.
+- **AC-009 (FR-009)**: The generated report contains scenario definition, commands run, artifact locations, percentile summaries, percent error, and a configurable pass/warn/fail threshold evaluation (default: Pass ≤5%, Warn 5–9%, Fail >9%).
 - **AC-010 (FR-010)**: Scoring-only mode produces the same report tables given existing metrics artifacts, without requiring any new simulation or real execution.
 - **AC-011 (FR-011)**: Large artifacts are written under `tmp/` and reports under `results/`; tracked source directories remain free of large generated artifacts.
 - **AC-012 (FR-012)**: Missing external assets produce a failure that clearly names the missing prerequisite and how to provide it.
 - **AC-013 (FR-013)**: The report includes enough provenance (scenario identifier, seeds, timestamps, artifact paths) for another contributor to reproduce results on the same machine.
+- **AC-014 (FR-014)**: The baseline scenario can be executed end-to-end and produces the expected trace, simulation metrics, real metrics, and a report.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -215,7 +233,7 @@ As a contributor, I want the system to score simulation vs real outputs using th
 
 ### Measurable Outcomes
 
-- **SC-001**: For the baseline scenario, the report includes median/P50 and tail/P95 percentile summaries and percent error for both the static and dynamic paper-aligned metrics.
+- **SC-001**: For the baseline scenario (LLaMA2-7B + arXiv summarization trace), the report includes median/P50 and tail/P95 percentile summaries and percent error for both the static and dynamic paper-aligned metrics.
 - **SC-002**: Re-running the same scenario with the same inputs produces identical trace artifacts and scorer outputs (percentiles and percent error) within 0.1% absolute difference.
 - **SC-003**: The workflow produces an estimated capacity request rate and the derived 85% operating point for the baseline scenario in a single run without manual tuning beyond providing search bounds.
 - **SC-004**: A second contributor can reproduce the baseline report by following the documented commands and prerequisites, producing the same percent error values within 1% absolute difference (allowing for runtime noise).
