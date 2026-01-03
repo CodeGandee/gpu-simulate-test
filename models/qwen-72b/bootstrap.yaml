@@ -1,0 +1,8 @@
+env:
+  model_root_env: GSIM_MODELS_ROOT
+  default_model_root: /data1/huangzhe/llm-models
+model:
+  source_subdir: Qwen-72B
+  repo_link_name: source-data
+  required_files:
+    - config.json

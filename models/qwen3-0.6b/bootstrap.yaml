@@ -1,0 +1,10 @@
+env:
+  model_root_env: GSIM_MODELS_ROOT
+  default_model_root: /data1/huangzhe/llm-models
+model:
+  source_subdir: qwen3-0.6b/qwen/Qwen3-0.6B
+  repo_link_name: source-data
+  required_files:
+    - config.json
+    - tokenizer.json
+    - model.safetensors

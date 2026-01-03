@@ -1,0 +1,7 @@
+models:
+  refs:
+    - qwen3-0.6b
+    - llama2-7b-hf
+    - llama2-70b-hf
+    - internlm-20b
+    - qwen-72b

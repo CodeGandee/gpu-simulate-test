@@ -1,0 +1,10 @@
+env:
+  model_root_env: GSIM_MODELS_ROOT
+  default_model_root: /data1/huangzhe/llm-models
+model:
+  source_subdir: Llama-2-7b-hf
+  repo_link_name: source-data
+  required_files:
+    - config.json
+    - tokenizer.model
+    - model.safetensors.index.json
