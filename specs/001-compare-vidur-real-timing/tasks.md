@@ -113,7 +113,7 @@
 
 ### Validation (US6)
 
-- [ ] T601 [P] Manual verification step: run `git status` and confirm no diffs under `/data1/huangzhe/code/gpu-simulate-test/extern/tracked/vidur/` after a full workflow run (document in `tmp/.../summary.md`)
+- [X] T601 [P] Manual verification step: run `git status` and confirm no diffs under `/data1/huangzhe/code/gpu-simulate-test/extern/tracked/vidur/` after a full workflow run (document in `tmp/.../summary.md`)
 
 ### Implementation (US6)
 

@@ -56,3 +56,21 @@ This Q&A doc captures implementation questions and answers for the `001-compare-
 - If you want Sarathi to load from the local `models/qwen3-0.6b/source-data/` directory instead of the HuggingFace hub id, override: `model.model_id=$(pwd)/models/qwen3-0.6b/source-data` (run from repo root; Sarathi receives `cfg.model.model_id` in `src/gpu_simulate_test/real_bench/backends/sarathi_backend.py`).
 - Outputs are written under `tmp/real_runs/<run_id>/` as standardized `request_metrics.csv`, `token_metrics.csv`, and `run_meta.json` (plus Sarathi runtime artifacts under `tmp/real_runs/<run_id>/sarathi/`).
 - These are **actual GPU inference** wall-clock timings (tokens timestamped after each `LLMEngine.step()`); to compare against Vidur’s **CPU-side simulation** for the same workload, run `pixi run compare-runs real_run_dir=tmp/real_runs/<run_id> sim_run_dir=tmp/vidur_runs/<run_id>`.
+
+## How do I run Vidur and Sarathi-Serve on Qwen3-0.6B so the sim vs real timing comparison is meaningful?
+> Last revised at: `2026-01-02T13:55:02Z` | Last revised base commit: `a404d11154a12bf176aa0a155548de7a82f93a3e`
+
+- Use the **same** deterministic workload directory for both runs; generate it once and reuse `workload.workload_dir=tmp/workloads/<workload_id>` (`src/gpu_simulate_test/cli/workload_spec.py`).
+- Make the workload avoid “apples-to-oranges” scheduling effects:
+  - `real-bench` replays requests **sequentially** (no concurrency), so if arrivals are too close together, later requests will queue behind earlier ones and TTFT will include queueing time.
+  - For a **no-batching / no-queueing** baseline, generate a workload with large enough inter-arrival spacing so each request finishes before the next arrives. Practical check: in the real run, ensure `completion_time_ns[i] <= arrival_time_ns[i+1]` for all requests.
+    - Example that avoids queueing for Qwen3-0.6B/64 tokens on A100: `tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/` (uses `workload.arrival.inter_arrival_ns=2000000000` and includes `summary.md`).
+  - If you instead generate a “burst” workload (many requests with `arrival_time_ns=0`), Vidur may batch requests (default batch cap is high) while `real-bench` runs sequentially; this can dominate TTFT differences even if the simulator/model is correct.
+- Keep token budgets compatible: Vidur trace generation/profiling uses `max_tokens=4096` (`src/gpu_simulate_test/vidur_ext/profile_runner.py`, `src/gpu_simulate_test/vidur_ext/sim_runner.py`), so ensure `num_prefill_tokens + num_decode_tokens <= 4096` for your workload.
+- Use the same model reference:
+  - For Sarathi real inference, prefer loading from the local model path: `model.model_id=$(pwd)/models/qwen3-0.6b/source-data` (avoids remote revision drift).
+  - For Vidur, `vidur-sim` registers Qwen3 from `models/qwen3-0.6b/source-data/config.json` (`src/gpu_simulate_test/cli/vidur_sim.py`).
+- Use the same hardware + single-GPU baseline: run real-bench on the target GPU (`CUDA_VISIBLE_DEVICES=0`) and run Vidur with `hardware=a100` and a profiling root built for that hardware (`pixi run vidur-profile ...`).
+- Remember the execution model: `vidur-sim` is **CPU-side simulation**; only `vidur-profile` runs on GPU to build the profiling bundle.
+- Compare with the built-in report generator: `pixi run compare-runs real_run_dir=tmp/real_runs/<run_id> sim_run_dir=tmp/vidur_runs/<run_id>`.
+- Sanity-check you are comparing the same run inputs (not bugs / not different workloads): inspect both `run_meta.json` files and confirm `params.workload.workload_dir` matches and real has `run_type=real` while sim has `run_type=vidur`.

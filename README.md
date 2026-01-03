@@ -112,6 +112,22 @@ Other candidates:
 - LLMCompass (Princeton University): https://github.com/PrincetonUniversity/LLMCompass
 - Accel-Sim Framework: https://github.com/accel-sim/accel-sim-framework
 
+## Q&A (Vidur simulation vs real GPU timing)
+
+### Q: Does `vidur-sim` run on CPU or GPU?
+
+A: `vidur-sim` runs on **CPU**. It uses a GPU-generated profiling bundle (e.g. A100 kernel timing + comm profiles) and a performance model to **simulate/predict GPU execution time** for a workload.
+
+### Q: Is it meaningful to compare `vidur-sim` results with real GPU inference timing?
+
+A: Yes — you should interpret the comparison as **simulated GPU latency prediction vs measured GPU latency**. It is meaningful, but it is not “two measurements of the same runtime”, so expect gaps:
+
+- The simulator’s accuracy depends on how well the profiling/model matches your real inference stack (kernels, precision, scheduler/batching, KV-cache behavior, etc.).
+- In this repo’s current `vidur-sim` wrapper, CPU overhead modeling is disabled (`skip_cpu_overhead_modeling=True` in `src/gpu_simulate_test/vidur_ext/sim_runner.py`), so CPU-side costs in a real server stack won’t be reflected.
+- Token-level latencies from `vidur-sim` are derived from request-level metrics (not measured token-by-token); see `src/gpu_simulate_test/vidur_ext/sim_runner.py`.
+- `real-bench` replays requests sequentially; if your workload has `arrival_time_ns=0` for many requests, later requests’ `ttft_ns` will include queueing behind earlier ones, which can distort direct TTFT comparisons.
+- For a “no queueing” baseline with `real-bench`, set `workload.arrival.inter_arrival_ns` large enough that each request completes before the next arrives (check `completion_time_ns[i] <= arrival_time_ns[i+1]` in the real run’s `request_metrics.csv`).
+
 ## Repo Layout
 
 - `src/gpu_simulate_test/`: Python package code (src layout).

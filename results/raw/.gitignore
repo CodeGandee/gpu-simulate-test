@@ -1,7 +1,7 @@
-# Ignore all raw outputs by default (can be large).
+# Ignore all raw artifacts by default (they can be large).
 *
 
-# Keep the ignore file (and any optional documentation) tracked.
+# Keep gitignore + optional docs in-tree.
 !.gitignore
 !README.md
 

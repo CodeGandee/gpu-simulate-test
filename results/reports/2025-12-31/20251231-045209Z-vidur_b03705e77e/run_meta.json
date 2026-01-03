@@ -1,0 +1,66 @@
+{
+  "ended_at": "2025-12-31T04:52:16.387633+00:00",
+  "env": {
+    "cuda_available": true,
+    "cuda_device_name": "NVIDIA A100-SXM4-80GB",
+    "cwd": "/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_runs/vidur_b03705e77e",
+    "platform": "Linux-6.8.0-90-generic-x86_64-with-glibc2.39",
+    "python": "3.13.11",
+    "torch": "2.9.1+cu128"
+  },
+  "git_commit": "0bf647dc9e6bea06afd7fbd2390807cf2c6597b9",
+  "git_dirty": true,
+  "hardware": {
+    "device": "cuda:0",
+    "hardware_id": "a100"
+  },
+  "hydra": {
+    "config_name": "vidur_sim",
+    "config_path": "configs/compare_vidur_real"
+  },
+  "model": "Qwen/Qwen3-0.6B",
+  "params": {
+    "hardware": {
+      "device": "cuda:0",
+      "hardware_id": "a100"
+    },
+    "model": {
+      "model_id": "Qwen/Qwen3-0.6B",
+      "tokenizer_ref": "/data1/huangzhe/code/gpu-simulate-test/models/qwen3-0.6b/source-data"
+    },
+    "output": {
+      "run_id": "vidur_b03705e77e"
+    },
+    "paths": {
+      "repo_root": "/data1/huangzhe/code/gpu-simulate-test",
+      "tmp_root": "/data1/huangzhe/code/gpu-simulate-test/tmp"
+    },
+    "vidur": {
+      "model_key": "qwen3_0_6b",
+      "profiling": {
+        "root": "/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_profiling/a100/qwen3_0_6b"
+      }
+    },
+    "workload": {
+      "arrival": {
+        "inter_arrival_ns": 0,
+        "kind": "fixed_interval",
+        "poisson_rate_per_s": 1.0,
+        "seed": 123
+      },
+      "num_decode_tokens": 64,
+      "prompts": "/data1/huangzhe/code/gpu-simulate-test/tmp/prompts/example.prompts.jsonl",
+      "seed": 123,
+      "workload_dir": "/data1/huangzhe/code/gpu-simulate-test/tmp/workloads/workload_b3572b3a53",
+      "workload_id": "workload_b3572b3a53"
+    }
+  },
+  "profiling_root": "/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_profiling/a100/qwen3_0_6b",
+  "run_id": "vidur_b03705e77e",
+  "run_type": "vidur",
+  "schema_version": "v1",
+  "started_at": "2025-12-31T04:52:09.826603+00:00",
+  "vidur_raw_dir": "/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_runs/vidur_b03705e77e/vidur_raw/2025-12-31_04-52-14-496148",
+  "vidur_trace_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_runs/vidur_b03705e77e/vidur_trace.csv",
+  "workload_dir": "/data1/huangzhe/code/gpu-simulate-test/tmp/workloads/workload_b3572b3a53"
+}
