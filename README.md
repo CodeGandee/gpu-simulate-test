@@ -46,7 +46,9 @@ reference” pattern (docs + bootstrap scripts are committed; the actual data is
   - Qwen3 model: `bash models/qwen3-0.6b/bootstrap.sh`
   - COCO 2017: `bash datasets/coco2017/bootstrap.sh`
 
-Both bootstrap scripts support `EXTERNAL_REF_ROOT` to point at your local storage root.
+Environment variables:
+- Models: `GSIM_MODELS_ROOT` (legacy: `EXTERNAL_REF_ROOT`)
+- Datasets: `GSIM_DATASETS_ROOT` (legacy: `EXTERNAL_REF_ROOT`)
 
 ### Vidur paper LLMs (reference + stats)
 
@@ -79,7 +81,7 @@ export MODELSCOPE_API_TOKEN="..."
 
 Token page: https://modelscope.cn/my/myaccesstoken
 
-3) Download a model into your external storage (pick a `local_dir` under your `EXTERNAL_REF_ROOT` / scratch disk):
+3) Download a model into your external storage (pick a `local_dir` under your `GSIM_MODELS_ROOT` / scratch disk):
 
 ```bash
 pixi run python -c "from modelscope.hub.snapshot_download import snapshot_download; print(snapshot_download('Qwen/Qwen-72B', local_dir='PATH/TO/Qwen-72B'))"

@@ -12,11 +12,10 @@ This folder manages a machine-local reference to the MS COCO 2017 dataset direct
 ## Bootstrap
 
 ```bash
-# Option A (recommended): point EXTERNAL_REF_ROOT at your dataset storage root
-export EXTERNAL_REF_ROOT=/path/to/datasets
+# Option A (recommended): point GSIM_DATASETS_ROOT at your dataset storage root
+export GSIM_DATASETS_ROOT=/path/to/datasets
 bash datasets/coco2017/bootstrap.sh
 
 # Option B: rely on the repository's detected default path (if it exists on this machine)
 bash datasets/coco2017/bootstrap.sh
 ```
-

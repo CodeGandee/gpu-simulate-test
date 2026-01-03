@@ -52,5 +52,4 @@ Key entrypoints:
 - Example reference: `models/qwen3-0.6b/`
   - `models/qwen3-0.6b/source-data` is a symlink to your local model directory.
   - `bash models/qwen3-0.6b/bootstrap.sh` recreates/repairs the symlink.
-  - Supports `EXTERNAL_REF_ROOT=/path/to/llm-models` to point at your own storage root.
-
+  - Supports `GSIM_MODELS_ROOT=/path/to/llm-models` to point at your own storage root.

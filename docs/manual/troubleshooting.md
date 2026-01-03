@@ -10,7 +10,7 @@
 ### Model reference missing (`models/qwen3-0.6b/source-data/...` not found)
 
 - Recreate the symlink: `bash models/qwen3-0.6b/bootstrap.sh`
-- If your local model storage root differs, set `EXTERNAL_REF_ROOT` before running the script.
+- If your local model storage root differs, set `GSIM_MODELS_ROOT` before running the script.
 
 ### `backend=sarathi` fails to load Qwen3
 
@@ -25,4 +25,3 @@ Ray may log errors about failing to connect to a metrics exporter agent. For thi
 ## More runbook notes
 
 - `context/runbooks/001-compare-vidur-real-timing-troubleshooting.md`
-

@@ -37,7 +37,9 @@ PY
 SRC_LINK="${REF_DIR}/source-data"
 
 default_target="/data1/huangzhe/datasets/coco2017"
-if [[ -n "${EXTERNAL_REF_ROOT:-}" ]]; then
+if [[ -n "${GSIM_DATASETS_ROOT:-}" ]]; then
+	target_candidate="${GSIM_DATASETS_ROOT}/coco2017"
+elif [[ -n "${EXTERNAL_REF_ROOT:-}" ]]; then
 	target_candidate="${EXTERNAL_REF_ROOT}/coco2017"
 else
 	target_candidate="${default_target}"
@@ -47,8 +49,8 @@ target="$(abspath "${target_candidate}")"
 
 if [[ ! -e "${target}" ]]; then
 	echo "Target does not exist: ${target}" >&2
-	echo "Set EXTERNAL_REF_ROOT to your local dataset storage root, e.g.:" >&2
-	echo "  export EXTERNAL_REF_ROOT=/path/to/datasets" >&2
+	echo "Set GSIM_DATASETS_ROOT to your local dataset storage root, e.g.:" >&2
+	echo "  export GSIM_DATASETS_ROOT=/path/to/datasets" >&2
 	exit 1
 fi
 
