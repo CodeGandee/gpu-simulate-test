@@ -205,4 +205,10 @@ pixi run pytest tests/unit/test_paper_fidelity_trace.py
 
 ## Implementation Summary
 
-(fill after implementation)
+- Implemented the canonical trace schema + validation in `src/gpu_simulate_test/paper_fidelity/traces.py` (`TraceSpec`, `validate_trace`, `read_trace_csv`).
+- Added deterministic trace sources/converters in `src/gpu_simulate_test/paper_fidelity/traces.py`:
+  - legacy workload dir → `trace.csv` via `legacy_workload_dir_to_trace`
+  - Vidur processed token-length stats → base trace via `processed_lengths_csv_to_trace`
+  - arrivals: `make_static` and seeded `add_poisson_arrivals`
+- Added stable artifact path helpers and report path conventions in `src/gpu_simulate_test/paper_fidelity/paths.py` (`PaperFidelityPaths`) plus provenance helper `build_run_meta`.
+- Added unit coverage for schema validation and determinism in `tests/unit/test_paper_fidelity_trace.py`.

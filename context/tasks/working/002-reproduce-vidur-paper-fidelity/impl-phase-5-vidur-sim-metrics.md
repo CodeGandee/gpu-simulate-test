@@ -156,4 +156,10 @@ pixi run python tests/manual/test_paper_fidelity_vidur_sim_smoke.py
 
 ## Implementation Summary
 
-(fill after implementation)
+- Added paper-fidelity Vidur sim adapter in `src/gpu_simulate_test/vidur_ext/sim_runner.py`:
+  - `VidurPaperFidelitySimInputs`
+  - `run_vidur_paper_fidelity_sim(...)` writes `tmp/paper_fidelity/runs/<scenario>/sim/request_metrics.csv` while preserving Vidur’s normalized columns (renames `Request Id` → `request_id`).
+- Keeps Vidur raw outputs for debugging and records the actual timestamped dir in `run_meta.json` (`vidur_raw_dir`), since Vidur appends a timestamp to `MetricsConfig.output_dir`.
+- Sets Vidur’s predictor cache to a per-run directory (`<output-dir>/vidur-cache`) to avoid polluting the repo root.
+- Added schema-preservation unit test using a checked-in fixture: `tests/unit/test_paper_fidelity_vidur_metrics_schema.py`.
+- Added a profiling-dependent smoke script: `tests/manual/test_paper_fidelity_vidur_sim_smoke.py`.

@@ -176,4 +176,6 @@ pixi run pytest tests/test_paper_fidelity_scorer.py
 
 ## Implementation Summary
 
-(fill after implementation)
+- Implemented scoring in `src/gpu_simulate_test/paper_fidelity/scoring.py` (`load_metrics_csv`, `score_metric`, pass/warn/fail thresholds; percent error `abs(sim-real)/real`).
+- Implemented report writer + gap diagnosis in `src/gpu_simulate_test/paper_fidelity/report.py` (`write_summary_md`, `diagnose_gap`), producing `summary.md` + `run_meta.json` under `results/reports/<date>/paper_fidelity/<scenario>/`.
+- Added fixture-based unit tests for scorer correctness and verdict thresholds: `tests/test_paper_fidelity_scorer.py` with inputs under `tests/fixtures/paper_fidelity/`.

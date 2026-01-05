@@ -171,4 +171,11 @@ pixi run python tests/manual/test_paper_fidelity_repro_smoke.py
 
 ## Implementation Summary
 
-(fill after implementation)
+- Implemented end-to-end orchestration for `paper-fidelity repro` in `src/gpu_simulate_test/cli/paper_fidelity.py` (`_run_repro` + `_repro_main`):
+  - generates/ensures `tmp/paper_fidelity/traces/<scenario>/trace.csv`
+  - runs Vidur sim to `tmp/paper_fidelity/runs/<scenario>/sim/request_metrics.csv`
+  - runs Sarathi replay to `tmp/paper_fidelity/runs/<scenario>/real/request_metrics.csv`
+  - scores and writes `results/reports/<date>/paper_fidelity/<scenario>/summary.md` (prints report dir)
+- Implemented scoring-only `paper-fidelity score` in `src/gpu_simulate_test/cli/paper_fidelity.py` (`_run_score_only` + `_score_main`), resolving relative `--sim/--real` paths against `repo_root` (Hydra `chdir` safety).
+- Dynamic repro includes capacity discovery and final trace generation at the 85% operating point, writing `tmp/paper_fidelity/runs/<scenario>/capacity/capacity.json` and per-QPS run subdirs.
+- Added an end-to-end smoke script at `tests/manual/test_paper_fidelity_repro_smoke.py` (GPU required).

@@ -150,4 +150,7 @@ pixi run python tests/manual/test_paper_fidelity_capacity_smoke.py
 
 ## Implementation Summary
 
-(fill after implementation)
+- Implemented capacity discovery primitives in `src/gpu_simulate_test/paper_fidelity/capacity.py` (`CapacityCriterion`, `discover_capacity`, `is_overloaded`, `write_capacity_json`).
+- Integrated capacity search into dynamic `paper-fidelity repro` (uses Sarathi replays at candidate QPS values and overload criterion P99(`request_scheduling_delay`) > threshold).
+- Writes `tmp/paper_fidelity/runs/<scenario>/capacity/capacity.json` plus a `run_meta.json` and per-QPS run subdirectories for debugging.
+- Added unit coverage (`tests/unit/test_paper_fidelity_capacity_search.py`) and a bounded GPU smoke (`tests/manual/test_paper_fidelity_capacity_smoke.py`).

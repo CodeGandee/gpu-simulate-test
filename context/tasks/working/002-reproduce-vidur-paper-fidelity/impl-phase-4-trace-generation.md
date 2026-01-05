@@ -125,4 +125,7 @@ pixi run python tests/manual/test_paper_fidelity_trace_smoke.py
 
 ## Implementation Summary
 
-(fill after implementation)
+- Implemented `paper-fidelity trace` in `src/gpu_simulate_test/cli/paper_fidelity.py` (`_run_trace` + `_trace_main`): generates/validates `trace.csv`, writes `trace_meta.json`, and prints the trace directory.
+- Supports trace sources `vidur_processed_lengths_csv` (token-length distribution) and `legacy_workload_dir` (split legacy files) with deterministic conversion and validation (`src/gpu_simulate_test/paper_fidelity/traces.py`).
+- Wired the baseline token-length distribution in `configs/paper_fidelity/scenario/llama2_7b_arxiv.yaml` pointing to Vidur’s processed arXiv stats CSV under `extern/tracked/vidur/`.
+- Added a manual determinism + schema smoke at `tests/manual/test_paper_fidelity_trace_smoke.py`.

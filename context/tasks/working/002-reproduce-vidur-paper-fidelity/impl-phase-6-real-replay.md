@@ -169,4 +169,10 @@ pixi run python tests/manual/test_paper_fidelity_real_smoke.py
 
 ## Implementation Summary
 
-(fill after implementation)
+- Implemented Sarathi paper-fidelity replay in `src/gpu_simulate_test/real_bench/backends/sarathi_paper_fidelity_backend.py`:
+  - `SarathiPaperFidelityInputs`
+  - `run_sarathi_paper_fidelity(...)` replays canonical `trace.csv` with `prompt_token_ids` (token-length-only) and writes `tmp/paper_fidelity/runs/<scenario>/real/request_metrics.csv`.
+- Uses Sarathi’s in-engine metrics store to produce `sarathi/replica_0/sequence_metrics.csv`, then converts to the paper-fidelity request-metrics schema (`convert_sequence_metrics_to_request_metrics`).
+- Avoids `metrics_store.plot()` (Plotly/Kaleido/Chrome dependency) by writing `sequence_metrics.csv` directly via `metrics_store._save_as_csv(...)`.
+- Adds GPU safety/compat: chooses a usable `CUDA_VISIBLE_DEVICES` subset by default and patches Sarathi’s Ray worker init so the setting is preserved.
+- Added CPU-only conversion unit test (`tests/unit/test_paper_fidelity_real_metrics_schema.py`) and GPU smoke (`tests/manual/test_paper_fidelity_real_smoke.py`).

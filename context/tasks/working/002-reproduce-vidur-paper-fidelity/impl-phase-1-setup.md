@@ -255,4 +255,7 @@ pixi run paper-fidelity --help
 
 ## Implementation Summary
 
-(fill after implementation)
+- Added the `paper_fidelity` package skeleton under `src/gpu_simulate_test/paper_fidelity/` (`__init__.py` + module layout).
+- Implemented the `paper-fidelity` CLI entrypoint at `src/gpu_simulate_test/cli/paper_fidelity.py` (argparse wrapper around Hydra apps; supports forwarding Hydra overrides via `parse_known_args`).
+- Wired a Pixi task in `pyproject.toml` (`[tool.pixi.tasks].paper-fidelity`) so the workflow runs as `pixi run paper-fidelity ...` (lock updated in `pixi.lock`).
+- Added Hydra configs under `configs/paper_fidelity/` (`repro.yaml`, `trace.yaml`, `score.yaml`) plus config groups `scenario/` and `workload/` (baseline scenario: `configs/paper_fidelity/scenario/llama2_7b_arxiv.yaml`).
