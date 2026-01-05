@@ -8,6 +8,8 @@ This feature is a CLI-first, artifact-driven workflow to reproduce the Vidur MLS
 
 The pipeline is organized as phases so that each phase can be implemented and validated independently, while still composing into an end-to-end reproduction (`paper-fidelity repro`).
 
+**Path convention**: All repo paths are relative to `<WORKSPACE_ROOT>` (repository root).
+
 ## Phase Flow
 
 **MUST HAVE: End-to-End Sequence Diagram**

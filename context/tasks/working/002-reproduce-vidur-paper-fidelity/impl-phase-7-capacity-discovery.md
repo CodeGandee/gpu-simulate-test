@@ -10,6 +10,8 @@ Compute the operating point for dynamic workloads:
 - compute `qps_85 = 0.85 * capacity_qps`
 - record the criterion used and the measurements taken
 
+**Path convention**: All repo paths are relative to `<WORKSPACE_ROOT>` (repository root).
+
 Overload criterion (default): overloaded if **P99**(`request_scheduling_delay`) **> 5 seconds**.
 
 ## Public APIs

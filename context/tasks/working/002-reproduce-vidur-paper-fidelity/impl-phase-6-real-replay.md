@@ -10,6 +10,8 @@ Replay the same `trace.csv` on Sarathi-Serve and emit paper-fidelity request met
 - normalized latencies (`request_e2e_time_normalized`, `request_execution_plus_preemption_time_normalized`)
 - token counts (`request_num_decode_tokens`, etc.)
 
+**Path convention**: All repo paths are relative to `<WORKSPACE_ROOT>` (repository root).
+
 ## Public APIs
 
 ### T052: Sarathi-backed trace replay runner (metrics-store based)

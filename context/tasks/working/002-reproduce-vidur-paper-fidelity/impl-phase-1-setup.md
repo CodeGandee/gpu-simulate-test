@@ -11,6 +11,8 @@ Create the shared scaffolding used by all paper-fidelity workflows:
 - Hydra presets under `configs/paper_fidelity/` (scenario + workload selection)
 - A Pixi task that wires everything into `pixi run paper-fidelity ...`
 
+**Path convention**: All repo paths are relative to `<WORKSPACE_ROOT>` (repository root).
+
 ## Public APIs
 
 ### T001: `paper_fidelity` package skeleton

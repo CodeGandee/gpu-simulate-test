@@ -15,6 +15,8 @@ Artifacts (stable locations):
 - `tmp/paper_fidelity/runs/<scenario>/real/request_metrics.csv`
 - `results/reports/<date>/paper_fidelity/<scenario>/summary.md`
 
+**Path convention**: All repo paths are relative to `<WORKSPACE_ROOT>` (repository root).
+
 ## Public APIs
 
 ### T021: `paper-fidelity repro` orchestration (trace → sim → capacity/real → score → report)

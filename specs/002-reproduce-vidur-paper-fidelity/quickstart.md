@@ -1,10 +1,12 @@
 # Quickstart: Reproduce Vidur paper fidelity
 
-**Spec**: `/data1/huangzhe/code/gpu-simulate-test/specs/002-reproduce-vidur-paper-fidelity/spec.md`  
-**Plan**: `/data1/huangzhe/code/gpu-simulate-test/specs/002-reproduce-vidur-paper-fidelity/plan.md`  
+**Spec**: `<WORKSPACE_ROOT>/specs/002-reproduce-vidur-paper-fidelity/spec.md`  
+**Plan**: `<WORKSPACE_ROOT>/specs/002-reproduce-vidur-paper-fidelity/plan.md`  
 **Date**: 2026-01-05
 
 This quickstart describes the intended end-to-end workflow once the feature is implemented.
+
+**Path convention**: `<WORKSPACE_ROOT>` refers to the repository root.
 
 ## Prerequisites
 
@@ -22,7 +24,7 @@ This quickstart describes the intended end-to-end workflow once the feature is i
 
 4. Ensure the baseline model reference is bootstrapped:
 
-   - `bash /data1/huangzhe/code/gpu-simulate-test/models/llama2-7b-hf/bootstrap.sh`
+   - `bash <WORKSPACE_ROOT>/models/llama2-7b-hf/bootstrap.sh`
 
 ## Baseline scenario (MVP)
 
@@ -30,7 +32,7 @@ Default scenario: **LLaMA2-7B + arXiv summarization token-length trace**.
 
 The baseline scenario config is expected at:
 
-- `/data1/huangzhe/code/gpu-simulate-test/configs/paper_fidelity/scenarios/llama2_7b_arxiv.yaml`
+- `<WORKSPACE_ROOT>/configs/paper_fidelity/scenarios/llama2_7b_arxiv.yaml`
 
 ## End-to-end reproduction
 
@@ -44,10 +46,10 @@ Run **dynamic** fidelity (paper “online” workload at 85% capacity):
 
 Expected artifacts:
 
-- Trace: `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/traces/llama2_7b_arxiv/trace.csv`
-- Sim metrics: `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv/sim/request_metrics.csv`
-- Real metrics: `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv/real/request_metrics.csv`
-- Report: `/data1/huangzhe/code/gpu-simulate-test/results/reports/<date>/paper_fidelity/llama2_7b_arxiv/summary.md`
+- Trace: `<WORKSPACE_ROOT>/tmp/paper_fidelity/traces/llama2_7b_arxiv/trace.csv`
+- Sim metrics: `<WORKSPACE_ROOT>/tmp/paper_fidelity/runs/llama2_7b_arxiv/sim/request_metrics.csv`
+- Real metrics: `<WORKSPACE_ROOT>/tmp/paper_fidelity/runs/llama2_7b_arxiv/real/request_metrics.csv`
+- Report: `<WORKSPACE_ROOT>/results/reports/<date>/paper_fidelity/llama2_7b_arxiv/summary.md`
 
 ## Scoring only
 
@@ -57,15 +59,14 @@ If you already have metrics CSVs:
 
 Expected output:
 
-- A report directory under `/data1/huangzhe/code/gpu-simulate-test/results/reports/<date>/paper_fidelity/<scenario_name>/`
+- A report directory under `<WORKSPACE_ROOT>/results/reports/<date>/paper_fidelity/<scenario_name>/`
 
 ## Validation
 
 Planned automated validation:
 
-- Unit tests with fixed fixtures: `/data1/huangzhe/code/gpu-simulate-test/tests/test_paper_fidelity_scorer.py`
+- Unit tests with fixed fixtures: `<WORKSPACE_ROOT>/tests/test_paper_fidelity_scorer.py`
 
 Planned manual validation:
 
-- A single baseline scenario smoke run that produces a complete `summary.md` and required CSVs under `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/`.
-
+- A single baseline scenario smoke run that produces a complete `summary.md` and required CSVs under `<WORKSPACE_ROOT>/tmp/paper_fidelity/`.

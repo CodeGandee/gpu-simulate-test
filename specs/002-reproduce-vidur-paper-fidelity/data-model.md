@@ -1,10 +1,12 @@
 # Data Model: Reproduce Vidur paper fidelity
 
-**Spec**: `/data1/huangzhe/code/gpu-simulate-test/specs/002-reproduce-vidur-paper-fidelity/spec.md`  
-**Plan**: `/data1/huangzhe/code/gpu-simulate-test/specs/002-reproduce-vidur-paper-fidelity/plan.md`  
+**Spec**: `<WORKSPACE_ROOT>/specs/002-reproduce-vidur-paper-fidelity/spec.md`  
+**Plan**: `<WORKSPACE_ROOT>/specs/002-reproduce-vidur-paper-fidelity/plan.md`  
 **Date**: 2026-01-05
 
 This feature is CLI- and artifact-driven (no database). The “data model” is the set of configs and on-disk artifacts that must be produced and consumed reproducibly.
+
+**Path convention**: `<WORKSPACE_ROOT>` refers to the repository root.
 
 ## Entities
 
@@ -19,7 +21,7 @@ Represents one paper-fidelity reproduction target (model + workload + hardware +
 **Config fields (logical)**
 
 - `model_id: str` (e.g., `meta-llama/Llama-2-7b-hf`)
-- `model_ref: str | Path` (local model reference for real runs; e.g., `/data1/huangzhe/code/gpu-simulate-test/models/llama2-7b-hf/source-data`)
+- `model_ref: str | Path` (local model reference for real runs; e.g., `<WORKSPACE_ROOT>/models/llama2-7b-hf/source-data`)
 - `hardware_id: str` (e.g., `a100`)
 - `trace_source`:
   - `kind: enum {vidur_processed_lengths_csv, trace_csv, legacy_workload_dir}`
@@ -32,7 +34,7 @@ Represents one paper-fidelity reproduction target (model + workload + hardware +
   - `qps: float` (dynamic only; used for Poisson arrivals)
   - `seed: int` (dynamic only; Poisson generator seed)
 - `vidur` (simulation):
-  - `profiling_root: Path` (default uses `/data1/huangzhe/code/gpu-simulate-test/extern/tracked/vidur/data/profiling` or a scenario override)
+  - `profiling_root: Path` (default uses `<WORKSPACE_ROOT>/extern/tracked/vidur/data/profiling` or a scenario override)
   - `model_key: str` (Vidur model key, if needed by wrappers)
   - scheduler knobs needed for paper alignment (TP/PP, batch caps, etc.)
 - `real`:
@@ -64,8 +66,8 @@ Canonical request stream definition shared by sim + real.
 
 **Files**
 
-- `trace.csv`: `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/traces/<scenario_name>/trace.csv`
-- `trace_meta.json`: `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/traces/<scenario_name>/trace_meta.json`
+- `trace.csv`: `<WORKSPACE_ROOT>/tmp/paper_fidelity/traces/<scenario_name>/trace.csv`
+- `trace_meta.json`: `<WORKSPACE_ROOT>/tmp/paper_fidelity/traces/<scenario_name>/trace_meta.json`
 
 **Schema (`trace.csv`)**
 
@@ -105,8 +107,8 @@ Vidur simulation outputs for a scenario.
 
 **Files**
 
-- `request_metrics.csv`: `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/<scenario_name>/sim/request_metrics.csv`
-- `run_meta.json`: `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/<scenario_name>/sim/run_meta.json`
+- `request_metrics.csv`: `<WORKSPACE_ROOT>/tmp/paper_fidelity/runs/<scenario_name>/sim/request_metrics.csv`
+- `run_meta.json`: `<WORKSPACE_ROOT>/tmp/paper_fidelity/runs/<scenario_name>/sim/run_meta.json`
 - (kept for debugging) raw Vidur metrics dir (e.g., `vidur_raw/.../request_metrics.csv`)
 
 **Required columns (minimum for scoring + capacity)**
@@ -122,8 +124,8 @@ Sarathi-Serve replay outputs for a scenario.
 
 **Files**
 
-- `request_metrics.csv`: `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/<scenario_name>/real/request_metrics.csv`
-- `run_meta.json`: `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/<scenario_name>/real/run_meta.json`
+- `request_metrics.csv`: `<WORKSPACE_ROOT>/tmp/paper_fidelity/runs/<scenario_name>/real/request_metrics.csv`
+- `run_meta.json`: `<WORKSPACE_ROOT>/tmp/paper_fidelity/runs/<scenario_name>/real/run_meta.json`
 
 **Required columns (minimum for scoring + capacity)**
 
@@ -138,8 +140,8 @@ Search output used to compute the 85% operating point for dynamic workload scori
 
 **Files**
 
-- `capacity.json`: `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/<scenario_name>/capacity/capacity.json`
-- `run_meta.json`: `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/<scenario_name>/capacity/run_meta.json`
+- `capacity.json`: `<WORKSPACE_ROOT>/tmp/paper_fidelity/runs/<scenario_name>/capacity/capacity.json`
+- `run_meta.json`: `<WORKSPACE_ROOT>/tmp/paper_fidelity/runs/<scenario_name>/capacity/run_meta.json`
 
 **Fields (`capacity.json`)**
 
@@ -153,9 +155,9 @@ Human-readable output summarizing fidelity error.
 
 **Files**
 
-- `summary.md`: `/data1/huangzhe/code/gpu-simulate-test/results/reports/<date>/paper_fidelity/<scenario_name>/summary.md`
-- Optional: `/data1/huangzhe/code/gpu-simulate-test/results/reports/<date>/paper_fidelity/<scenario_name>/tables/*.csv`
-- Optional: `/data1/huangzhe/code/gpu-simulate-test/results/reports/<date>/paper_fidelity/<scenario_name>/figs/*.png`
+- `summary.md`: `<WORKSPACE_ROOT>/results/reports/<date>/paper_fidelity/<scenario_name>/summary.md`
+- Optional: `<WORKSPACE_ROOT>/results/reports/<date>/paper_fidelity/<scenario_name>/tables/*.csv`
+- Optional: `<WORKSPACE_ROOT>/results/reports/<date>/paper_fidelity/<scenario_name>/figs/*.png`
 
 **Validation**
 
@@ -170,5 +172,4 @@ The intended lifecycle is:
 Failure modes:
 
 - Any step may fail fast with an actionable error (missing model refs, profiling bundles, CUDA unavailable, schema mismatch).
-- Partial artifacts are allowed under `/tmp` but must be detected and reported with resume/cleanup guidance.
-
+- Partial artifacts are allowed under `<WORKSPACE_ROOT>/tmp/` but must be detected and reported with resume/cleanup guidance.

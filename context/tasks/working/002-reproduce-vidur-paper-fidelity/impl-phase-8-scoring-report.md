@@ -11,6 +11,8 @@ Given two metrics files (sim + real), compute paper-aligned summaries:
 - Threshold evaluation (Pass/Warn/Fail)
 - A human-readable `summary.md`, plus optional diagnosis hints when thresholds are exceeded
 
+**Path convention**: All repo paths are relative to `<WORKSPACE_ROOT>` (repository root).
+
 ## Public APIs
 
 ### T071: Scorer (percentiles + percent error + thresholds)
@@ -175,4 +177,3 @@ pixi run pytest tests/test_paper_fidelity_scorer.py
 ## Implementation Summary
 
 (fill after implementation)
-

@@ -1,10 +1,12 @@
 # Research: Reproduce Vidur paper fidelity
 
-**Spec**: `/data1/huangzhe/code/gpu-simulate-test/specs/002-reproduce-vidur-paper-fidelity/spec.md`  
-**Plan**: `/data1/huangzhe/code/gpu-simulate-test/specs/002-reproduce-vidur-paper-fidelity/plan.md`  
+**Spec**: `<WORKSPACE_ROOT>/specs/002-reproduce-vidur-paper-fidelity/spec.md`  
+**Plan**: `<WORKSPACE_ROOT>/specs/002-reproduce-vidur-paper-fidelity/plan.md`  
 **Date**: 2026-01-05
 
 This document resolves all `NEEDS CLARIFICATION` items from `plan.md` and records key design decisions.
+
+**Path convention**: `<WORKSPACE_ROOT>` refers to the repository root.
 
 ## Real baseline engine (MVP)
 
@@ -13,7 +15,7 @@ This document resolves all `NEEDS CLARIFICATION` items from `plan.md` and record
 **Rationale**:
 
 - The feature spec clarifications explicitly require Sarathi-Serve for the MVP.
-- This repo already integrates Sarathi as an editable dependency at `/data1/huangzhe/code/gpu-simulate-test/extern/tracked/sarathi-serve`.
+- This repo already integrates Sarathi as an editable dependency at `<WORKSPACE_ROOT>/extern/tracked/sarathi-serve`.
 - Sarathi’s built-in benchmark path supports **token-length-only** workloads via `prompt_token_ids` (no dataset prompts needed), matching the Vidur paper’s “request length characteristics” methodology.
 - Sarathi exposes the same metric vocabulary as Vidur (`request_scheduling_delay`, `request_execution_plus_preemption_time_normalized`, etc.) via its metrics store, which is critical for capacity discovery and paper-aligned scoring.
 
@@ -38,7 +40,7 @@ Canonicalization rule: `arrived_at = arrival_time_ns / 1e9`.
 
 Baseline trace source for the default MVP scenario:
 
-- Token-length source: `/data1/huangzhe/code/gpu-simulate-test/extern/tracked/vidur/data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_v2.csv`
+- Token-length source: `<WORKSPACE_ROOT>/extern/tracked/vidur/data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_v2.csv`
   - Provides `num_prefill_tokens` and `num_decode_tokens` distributions derived with the LLaMA2 tokenizer.
 - Workload modes:
   - **Static**: set all `arrived_at = 0` (paper “offline” workload).
@@ -46,7 +48,7 @@ Baseline trace source for the default MVP scenario:
 
 **Rationale**:
 
-- Vidur’s `TraceReplayRequestGenerator` consumes `trace.csv` with `arrived_at,num_prefill_tokens,num_decode_tokens` (see `/data1/huangzhe/code/gpu-simulate-test/extern/tracked/vidur/vidur/request_generator/trace_replay_request_generator.py`).
+- Vidur’s `TraceReplayRequestGenerator` consumes `trace.csv` with `arrived_at,num_prefill_tokens,num_decode_tokens` (see `<WORKSPACE_ROOT>/extern/tracked/vidur/vidur/request_generator/trace_replay_request_generator.py`).
 - The repo’s existing legacy workload format already provides equivalent data (arrival times + token lengths) and can be converted deterministically.
 - Using token-length-only traces keeps artifacts small and reproducible, while still matching the paper’s fidelity metric definitions (normalized by output length).
 
@@ -81,7 +83,7 @@ For the real runner, use Sarathi’s per-request metrics output (`sequence_metri
 
 - Enable request-level metric output needed for scoring (per-request values).
 - Disable optional heavy traces (e.g., Chrome traces, per-token lists) unless explicitly requested by a scenario.
-- The wrapper’s incremental overhead should be limited to CSV/JSON I/O under `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/` and must not add per-token GPU synchronization beyond what the engine requires.
+- The wrapper’s incremental overhead should be limited to CSV/JSON I/O under `<WORKSPACE_ROOT>/tmp/paper_fidelity/` and must not add per-token GPU synchronization beyond what the engine requires.
 
 **Rationale**:
 
@@ -92,4 +94,3 @@ For the real runner, use Sarathi’s per-request metrics output (`sequence_metri
 
 - **Client-side token timestamping in Python**: introduces overhead and ambiguous semantics for “schedule time”.
 - **Always-on detailed tracing**: useful for diagnosis but too expensive as the default for reproducibility workflows.
-

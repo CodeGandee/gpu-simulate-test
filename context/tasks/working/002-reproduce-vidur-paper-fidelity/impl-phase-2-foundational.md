@@ -10,6 +10,8 @@ Standardize the “shared contract layer” used by every workflow:
 - Reproducible artifact directory helpers under `tmp/paper_fidelity/`
 - Run metadata helpers that reuse `gpu_simulate_test.io` conventions
 
+**Path convention**: All repo paths are relative to `<WORKSPACE_ROOT>` (repository root).
+
 ## Public APIs
 
 ### T010: Canonical trace schema + deterministic converters

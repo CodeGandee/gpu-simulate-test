@@ -8,7 +8,7 @@ info:
     The planned implementation is a CLI (`pixi run paper-fidelity ...`), but the same operations can be
     modeled as HTTP endpoints for clarity and to define stable input/output schemas.
 
-    Repo root: /data1/huangzhe/code/gpu-simulate-test
+    Repo root: `<WORKSPACE_ROOT>`
 
 servers:
   - url: http://localhost

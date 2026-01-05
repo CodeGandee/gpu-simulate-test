@@ -9,6 +9,8 @@ Run Vidur simulation using a canonical `trace.csv` and emit a paper-fidelity `re
 - preserves Vidur’s normalized metrics *without recomputation*
 - keeps Vidur’s raw output directory for debugging
 
+**Path convention**: All repo paths are relative to `<WORKSPACE_ROOT>` (repository root).
+
 ## Public APIs
 
 ### T042: Extend Vidur sim runner for paper-fidelity output

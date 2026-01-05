@@ -10,6 +10,8 @@ Provide a single canonical trace schema that drives both Vidur simulation and re
 - Legacy compatibility: `trace_lengths.csv` + `trace_intervals.csv` conversion
 - Baseline trace source: Vidur’s processed arXiv summarization token-length distribution (LLaMA2 tokenizer)
 
+**Path convention**: All repo paths are relative to `<WORKSPACE_ROOT>` (repository root).
+
 ## Public APIs
 
 ### T031: `paper-fidelity trace` CLI subcommand
