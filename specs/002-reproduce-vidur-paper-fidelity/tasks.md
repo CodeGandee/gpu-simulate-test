@@ -7,6 +7,13 @@
 
 **Organization**: Tasks are grouped by user story (US1–US6) to keep each story independently testable where feasible.
 
+**Implementation guides**: Step-by-step implementation notes (APIs, flows, test inputs) live under:
+
+- `/data1/huangzhe/code/gpu-simulate-test/context/tasks/working/002-reproduce-vidur-paper-fidelity/impl-phase-*.md`
+- `/data1/huangzhe/code/gpu-simulate-test/context/tasks/working/002-reproduce-vidur-paper-fidelity/impl-integrate-phases.md`
+
+Use this file (`tasks.md`) as the **authoritative checklist**; use the guides to implement and validate each phase.
+
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
@@ -162,4 +169,3 @@
 - **US3 + US4** must complete before meaningful scoring (US6) and end-to-end repro (US1).
 - **US5** is required for dynamic runs at the 85% operating point (US1 dynamic workflow).
 - **US6** is required for scoring-only (US1 acceptance scenario 2) and for producing `summary.md`.
-
