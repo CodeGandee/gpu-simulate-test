@@ -35,11 +35,72 @@ Vidur’s pipeline is:
 1. **Model onboarding / profiling**
    - Decompose common transformer LLMs into a small set of operators.
    - Profile a minimal set of input sizes and parallelism sharding configs.
+
+   Code reference (profiling drivers + per-operator wrappers):
+
+   ```python
+   # Profiling entrypoints (generate profiling CSVs for later use)
+   vidur.profiling.mlp.main.main
+   vidur.profiling.attention.main.main
+   vidur.profiling.collectives.main.main
+   vidur.profiling.cpu_overhead.main.main
+
+   # Profiling wrappers (run kernels/ops and record timings)
+   vidur.profiling.mlp.mlp_wrapper.MlpWrapper
+   vidur.profiling.attention.attention_wrapper.AttentionWrapper.profile
+   vidur.profiling.collectives.collectives_wrapper.CollectiveWrapper.profile
+   ```
+
+   How this stage works in code:
+   - The `vidur.profiling.*` modules implement microbenchmarks that sweep token sizes / TP degrees and write CSVs (compute, attention, comms, CPU overhead) used by the runtime estimator.
+   - Operator wrappers run the underlying kernels/ops (often via Sarathi components for attention) and time them with CUDA-based timers, aggregating into per-op statistics.
+
 2. **Runtime estimation**
    - Train small regressors (the paper uses Random Forest) to interpolate unprofiled sizes.
    - Produce runtime lookup tables for operator latencies.
+
+   Code reference (predictor training + per-batch execution-time composition):
+
+   ```python
+   # Predictor selection / construction
+   vidur.execution_time_predictor.execution_time_predictor_registry.ExecutionTimePredictorRegistry.get
+
+   # Trained predictor implementation (paper uses RF via sklearn)
+   vidur.execution_time_predictor.random_forrest_execution_time_predictor.RandomForrestExecutionTimePredictor
+   vidur.execution_time_predictor.sklearn_execution_time_predictor.SklearnExecutionTimePredictor
+
+   # Entry point used by simulation to get a batch's stage execution time breakdown
+   vidur.execution_time_predictor.base_execution_time_predictor.BaseExecutionTimePredictor.get_execution_time
+   ```
+
+   How this stage works in code:
+   - The global scheduler constructs an execution-time predictor via `ExecutionTimePredictorRegistry`, which loads profiling CSVs and trains/caches a model (sklearn-based in the RF path).
+   - During simulation, stage scheduling calls `get_execution_time(batch, stage_id)` to obtain an `ExecutionTime` object whose components sum to the per-stage iteration duration.
+
 3. **Event-driven simulation**
    - Simulate request arrivals, scheduling decisions, batching, and per-iteration execution times using the predicted operator runtimes (plus communication profiles).
+
+   Code reference (event loop + scheduler tiers):
+
+   ```python
+   # Main simulation loop (priority-queue event processing)
+   vidur.simulator.Simulator.run
+
+   # Scheduling/event pipeline (arrival -> global -> replica -> stage)
+   vidur.events.request_arrival_event.RequestArrivalEvent.handle_event
+   vidur.events.global_schedule_event.GlobalScheduleEvent.handle_event
+   vidur.events.replica_schedule_event.ReplicaScheduleEvent.handle_event
+   vidur.events.replica_stage_schedule_event.ReplicaStageScheduleEvent.handle_event
+
+   # Scheduler tiers (routing, batching/memory, per-stage execution)
+   vidur.scheduler.global_scheduler.base_global_scheduler.BaseGlobalScheduler.schedule
+   vidur.scheduler.replica_scheduler.base_replica_scheduler.BaseReplicaScheduler.on_schedule
+   vidur.scheduler.replica_stage_scheduler.replica_stage_schduler.ReplicaStageScheduler.on_schedule
+   ```
+
+   How this stage works in code:
+   - `vidur.simulator.Simulator` runs a discrete-event loop: it pops the next event, advances a virtual clock, and enqueues follow-up events.
+   - The tiered scheduling path is encoded as events: arrival enqueues global scheduling; global routing assigns requests to replicas; replica scheduling forms batches; stage scheduling consults the execution-time predictor and schedules a “stage end” event at `time + execution_time`.
 
 ### 2.2 Operator triaging: what gets profiled and how it’s predicted
 

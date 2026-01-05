@@ -1,0 +1,397 @@
+openapi: 3.1.0
+info:
+  title: Paper Fidelity Workflow API (Design Contract)
+  version: 0.1.0
+  description: |
+    Design-only contract for the Vidur paper-fidelity workflow.
+
+    The planned implementation is a CLI (`pixi run paper-fidelity ...`), but the same operations can be
+    modeled as HTTP endpoints for clarity and to define stable input/output schemas.
+
+    Repo root: /data1/huangzhe/code/gpu-simulate-test
+
+servers:
+  - url: http://localhost
+    description: Placeholder (CLI-first implementation)
+
+paths:
+  /v1/paper-fidelity/traces:
+    post:
+      summary: Generate or validate a canonical trace.csv
+      operationId: createTrace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TraceRequest"
+      responses:
+        "200":
+          description: Trace ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TraceResponse"
+
+  /v1/paper-fidelity/runs/sim:
+    post:
+      summary: Run Vidur simulation and write request_metrics.csv
+      operationId: runSim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SimRunRequest"
+      responses:
+        "200":
+          description: Simulation run complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunResponse"
+
+  /v1/paper-fidelity/runs/real:
+    post:
+      summary: Run real replay (Sarathi-Serve) and write request_metrics.csv
+      operationId: runReal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RealRunRequest"
+      responses:
+        "200":
+          description: Real run complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunResponse"
+
+  /v1/paper-fidelity/capacity:
+    post:
+      summary: Discover capacity QPS and compute 85% operating point
+      operationId: discoverCapacity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CapacityRequest"
+      responses:
+        "200":
+          description: Capacity discovery complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapacityResponse"
+
+  /v1/paper-fidelity/score:
+    post:
+      summary: Score sim vs real metrics and write summary.md
+      operationId: score
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScoreRequest"
+      responses:
+        "200":
+          description: Scoring complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScoreResponse"
+
+  /v1/paper-fidelity/repro:
+    post:
+      summary: End-to-end reproduction (trace → sim → capacity → real → score)
+      operationId: repro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReproRequest"
+      responses:
+        "200":
+          description: Reproduction complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReproResponse"
+
+components:
+  schemas:
+    AbsolutePath:
+      type: string
+      description: Absolute filesystem path on the host running the workflow.
+      pattern: "^/"
+
+    ScenarioName:
+      type: string
+      minLength: 1
+      description: Stable identifier for a scenario (used in output paths and reports).
+
+    WorkloadMode:
+      type: string
+      enum: ["static", "dynamic"]
+
+    TraceSourceKind:
+      type: string
+      enum: ["vidur_processed_lengths_csv", "trace_csv", "legacy_workload_dir"]
+
+    WorkloadConfig:
+      type: object
+      additionalProperties: false
+      required: ["mode"]
+      properties:
+        mode:
+          $ref: "#/components/schemas/WorkloadMode"
+        qps:
+          type: number
+          minimum: 0
+          description: Required for dynamic workloads (Poisson arrivals).
+        seed:
+          type: integer
+          description: Seed for arrival generation (dynamic).
+
+    TraceSourceConfig:
+      type: object
+      additionalProperties: false
+      required: ["kind", "path"]
+      properties:
+        kind:
+          $ref: "#/components/schemas/TraceSourceKind"
+        path:
+          $ref: "#/components/schemas/AbsolutePath"
+        max_tokens:
+          type: integer
+          minimum: 1
+          default: 4096
+        num_requests:
+          type: integer
+          minimum: 1
+          description: Optional cap when sampling/shuffling a length distribution.
+        seed:
+          type: integer
+          description: Seed for deterministic sampling/shuffle when applicable.
+
+    TraceSchema:
+      type: object
+      additionalProperties: false
+      required: ["arrived_at", "num_prefill_tokens", "num_decode_tokens"]
+      properties:
+        arrived_at:
+          type: number
+          description: Seconds since start (non-decreasing).
+          minimum: 0
+        num_prefill_tokens:
+          type: integer
+          minimum: 1
+        num_decode_tokens:
+          type: integer
+          minimum: 1
+        request_id:
+          type: integer
+          minimum: 0
+        prompt_id:
+          type: string
+
+    TraceRequest:
+      type: object
+      additionalProperties: false
+      required: ["scenario_name", "workload", "trace_source"]
+      properties:
+        scenario_name:
+          $ref: "#/components/schemas/ScenarioName"
+        workload:
+          $ref: "#/components/schemas/WorkloadConfig"
+        trace_source:
+          $ref: "#/components/schemas/TraceSourceConfig"
+
+    TraceResponse:
+      type: object
+      additionalProperties: false
+      required: ["trace_csv", "trace_meta_json"]
+      properties:
+        trace_csv:
+          $ref: "#/components/schemas/AbsolutePath"
+        trace_meta_json:
+          $ref: "#/components/schemas/AbsolutePath"
+
+    SimRunRequest:
+      type: object
+      additionalProperties: false
+      required: ["scenario_name", "trace_csv", "profiling_root", "model_key"]
+      properties:
+        scenario_name:
+          $ref: "#/components/schemas/ScenarioName"
+        trace_csv:
+          $ref: "#/components/schemas/AbsolutePath"
+        profiling_root:
+          $ref: "#/components/schemas/AbsolutePath"
+        model_key:
+          type: string
+          description: Vidur model key used by wrappers/configs.
+
+    RealRunRequest:
+      type: object
+      additionalProperties: false
+      required: ["scenario_name", "trace_csv", "backend", "model_ref"]
+      properties:
+        scenario_name:
+          $ref: "#/components/schemas/ScenarioName"
+        trace_csv:
+          $ref: "#/components/schemas/AbsolutePath"
+        backend:
+          type: string
+          enum: ["sarathi"]
+        model_ref:
+          $ref: "#/components/schemas/AbsolutePath"
+
+    RunResponse:
+      type: object
+      additionalProperties: false
+      required: ["run_dir", "request_metrics_csv", "run_meta_json"]
+      properties:
+        run_dir:
+          $ref: "#/components/schemas/AbsolutePath"
+        request_metrics_csv:
+          $ref: "#/components/schemas/AbsolutePath"
+        run_meta_json:
+          $ref: "#/components/schemas/AbsolutePath"
+
+    CapacityRequest:
+      type: object
+      additionalProperties: false
+      required: ["scenario_name", "backend", "trace_source", "criterion"]
+      properties:
+        scenario_name:
+          $ref: "#/components/schemas/ScenarioName"
+        backend:
+          type: string
+          enum: ["sarathi"]
+        trace_source:
+          $ref: "#/components/schemas/TraceSourceConfig"
+        criterion:
+          type: object
+          additionalProperties: false
+          required: ["metric", "quantile", "threshold_s"]
+          properties:
+            metric:
+              type: string
+              enum: ["request_scheduling_delay"]
+            quantile:
+              type: number
+              enum: [0.99]
+            threshold_s:
+              type: number
+              minimum: 0
+              default: 5.0
+        search:
+          type: object
+          additionalProperties: false
+          properties:
+            min_qps:
+              type: number
+              minimum: 0
+            max_qps:
+              type: number
+              minimum: 0
+            max_iters:
+              type: integer
+              minimum: 1
+            operating_point_fraction:
+              type: number
+              minimum: 0
+              maximum: 1
+              default: 0.85
+
+    CapacityResponse:
+      type: object
+      additionalProperties: false
+      required: ["capacity_qps", "qps_85", "capacity_json", "run_meta_json"]
+      properties:
+        capacity_qps:
+          type: number
+          minimum: 0
+        qps_85:
+          type: number
+          minimum: 0
+        capacity_json:
+          $ref: "#/components/schemas/AbsolutePath"
+        run_meta_json:
+          $ref: "#/components/schemas/AbsolutePath"
+
+    ScoreRequest:
+      type: object
+      additionalProperties: false
+      required: ["scenario_name", "sim_request_metrics_csv", "real_request_metrics_csv"]
+      properties:
+        scenario_name:
+          $ref: "#/components/schemas/ScenarioName"
+        sim_request_metrics_csv:
+          $ref: "#/components/schemas/AbsolutePath"
+        real_request_metrics_csv:
+          $ref: "#/components/schemas/AbsolutePath"
+        percentiles:
+          type: array
+          items:
+            type: number
+          default: [0.5, 0.95]
+        thresholds:
+          type: object
+          additionalProperties: false
+          properties:
+            pass_pct:
+              type: number
+              minimum: 0
+              default: 0.05
+            warn_pct:
+              type: number
+              minimum: 0
+              default: 0.09
+
+    ScoreResponse:
+      type: object
+      additionalProperties: false
+      required: ["report_dir", "summary_md"]
+      properties:
+        report_dir:
+          $ref: "#/components/schemas/AbsolutePath"
+        summary_md:
+          $ref: "#/components/schemas/AbsolutePath"
+
+    ReproRequest:
+      type: object
+      additionalProperties: false
+      required: ["scenario_name", "workload"]
+      properties:
+        scenario_name:
+          $ref: "#/components/schemas/ScenarioName"
+        workload:
+          $ref: "#/components/schemas/WorkloadConfig"
+
+    ReproResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - trace
+        - sim
+        - capacity
+        - real
+        - score
+      properties:
+        trace:
+          $ref: "#/components/schemas/TraceResponse"
+        sim:
+          $ref: "#/components/schemas/RunResponse"
+        capacity:
+          $ref: "#/components/schemas/CapacityResponse"
+        real:
+          $ref: "#/components/schemas/RunResponse"
+        score:
+          $ref: "#/components/schemas/ScoreResponse"

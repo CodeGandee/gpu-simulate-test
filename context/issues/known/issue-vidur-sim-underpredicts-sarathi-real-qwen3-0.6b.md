@@ -41,7 +41,9 @@ Workload snapshot:
 
 2. **Attention profiling likely fell back to a template, producing unrealistic attention timings**
    - The profiling workflow can fall back to a template attention.csv if the attention profiling subprocess fails (`src/gpu_simulate_test/vidur_ext/profile_runner.py`).
-   - The Qwen3 attention.csv in this run looks like a template-derived file (e.g., `attention_backend` entries such as `AttentionBackend.FLASH_ATTENTION`, which does not match Sarathi’s `AttentionBackend` enum in this repo), suggesting attention latency may be severely under-modeled.
+   - In this specific experiment, the profiling root used by the Vidur run is `tmp/vidur_profiling/a100/qwen3_0_6b` (see `tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/vidur_run/run_meta.json`).
+   - The attention profiling command we invoke includes `--profile_only_decode` (`src/gpu_simulate_test/vidur_ext/profile_runner.py`), but the resulting `attention.csv` contains both decode and **prefill** rows (`is_prefill=True`). That combination strongly indicates the attention subprocess failed and the template fallback path was used.
+   - Verified: `tmp/vidur_profiling/a100/qwen3_0_6b/.../attention.csv` is exactly Vidur’s shipped phi-2 A100 `attention.csv` (after `drop_duplicates()`), with only the model-shape columns patched (`n_embd`, `n_q_head`, `n_kv_head`, `block_size`, `num_tensor_parallel_workers`). This means attention timings are not Qwen3-0.6B–specific and may be far from the real kernel path used by Sarathi.
 
 3. **Compute profiling may be optimistic vs real end-to-end inference**
    - Vidur’s compute profiling uses dummy weights and a simplified profiling model structure (e.g., a single block repeated many times) which can be more cache-friendly and can underrepresent bandwidth/weight-traffic effects present in real inference.
