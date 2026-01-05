@@ -1,0 +1,43 @@
+{
+  "artifacts": {
+    "real_csv": "/data1/huangzhe/code/gpu-simulate-test/tests/fixtures/paper_fidelity/real_request_metrics.csv",
+    "report_dir": "/data1/huangzhe/code/gpu-simulate-test/results/reports/2026-01-05/paper_fidelity/adhoc_79e74acf1cdb",
+    "sim_csv": "/data1/huangzhe/code/gpu-simulate-test/tests/fixtures/paper_fidelity/sim_request_metrics.csv"
+  },
+  "ended_at": "2026-01-05T08:48:31.352107+00:00",
+  "env": {
+    "cuda_available": true,
+    "cwd": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/score/score_8f5699876f",
+    "platform": "Linux-6.8.0-90-generic-x86_64-with-glibc2.39",
+    "python": "3.13.11",
+    "torch": "2.9.1+cu128"
+  },
+  "git_commit": "3c2a3666e6688daac0e7fe35f58b2db0a3063631",
+  "git_dirty": true,
+  "params": {
+    "inputs": {
+      "real_csv": "tests/fixtures/paper_fidelity/real_request_metrics.csv",
+      "sim_csv": "tests/fixtures/paper_fidelity/sim_request_metrics.csv"
+    },
+    "paths": {
+      "repo_root": "/data1/huangzhe/code/gpu-simulate-test",
+      "results_root": "/data1/huangzhe/code/gpu-simulate-test/results",
+      "tmp_root": "/data1/huangzhe/code/gpu-simulate-test/tmp"
+    },
+    "scoring": {
+      "percentiles": [
+        0.5,
+        0.95
+      ],
+      "thresholds": {
+        "pass_pct": 0.05,
+        "warn_pct": 0.09
+      }
+    }
+  },
+  "run_id": "pf_score_62505dca0108",
+  "run_type": "score",
+  "scenario_name": "adhoc_79e74acf1cdb",
+  "schema_version": "v1",
+  "started_at": "2026-01-05T08:48:31.352095+00:00"
+}

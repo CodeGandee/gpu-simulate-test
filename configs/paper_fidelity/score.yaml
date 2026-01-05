@@ -1,0 +1,24 @@
+defaults:
+  - _self_
+
+paths:
+  repo_root: ${hydra:runtime.cwd}
+  tmp_root: ${paths.repo_root}/tmp
+  results_root: ${paths.repo_root}/results
+
+inputs:
+  sim_csv: ""
+  real_csv: ""
+
+scoring:
+  percentiles: [0.5, 0.95]
+  thresholds:
+    pass_pct: 0.05
+    warn_pct: 0.09
+
+hydra:
+  run:
+    dir: ${paths.tmp_root}/paper_fidelity/score/${stable_id:score,${inputs.sim_csv},${inputs.real_csv}}
+  job:
+    chdir: true
+

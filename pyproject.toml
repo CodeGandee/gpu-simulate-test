@@ -60,6 +60,7 @@ real-bench = "python -m gpu_simulate_test.cli.real_bench"
 vidur-profile = "python -m gpu_simulate_test.cli.vidur_profile"
 vidur-sim = "python -m gpu_simulate_test.cli.vidur_sim"
 compare-runs = "python -m gpu_simulate_test.cli.compare_runs"
+paper-fidelity = "python -m gpu_simulate_test.cli.paper_fidelity"
 docs-serve = "mkdocs serve -a 127.0.0.1:8000"
 docs-build = "mkdocs build --strict"
 

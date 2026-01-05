@@ -29,7 +29,7 @@ cd extern/tracked/vidur
 WANDB_MODE=disabled pixi run python -m vidur.main \
   --synthetic_request_generator_config_num_requests 2 \
   --metrics_config_output_dir ../../../tmp/vidur_smoke \
-  --metrics_config_cache_dir ../../../tmp/vidur_cache \
+  --metrics_config_cache_dir ../../../tmp/vidur_smoke/vidur-cache \
   --no-metrics_config_enable_chrome_trace \
   --no-metrics_config_store_plots
 ```
@@ -52,6 +52,7 @@ Expected result:
   - `--synthetic_request_generator_config_num_requests <N>`
 - Output:
   - `--metrics_config_output_dir tmp/vidur_runs` (Vidur appends a timestamp subdir)
+  - `--metrics_config_cache_dir tmp/vidur_runs/vidur-cache` (cache lives next to run outputs)
 
 ## 4) Trace-driven request lengths + arrivals
 

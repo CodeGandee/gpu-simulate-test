@@ -1,0 +1,46 @@
+name: llama2_7b_arxiv
+
+model:
+  model_id: meta-llama/Llama-2-7b-hf
+  model_ref: ${paths.repo_root}/models/llama2-7b-hf/source-data
+
+trace_source:
+  kind: vidur_processed_lengths_csv
+  path: ${paths.repo_root}/extern/tracked/vidur/data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_v2.csv
+  max_tokens: 4096
+  seed: 42
+  num_requests: null
+
+vidur:
+  profiling_root: ${paths.repo_root}/extern/tracked/vidur
+  device: a100
+  network_device: a100_pairwise_nvlink
+  tensor_parallel_size: 1
+  num_pipeline_stages: 1
+  seed: 42
+
+real:
+  backend: sarathi
+  scheduler:
+    chunk_size: 16
+    max_num_seqs: 16
+  parallel:
+    tensor_parallel_size: 1
+    pipeline_parallel_size: 1
+  metrics:
+    write_metrics: true
+    enable_chrome_trace: false
+
+capacity_search:
+  enabled: true
+  min_qps: 1.0
+  max_qps: 20.0
+  max_iters: 6
+  overload_p99_scheduling_delay_s: 5.0
+  qps_operating_point_fraction: 0.85
+
+scoring:
+  percentiles: [0.5, 0.95]
+  thresholds:
+    pass_pct: 0.05
+    warn_pct: 0.09

@@ -89,6 +89,9 @@ env.bak/
 venv.bak/
 
 # IDEs/editors
+.DS_Store
+Thumbs.db
+*.tmp
 .idea/
 .vscode/*
 !.vscode/settings.json
@@ -106,4 +109,6 @@ venv.bak/
 
 # Project-local scratch dirs
 /tmp/
+/cache/
+/vidur-cache/
 /.codex/

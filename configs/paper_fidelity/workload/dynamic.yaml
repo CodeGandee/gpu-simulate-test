@@ -1,0 +1,4 @@
+mode: dynamic
+qps: 1.0
+seed: 42
+

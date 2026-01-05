@@ -1,0 +1,16 @@
+defaults:
+  - scenario: llama2_7b_arxiv
+  - workload: static
+  - _self_
+
+paths:
+  repo_root: ${hydra:runtime.cwd}
+  tmp_root: ${paths.repo_root}/tmp
+  results_root: ${paths.repo_root}/results
+
+hydra:
+  run:
+    dir: ${paths.tmp_root}/paper_fidelity/runs/${scenario.name}/trace
+  job:
+    chdir: true
+

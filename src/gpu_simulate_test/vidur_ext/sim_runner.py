@@ -9,6 +9,12 @@ from gpu_simulate_test.io import read_csv, utcnow_iso, write_csv, write_json
 from gpu_simulate_test.vidur_ext.profiling_root import ProfilingRootLayout, validate_profiling_root
 
 
+def _default_vidur_cache_dir(*, out_dir: Path) -> Path:
+    cache_dir = out_dir / "vidur-cache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    return cache_dir
+
+
 @dataclass(frozen=True)
 class VidurSimInputs:
     workload_dir: Path
@@ -189,6 +195,7 @@ def run_vidur_sim(inputs: VidurSimInputs, *, out_dir: Path, run_meta: dict) -> N
         store_batch_metrics=False,
         store_utilization_metrics=False,
         output_dir=str(out_dir / "vidur_raw"),
+        cache_dir=str(_default_vidur_cache_dir(out_dir=out_dir).resolve()),
     )
 
     sim_cfg = SimulationConfig(
@@ -238,3 +245,153 @@ def run_vidur_sim(inputs: VidurSimInputs, *, out_dir: Path, run_meta: dict) -> N
     run_meta.setdefault("vidur_raw_dir", str(raw_dir))
     run_meta.setdefault("vidur_trace_csv", str(trace_csv))
     write_json(out_dir / "run_meta.json", run_meta)
+
+
+PAPER_FIDELITY_REQUIRED_VIDUR_COLUMNS = [
+    "request_scheduling_delay",
+    "request_execution_plus_preemption_time_normalized",
+    "request_e2e_time_normalized",
+    "request_num_decode_tokens",
+]
+
+
+def convert_vidur_request_metrics_to_paper_fidelity(raw_request_metrics_csv: Path) -> pd.DataFrame:
+    """Convert Vidur's raw `request_metrics.csv` to the paper-fidelity schema.
+
+    The primary transformation is renaming `Request Id` → `request_id`, while preserving
+    Vidur's normalized metric columns without recomputation.
+    """
+    raw = pd.read_csv(raw_request_metrics_csv)
+    if "Request Id" not in raw.columns:
+        raise ValueError(
+            "Unexpected Vidur request_metrics.csv schema: missing 'Request Id' "
+            f"({raw_request_metrics_csv})"
+        )
+
+    df = raw.rename(columns={"Request Id": "request_id"})
+    missing = [c for c in PAPER_FIDELITY_REQUIRED_VIDUR_COLUMNS if c not in df.columns]
+    if missing:
+        raise ValueError(
+            "Unexpected Vidur request_metrics.csv schema: missing required columns "
+            f"{missing} ({raw_request_metrics_csv})"
+        )
+    return df
+
+
+@dataclass(frozen=True)
+class VidurPaperFidelitySimInputs:
+    scenario_name: str
+    trace_csv: Path
+    profiling_root: Path
+    model_id: str
+    device: str = "a100"
+    network_device: str = "a100_pairwise_nvlink"
+    tensor_parallel_size: int = 1
+    num_pipeline_stages: int = 1
+    seed: int = 42
+    max_tokens: int = 4096
+
+
+def run_vidur_paper_fidelity_sim(
+    inputs: VidurPaperFidelitySimInputs,
+    *,
+    out_dir: Path,
+    run_meta: dict,
+) -> Path:
+    """Run Vidur and write a paper-fidelity `request_metrics.csv` preserving normalized columns."""
+    layout = ProfilingRootLayout(
+        profiling_root=inputs.profiling_root,
+        device=inputs.device,
+        model_id=inputs.model_id,
+        network_device=inputs.network_device,
+        tensor_parallel_size=inputs.tensor_parallel_size,
+        num_pipeline_stages=inputs.num_pipeline_stages,
+        skip_cpu_overhead_modeling=True,
+    )
+    validate_profiling_root(layout)
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    started_at = utcnow_iso()
+
+    profiling_base = inputs.profiling_root / "data" / "profiling"
+
+    from vidur.config import (
+        ClusterConfig,
+        MetricsConfig,
+        RandomForrestExecutionTimePredictorConfig,
+        ReplicaConfig,
+        SimulationConfig,
+        TraceRequestGeneratorConfig,
+    )
+    from vidur.simulator import Simulator
+
+    replica_config = ReplicaConfig(
+        model_name=inputs.model_id,
+        num_pipeline_stages=int(inputs.num_pipeline_stages),
+        tensor_parallel_size=int(inputs.tensor_parallel_size),
+        device=str(inputs.device),
+        network_device=str(inputs.network_device),
+    )
+    cluster_config = ClusterConfig(num_replicas=1, replica_config=replica_config)
+    request_generator_config = TraceRequestGeneratorConfig(
+        trace_file=str(inputs.trace_csv),
+        max_tokens=int(inputs.max_tokens),
+    )
+
+    exec_cfg = RandomForrestExecutionTimePredictorConfig(
+        compute_input_file=str(profiling_base / "compute/{DEVICE}/{MODEL}/mlp.csv"),
+        attention_input_file=str(profiling_base / "compute/{DEVICE}/{MODEL}/attention.csv"),
+        all_reduce_input_file=str(profiling_base / "network/{NETWORK_DEVICE}/all_reduce.csv"),
+        send_recv_input_file=str(profiling_base / "network/{NETWORK_DEVICE}/send_recv.csv"),
+        cpu_overhead_input_file=str(profiling_base / "cpu_overhead/{NETWORK_DEVICE}/{MODEL}/cpu_overheads.csv"),
+        skip_cpu_overhead_modeling=True,
+    )
+
+    metrics_cfg = MetricsConfig(
+        write_metrics=True,
+        enable_chrome_trace=False,
+        store_plots=False,
+        store_operation_metrics=False,
+        store_token_completion_metrics=False,
+        store_request_metrics=True,
+        store_batch_metrics=False,
+        store_utilization_metrics=False,
+        output_dir=str(out_dir / "vidur_raw"),
+        cache_dir=str(_default_vidur_cache_dir(out_dir=out_dir).resolve()),
+    )
+
+    sim_cfg = SimulationConfig(
+        seed=int(inputs.seed),
+        cluster_config=cluster_config,
+        request_generator_config=request_generator_config,
+        execution_time_predictor_config=exec_cfg,
+        metrics_config=metrics_cfg,
+    )
+
+    simulator = Simulator(sim_cfg)
+    simulator.run()
+    simulator.metric_store.plot()
+
+    raw_dir = Path(sim_cfg.metrics_config.output_dir)
+    raw_request_metrics = raw_dir / "request_metrics.csv"
+    if not raw_request_metrics.exists():
+        raise FileNotFoundError(f"Vidur did not produce request_metrics.csv under {raw_dir}")
+
+    request_df = convert_vidur_request_metrics_to_paper_fidelity(raw_request_metrics)
+    write_csv(
+        out_dir / "request_metrics.csv",
+        request_df,
+        required_columns=["request_id", *PAPER_FIDELITY_REQUIRED_VIDUR_COLUMNS],
+    )
+
+    meta = dict(run_meta)
+    meta.setdefault("schema_version", "v1")
+    meta.setdefault("run_type", "sim")
+    meta.setdefault("scenario_name", inputs.scenario_name)
+    meta.setdefault("started_at", started_at)
+    meta.setdefault("ended_at", utcnow_iso())
+    meta.setdefault("vidur_raw_dir", str(raw_dir.resolve()))
+    meta.setdefault("trace_csv", str(inputs.trace_csv.resolve()))
+    write_json(out_dir / "run_meta.json", meta)
+
+    return out_dir / "request_metrics.csv"

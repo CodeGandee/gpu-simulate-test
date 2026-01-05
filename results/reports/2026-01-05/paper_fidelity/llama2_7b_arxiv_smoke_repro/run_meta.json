@@ -1,0 +1,88 @@
+{
+  "artifacts": {
+    "real_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv_smoke_repro/real/request_metrics.csv",
+    "report_dir": "/data1/huangzhe/code/gpu-simulate-test/results/reports/2026-01-05/paper_fidelity/llama2_7b_arxiv_smoke_repro",
+    "sim_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv_smoke_repro/sim/request_metrics.csv"
+  },
+  "ended_at": "2026-01-05T08:51:45.615793+00:00",
+  "env": {
+    "cuda_available": true,
+    "cuda_device_name": "NVIDIA A100-SXM4-80GB",
+    "cwd": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv_smoke_repro/repro",
+    "platform": "Linux-6.8.0-90-generic-x86_64-with-glibc2.39",
+    "python": "3.13.11",
+    "torch": "2.9.1+cu128"
+  },
+  "git_commit": "3c2a3666e6688daac0e7fe35f58b2db0a3063631",
+  "git_dirty": true,
+  "params": {
+    "paths": {
+      "repo_root": "/data1/huangzhe/code/gpu-simulate-test",
+      "results_root": "/data1/huangzhe/code/gpu-simulate-test/results",
+      "tmp_root": "/data1/huangzhe/code/gpu-simulate-test/tmp"
+    },
+    "scenario": {
+      "capacity_search": {
+        "enabled": true,
+        "max_iters": 6,
+        "max_qps": 20.0,
+        "min_qps": 1.0,
+        "overload_p99_scheduling_delay_s": 5.0,
+        "qps_operating_point_fraction": 0.85
+      },
+      "model": {
+        "model_id": "meta-llama/Llama-2-7b-hf",
+        "model_ref": "/data1/huangzhe/code/gpu-simulate-test/models/llama2-7b-hf/source-data"
+      },
+      "name": "llama2_7b_arxiv_smoke_repro",
+      "real": {
+        "backend": "sarathi",
+        "metrics": {
+          "enable_chrome_trace": false,
+          "write_metrics": true
+        },
+        "parallel": {
+          "pipeline_parallel_size": 1,
+          "tensor_parallel_size": 1
+        },
+        "scheduler": {
+          "chunk_size": 16,
+          "max_num_seqs": 16
+        }
+      },
+      "scoring": {
+        "percentiles": [
+          0.5,
+          0.95
+        ],
+        "thresholds": {
+          "pass_pct": 0.05,
+          "warn_pct": 0.09
+        }
+      },
+      "trace_source": {
+        "kind": "vidur_processed_lengths_csv",
+        "max_tokens": 64,
+        "num_requests": 1,
+        "path": "/data1/huangzhe/code/gpu-simulate-test/extern/tracked/vidur/data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_v2.csv",
+        "seed": 42
+      },
+      "vidur": {
+        "device": "a100",
+        "network_device": "a100_pairwise_nvlink",
+        "num_pipeline_stages": 1,
+        "profiling_root": "/data1/huangzhe/code/gpu-simulate-test/extern/tracked/vidur",
+        "seed": 42,
+        "tensor_parallel_size": 1
+      }
+    },
+    "workload": {
+      "mode": "static"
+    }
+  },
+  "run_id": "pf_score_235e95a53ddf",
+  "run_type": "score",
+  "scenario_name": "llama2_7b_arxiv_smoke_repro",
+  "schema_version": "v1",
+  "started_at": "2026-01-05T08:51:45.615773+00:00"
+}
