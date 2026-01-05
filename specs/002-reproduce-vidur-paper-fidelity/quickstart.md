@@ -4,7 +4,7 @@
 **Plan**: `<WORKSPACE_ROOT>/specs/002-reproduce-vidur-paper-fidelity/plan.md`  
 **Date**: 2026-01-05
 
-This quickstart describes the intended end-to-end workflow once the feature is implemented.
+This quickstart describes the end-to-end workflow for the paper-fidelity reproduction feature.
 
 **Path convention**: `<WORKSPACE_ROOT>` refers to the repository root.
 
@@ -32,7 +32,7 @@ Default scenario: **LLaMA2-7B + arXiv summarization token-length trace**.
 
 The baseline scenario config is expected at:
 
-- `<WORKSPACE_ROOT>/configs/paper_fidelity/scenarios/llama2_7b_arxiv.yaml`
+- `<WORKSPACE_ROOT>/configs/paper_fidelity/scenario/llama2_7b_arxiv.yaml`
 
 ## End-to-end reproduction
 
@@ -49,6 +49,7 @@ Expected artifacts:
 - Trace: `<WORKSPACE_ROOT>/tmp/paper_fidelity/traces/llama2_7b_arxiv/trace.csv`
 - Sim metrics: `<WORKSPACE_ROOT>/tmp/paper_fidelity/runs/llama2_7b_arxiv/sim/request_metrics.csv`
 - Real metrics: `<WORKSPACE_ROOT>/tmp/paper_fidelity/runs/llama2_7b_arxiv/real/request_metrics.csv`
+- Capacity (dynamic): `<WORKSPACE_ROOT>/tmp/paper_fidelity/runs/llama2_7b_arxiv/capacity/capacity.json`
 - Report: `<WORKSPACE_ROOT>/results/reports/<date>/paper_fidelity/llama2_7b_arxiv/summary.md`
 
 ## Scoring only
@@ -63,10 +64,14 @@ Expected output:
 
 ## Validation
 
-Planned automated validation:
+Automated validation:
 
 - Unit tests with fixed fixtures: `<WORKSPACE_ROOT>/tests/test_paper_fidelity_scorer.py`
+- Run: `pixi run pytest tests`
 
-Planned manual validation:
+Manual validation:
 
-- A single baseline scenario smoke run that produces a complete `summary.md` and required CSVs under `<WORKSPACE_ROOT>/tmp/paper_fidelity/`.
+- Trace generation smoke: `pixi run python tests/manual/test_paper_fidelity_trace_smoke.py`
+- Vidur simulation smoke: `pixi run python tests/manual/test_paper_fidelity_vidur_sim_smoke.py`
+- Real replay smoke (GPU required): `pixi run python tests/manual/test_paper_fidelity_real_smoke.py`
+- End-to-end smoke (GPU required): `pixi run python tests/manual/test_paper_fidelity_repro_smoke.py`

@@ -18,8 +18,9 @@ This Q&A captures practical clarifications that come up when implementing and va
 - `extern/tracked/vidur/paper/tex/figures-tex/fig-fidelity-static-trace.tex`
 - `extern/tracked/vidur/paper/tex/figures-tex/fig-fidelity-dynamic-trace.tex`
 - `extern/tracked/sarathi-serve/sarathi/metrics/README.md`
+- `src/gpu_simulate_test/cli/paper_fidelity.py`
 - `src/gpu_simulate_test/vidur_ext/sim_runner.py`
-- `src/gpu_simulate_test/real_bench/backends/sarathi_backend.py`
+- `src/gpu_simulate_test/real_bench/backends/sarathi_paper_fidelity_backend.py`
 
 ## What does Vidur actually measure in its timing metrics?
 > Last revised at: `2026-01-05T03:27:58Z` | Last revised base commit: `b735cecbb66fde6f6f956c68ec34f59877e0725a`

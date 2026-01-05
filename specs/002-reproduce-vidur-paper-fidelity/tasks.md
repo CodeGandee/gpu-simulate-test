@@ -80,7 +80,7 @@ Use this file (`tasks.md`) as the **authoritative checklist**; use the guides to
 ### Implementation
 
 - [X] T031 [US2] Add `paper-fidelity trace` subcommand (generate/validate) in `<WORKSPACE_ROOT>/src/gpu_simulate_test/cli/paper_fidelity.py`
-- [X] T032 [US2] Wire baseline token-length source `<WORKSPACE_ROOT>/extern/tracked/vidur/data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_v2.csv` into the baseline scenario config (`<WORKSPACE_ROOT>/configs/paper_fidelity/scenarios/llama2_7b_arxiv.yaml`)
+- [X] T032 [US2] Wire baseline token-length source `<WORKSPACE_ROOT>/extern/tracked/vidur/data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_v2.csv` into the baseline scenario config (`<WORKSPACE_ROOT>/configs/paper_fidelity/scenario/llama2_7b_arxiv.yaml`)
 
 ---
 

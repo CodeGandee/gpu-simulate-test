@@ -72,25 +72,30 @@ It standardizes (a) trace inputs (`trace.csv` preferred, legacy split files supp
 <WORKSPACE_ROOT>/src/gpu_simulate_test/
 ├── analysis/
 ├── cli/
-│   └── paper_fidelity.py          # new
-├── paper_fidelity/                # new
-│   ├── traces.py                  # new (trace IO + validation; legacy compatibility)
-│   ├── capacity.py                # new (capacity discovery + 85% operating point)
-│   ├── scoring.py                 # new (percentiles + percent error + thresholds)
-│   └── report.py                  # new (summary.md writer; reuses analysis/report patterns)
+│   └── paper_fidelity.py                  # new (Hydra-driven paper-fidelity CLI)
+├── paper_fidelity/                        # new
+│   ├── __init__.py                        # new
+│   ├── paths.py                           # new (artifact path conventions)
+│   ├── traces.py                          # new (trace IO + validation; legacy compatibility)
+│   ├── capacity.py                        # new (capacity discovery + 85% operating point)
+│   ├── scoring.py                         # new (percentiles + percent error + thresholds)
+│   └── report.py                          # new (summary.md writer + gap diagnosis)
 ├── real_bench/
 │   └── backends/
-│       └── sarathi_backend.py     # extend (paper metrics timestamps)
+│       └── sarathi_paper_fidelity_backend.py  # new (Sarathi replay + paper metrics)
 └── vidur_ext/
-    └── sim_runner.py              # extend (preserve required paper metric columns)
+    └── sim_runner.py                      # extend (paper-fidelity sim adapter)
 
 <WORKSPACE_ROOT>/configs/
-├── paper_fidelity/                # new (scenarios + defaults)
-└── compare_vidur_real/
-    └── backend/                   # extend (real backend alignment knobs)
+└── paper_fidelity/                       # new (defaults + scenarios + workloads)
 
 <WORKSPACE_ROOT>/tests/
-└── test_paper_fidelity_scorer.py  # new (fixed fixtures; unit test)
+├── fixtures/paper_fidelity/              # new (small CSV fixtures)
+├── manual/                               # smoke scripts (python entrypoints)
+│   └── test_paper_fidelity_*_smoke.py
+├── test_paper_fidelity_scorer.py         # new (fixed fixtures; unit test)
+└── unit/
+    └── test_paper_fidelity_*.py          # new (schema, trace, capacity unit tests)
 ```
 
 **Structure Decision**: Extend the existing single-package layout by adding a paper-fidelity workflow module under `<WORKSPACE_ROOT>/src/gpu_simulate_test/` and a Hydra-driven CLI entrypoint (mirroring existing commands like `gpu_simulate_test.cli.compare_runs`). Keep simulator- and backend-specific glue isolated (Vidur under `<WORKSPACE_ROOT>/src/gpu_simulate_test/vidur_ext/`, real runner under `<WORKSPACE_ROOT>/src/gpu_simulate_test/real_bench/`).
@@ -102,3 +107,12 @@ It standardizes (a) trace inputs (`trace.csv` preferred, legacy split files supp
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
 | N/A | N/A | N/A |
+
+## Implementation Summary
+
+- CLI: `pixi run paper-fidelity {trace,repro,score}` implemented by `<WORKSPACE_ROOT>/src/gpu_simulate_test/cli/paper_fidelity.py` (argparse wrapper; forwards Hydra overrides).
+- Configs: `<WORKSPACE_ROOT>/configs/paper_fidelity/` provides `repro.yaml`, `trace.yaml`, `score.yaml` plus config groups `scenario/` and `workload/`.
+- Artifacts: traces under `<WORKSPACE_ROOT>/tmp/paper_fidelity/traces/<scenario>/`; runs under `<WORKSPACE_ROOT>/tmp/paper_fidelity/runs/<scenario>/{sim,real,capacity}/`; reports under `<WORKSPACE_ROOT>/results/reports/<date>/paper_fidelity/<scenario>/`.
+- Simulation: `<WORKSPACE_ROOT>/src/gpu_simulate_test/vidur_ext/sim_runner.py` adds a paper-fidelity sim path that preserves Vidur’s normalized metrics columns, keeps the raw Vidur output dir for debugging, and uses a per-run Vidur cache dir (`<output-dir>/vidur-cache`).
+- Real replay: `<WORKSPACE_ROOT>/src/gpu_simulate_test/real_bench/backends/sarathi_paper_fidelity_backend.py` replays the canonical trace via Sarathi-Serve metrics store and converts to paper-fidelity `request_metrics.csv` without requiring plot tooling.
+- Validation: unit tests under `<WORKSPACE_ROOT>/tests/` (`pixi run pytest tests`) + manual smoke scripts under `<WORKSPACE_ROOT>/tests/manual/` (trace/sim/real/repro).
