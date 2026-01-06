@@ -86,14 +86,17 @@ Dynamic fidelity @85% capacity (normalized end-to-end latency), P95:
 - Workspace hygiene: Vidur cache is written under `tmp/paper_fidelity/runs/<scenario>/sim/vidur-cache/` (no top-level `cache/`) (`src/gpu_simulate_test/vidur_ext/sim_runner.py`).
 
 ## How do I run the Phase 3 “sim-vs-real gap reproduction” (host microbenchmarking), and what artifacts do I need?
-> Last revised at: `2026-01-05T15:27:56Z` | Last revised base commit: `7c8877d53389d73486286317d71bd055e335d884`
+> Last revised at: `2026-01-06T02:22:35Z` | Last revised base commit: `b7647c91f1d3478c30fc19c9522b68e11aa03ee6`
 
-- Generate a host-specific profiling bundle (Vidur’s profiling scripts use Sarathi modules and require a working GPU stack; see `extern/tracked/vidur/docs/profiling.md`):
-  - `pixi run python extern/tracked/vidur/vidur/profiling/mlp/main.py --models meta-llama/Llama-2-7b-hf --num_gpus 1 --num_tensor_parallel_workers 1 --output_dir tmp/paper_fidelity/profiling_outputs`
-  - `pixi run python extern/tracked/vidur/vidur/profiling/attention/main.py --models meta-llama/Llama-2-7b-hf --num_gpus 1 --num_tensor_parallel_workers 1 --output_dir tmp/paper_fidelity/profiling_outputs`
-- Build a profiling root that matches Vidur’s expected layout (minimum for TP=1/PP=1 is `mlp.csv` + `attention.csv` under `data/profiling/compute/<device>/<model_id>/`); point `scenario.vidur.profiling_root` at that directory (`src/gpu_simulate_test/vidur_ext/profiling_root.py`).
-- Run Phase 3 with the host profiling root:
-  - `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static scenario.vidur.profiling_root=tmp/paper_fidelity/profiling_root`
-  - `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload dynamic scenario.vidur.profiling_root=tmp/paper_fidelity/profiling_root`
+- Generate a host-specific profiling root via the first-class CLI:
+  - `pixi run paper-fidelity profile --scenario llama2_7b_arxiv`
+  - Optional (bounded run): `pixi run paper-fidelity profile --scenario llama2_7b_arxiv profiling.max_tokens=256 profiling.num_gpus=1`
+- The command prints the created profiling root path and writes:
+  - Host profiling root: `tmp/paper_fidelity/profiling_roots/<scenario>/<run_id>/data/profiling/...` (`src/gpu_simulate_test/paper_fidelity/profiling.py`)
+  - Profiling provenance: `tmp/paper_fidelity/profiling_roots/<scenario>/<run_id>/profiling_meta.json`
+  - Large intermediate outputs: `tmp/paper_fidelity/profiling_outputs/<scenario>/<run_id>/...`
+- Run Phase 3 with the host profiling root by overriding `scenario.vidur.profiling_root` (absolute path recommended):
+  - `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static scenario.vidur.profiling_root=/abs/path/to/tmp/paper_fidelity/profiling_roots/...`
+  - `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload dynamic scenario.vidur.profiling_root=/abs/path/to/tmp/paper_fidelity/profiling_roots/...`
 - Now the report’s sim-vs-real `% error` is meaningful on this host (both sim and real share the same serving stack); compare it to the paper’s reported error band/trends rather than expecting exact equality.
-- Caveat: current simulation runs with `skip_cpu_overhead_modeling=True` (`src/gpu_simulate_test/vidur_ext/sim_runner.py`), so some drift (especially for smaller models) may remain even after host profiling.
+- CPU overhead modeling: baseline scenarios default to `scenario.vidur.skip_cpu_overhead_modeling=true` (see `configs/paper_fidelity/scenario/llama2_7b_arxiv.yaml`). If you set it to `false`, ensure the profiling root includes `cpu_overheads.csv` or validation will fail (`src/gpu_simulate_test/vidur_ext/profiling_root.py`).
