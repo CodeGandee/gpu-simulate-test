@@ -171,7 +171,7 @@ pixi run pytest tests/test_paper_fidelity_scorer.py
 ## References
 
 - Contracts (required columns): `specs/002-reproduce-vidur-paper-fidelity/contracts/`
-- Known issue patterns: `context/issues/known/issue-vidur-sim-underpredicts-sarathi-real-qwen3-0.6b.md`
+- Known issue patterns: `context/issues/known/issue-vidur-sim-underpredicts-sarathi-real.md`
 - Tasks breakdown (authoritative checklist): `specs/002-reproduce-vidur-paper-fidelity/tasks.md`
 
 ## Implementation Summary

@@ -28,8 +28,8 @@ def diagnose_gap(*, sim_csv: Path, real_csv: Path, sim_meta: dict | None) -> lis
     hypotheses: list[str] = []
 
     hypotheses.append(
-        "Vidur sim may underpredict wall-clock latency when CPU/runtime overhead is excluded; "
-        "see `context/issues/known/issue-vidur-sim-underpredicts-sarathi-real-qwen3-0.6b.md`."
+        "Vidur sim may underpredict wall-clock latency when CPU/runtime overhead is excluded and/or "
+        "the profiling bundle is not host-matched; see `context/issues/known/issue-vidur-sim-underpredicts-sarathi-real.md`."
     )
 
     if sim_meta and sim_meta.get("vidur_raw_dir"):

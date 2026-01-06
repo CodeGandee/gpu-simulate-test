@@ -41,21 +41,67 @@ Static fidelity (normalized execution-plus-preemption time), P50:
 
 ![Static fidelity P50 (paper)](figures/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p50.svg)
 
+Vendor simulation (A100; static arrivals; vLLM scheduler; “Real” plotted as 0 placeholder; note: Vidur submodule does not ship Chat-1M/BWB-4K trace-length CSVs, and we exclude Splitwise traces, so only Arxiv-4K is plotted):
+
+![Static fidelity P50 (vendor)](figures/vendor_a100_vllm_static_fidelity_request_execution_plus_preemption_time_normalized_p50.svg)
+
 Static fidelity (normalized execution-plus-preemption time), P95:
 
 ![Static fidelity P95 (paper)](figures/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p95.svg)
+
+Vendor simulation (A100; static arrivals; vLLM scheduler; “Real” plotted as 0 placeholder):
+
+![Static fidelity P95 (vendor)](figures/vendor_a100_vllm_static_fidelity_request_execution_plus_preemption_time_normalized_p95.svg)
 
 Dynamic fidelity @85% capacity (normalized end-to-end latency), P50:
 
 ![Dynamic fidelity @85% capacity P50 (paper)](figures/dynamic_fidelity_v8_request_e2e_time_normalized_85_p50.svg)
 
+Vendor simulation (A100; Poisson QPS=6.45; “Real” plotted as 0 placeholder from `results/raw/vendor-results/sarathi-serve/dynamic/**`; only Arxiv-4K is plotted):
+
+![Dynamic fidelity P50 (vendor)](figures/vendor_a100_dynamic_fidelity_request_e2e_time_normalized_p50.svg)
+
 Dynamic fidelity @85% capacity (normalized end-to-end latency), P95:
 
 ![Dynamic fidelity @85% capacity P95 (paper)](figures/dynamic_fidelity_v8_request_e2e_time_normalized_85_p95.svg)
 
+Vendor simulation (A100; Poisson QPS=6.45; “Real” plotted as 0 placeholder from `results/raw/vendor-results/sarathi-serve/dynamic/**`; only Arxiv-4K is plotted):
+
+![Dynamic fidelity P95 (vendor)](figures/vendor_a100_dynamic_fidelity_request_e2e_time_normalized_p95.svg)
+
 - For both metrics, we compute **P50/P95** and report **percent error** `abs(sim - real) / real` in `results/reports/<date>/paper_fidelity/<scenario>/summary.md` (`src/gpu_simulate_test/paper_fidelity/report.py`).
 - Dynamic “85% capacity” is derived via capacity search using **P99 scheduling delay** (`request_scheduling_delay`) against the configured threshold (default 5s), producing `tmp/paper_fidelity/runs/<scenario>/capacity/capacity.json` (`src/gpu_simulate_test/paper_fidelity/capacity.py`).
 - The repro workflow always scores both normalized metrics (see the `metrics = [...]` list in `src/gpu_simulate_test/cli/paper_fidelity.py`), but these two correspond to the paper’s fidelity plots.
+
+## How do I compute the static/dynamic P50/P95 metrics from Vidur “vendor” simulation outputs (paper profiling + processed traces)?
+> Last revised at: `2026-01-06T11:43:54Z` | Last revised base commit: `5dd6037d2dcb151e46639d07e0fde6a3765ab894`
+
+- Run Vidur as described in `extern/tracked/vidur/README.md`, using Vidur’s shipped profiling bundle under `extern/tracked/vidur/data/profiling/**` and a processed trace under `extern/tracked/vidur/data/processed_traces/*.csv` (or use the already-produced outputs under `results/raw/vendor-results/**`).
+- For a single Vidur run directory (the timestamp dir containing `request_metrics.csv` + `config.json`), identify whether it was “static” vs “dynamic” by inspecting `config.json`:
+  - Mode: `jq -r '.request_generator_config.interval_generator_config.name' <run_dir>/config.json` (`static` or `poisson`)
+  - QPS (poisson only): `jq -r '.request_generator_config.interval_generator_config.qps' <run_dir>/config.json`
+- Compute P50/P95 directly from `request_metrics.csv` percentiles:
+  - **Static metric (paper)**: `request_execution_plus_preemption_time_normalized` (P50/P95; units `s/token`).
+  - **Dynamic metric (paper)**: `request_e2e_time_normalized` (P50/P95; units `s/token`; paper-comparable only when the offered load matches the paper’s operating point definition, e.g. “85% of capacity”).
+- Example (replace `run_dir` with your timestamp directory path):
+  - In this repo’s `results/raw/vendor-results/` layout, `<runner>` is `sarathi-serve` or `vllm`, and `<arrival_mode>` is `dynamic` or `static`.
+
+  ```bash
+  pixi run python - <<'PY'
+  import pandas as pd
+  from pathlib import Path
+
+  run_dir = Path("results/raw/vendor-results/<runner>/<arrival_mode>/<gpu>-<model>-<trace>/<timestamp>")
+  df = pd.read_csv(run_dir / "request_metrics.csv")
+  for metric in [
+      "request_execution_plus_preemption_time_normalized",
+      "request_e2e_time_normalized",
+  ]:
+      p50 = float(df[metric].quantile(0.5))
+      p95 = float(df[metric].quantile(0.95))
+      print(metric, {"p50": p50, "p95": p95})
+  PY
+  ```
 
 ## What are the two Phase 3 “paper reproduction” goals (sanity-check vs sim-vs-real gap), and what counts as “correct”?
 > Last revised at: `2026-01-05T15:27:56Z` | Last revised base commit: `7c8877d53389d73486286317d71bd055e335d884`

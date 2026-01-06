@@ -1,0 +1,110 @@
+[
+  {
+    "model": "Llama-7b",
+    "dataset": "Chat1M",
+    "sku": "A100",
+    "batch_size": 64,
+    "scheduler": "Sarathi-Serve",
+    "tp_dim": 1,
+    "pp_dim": 1
+  },
+  {
+    "model": "Llama-7b",
+    "dataset": "Arxiv",
+    "sku": "A100",
+    "batch_size": 64,
+    "scheduler": "Sarathi-Serve",
+    "tp_dim": 1,
+    "pp_dim": 1
+  },
+  {
+    "model": "Llama-7b",
+    "dataset": "BWB",
+    "sku": "A100",
+    "batch_size": 64,
+    "scheduler": "Sarathi-Serve",
+    "tp_dim": 1,
+    "pp_dim": 1
+  },
+  {
+    "model": "InternLM-20b",
+    "dataset": "Chat1M",
+    "sku": "A100",
+    "batch_size": 64,
+    "scheduler": "Sarathi-Serve",
+    "tp_dim": 1,
+    "pp_dim": 1
+  },
+  {
+    "model": "InternLM-20b",
+    "dataset": "Arxiv",
+    "sku": "A100",
+    "batch_size": 128,
+    "scheduler": "Sarathi-Serve",
+    "tp_dim": 2,
+    "pp_dim": 1
+  },
+  {
+    "model": "InternLM-20b",
+    "dataset": "BWB",
+    "sku": "A100",
+    "batch_size": 128,
+    "scheduler": "Sarathi-Serve",
+    "tp_dim": 2,
+    "pp_dim": 1
+  },
+  {
+    "model": "Llama-70b",
+    "dataset": "Chat1M",
+    "sku": "H100",
+    "batch_size": 256,
+    "scheduler": "Sarathi-Serve",
+    "tp_dim": 4,
+    "pp_dim": 1
+  },
+  {
+    "model": "Llama-70b",
+    "dataset": "Arxiv",
+    "sku": "A100",
+    "batch_size": 64,
+    "scheduler": "Sarathi-Serve",
+    "tp_dim": 4,
+    "pp_dim": 1
+  },
+  {
+    "model": "Llama-70b",
+    "dataset": "BWB",
+    "sku": "A100",
+    "batch_size": 64,
+    "scheduler": "Sarathi-Serve",
+    "tp_dim": 4,
+    "pp_dim": 1
+  },
+  {
+    "model": "Qwen-72B",
+    "dataset": "Chat1M",
+    "sku": "H100",
+    "batch_size": 256,
+    "scheduler": "vLLM",
+    "tp_dim": 4,
+    "pp_dim": 2
+  },
+  {
+    "model": "Qwen-72B",
+    "dataset": "Arxiv",
+    "sku": "H100",
+    "batch_size": 256,
+    "scheduler": "vLLM",
+    "tp_dim": 4,
+    "pp_dim": 2
+  },
+  {
+    "model": "Qwen-72B",
+    "dataset": "BWB",
+    "sku": "H100",
+    "batch_size": 256,
+    "scheduler": "vLLM",
+    "tp_dim": 4,
+    "pp_dim": 2
+  }
+]
