@@ -24,8 +24,76 @@ This Q&A doc captures implementation questions and answers for Phase 3 (US1: end
 - `src/gpu_simulate_test/paper_fidelity/report.py`
 - `tests/manual/test_paper_fidelity_repro_smoke.py`
 
-## [question title]
-> Last revised at: `2026-01-05T09:58:46Z` | Last revised base commit: `d75f15a735708432a64b6e0047f3502111ec5303`
+## Which paper metric(s) can we currently reproduce with `paper-fidelity repro`?
+> Last revised at: `2026-01-05T13:57:23Z` | Last revised base commit: `7c8877d53389d73486286317d71bd055e335d884`
 
-- [answer/code]
+- We currently reproduce the Vidur paper’s **fidelity** metrics for the “static” and “dynamic” traces:
+  - **Static fidelity metric**: `request_execution_plus_preemption_time_normalized` (paper: static trace figure).
+  - **Dynamic fidelity metric**: `request_e2e_time_normalized` at the **85% capacity** operating point (paper: dynamic trace figure).
+- Paper references: `extern/tracked/vidur/paper/tex/figures-tex/fig-fidelity-static-trace.tex` and `extern/tracked/vidur/paper/tex/figures-tex/fig-fidelity-dynamic-trace.tex`.
+- Local SVG copies of the corresponding paper figures are under `context/tasks/working/002-reproduce-vidur-paper-fidelity/figures/` (converted from `extern/tracked/vidur/paper/tex/graphs/*.pdf` via Poppler `pdftocairo -svg`):
+  - Static P50: [static_fidelity_v12_request_execution_plus_preemption_time_normalized_p50.svg](figures/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p50.svg)
+  - Static P95: [static_fidelity_v12_request_execution_plus_preemption_time_normalized_p95.svg](figures/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p95.svg)
+  - Dynamic @85% capacity P50: [dynamic_fidelity_v8_request_e2e_time_normalized_85_p50.svg](figures/dynamic_fidelity_v8_request_e2e_time_normalized_85_p50.svg)
+  - Dynamic @85% capacity P95: [dynamic_fidelity_v8_request_e2e_time_normalized_85_p95.svg](figures/dynamic_fidelity_v8_request_e2e_time_normalized_85_p95.svg)
 
+Static fidelity (normalized execution-plus-preemption time), P50:
+
+![Static fidelity P50 (paper)](figures/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p50.svg)
+
+Static fidelity (normalized execution-plus-preemption time), P95:
+
+![Static fidelity P95 (paper)](figures/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p95.svg)
+
+Dynamic fidelity @85% capacity (normalized end-to-end latency), P50:
+
+![Dynamic fidelity @85% capacity P50 (paper)](figures/dynamic_fidelity_v8_request_e2e_time_normalized_85_p50.svg)
+
+Dynamic fidelity @85% capacity (normalized end-to-end latency), P95:
+
+![Dynamic fidelity @85% capacity P95 (paper)](figures/dynamic_fidelity_v8_request_e2e_time_normalized_85_p95.svg)
+
+- For both metrics, we compute **P50/P95** and report **percent error** `abs(sim - real) / real` in `results/reports/<date>/paper_fidelity/<scenario>/summary.md` (`src/gpu_simulate_test/paper_fidelity/report.py`).
+- Dynamic “85% capacity” is derived via capacity search using **P99 scheduling delay** (`request_scheduling_delay`) against the configured threshold (default 5s), producing `tmp/paper_fidelity/runs/<scenario>/capacity/capacity.json` (`src/gpu_simulate_test/paper_fidelity/capacity.py`).
+- The repro workflow always scores both normalized metrics (see the `metrics = [...]` list in `src/gpu_simulate_test/cli/paper_fidelity.py`), but these two correspond to the paper’s fidelity plots.
+
+## What are the two Phase 3 “paper reproduction” goals (sanity-check vs sim-vs-real gap), and what counts as “correct”?
+> Last revised at: `2026-01-05T15:27:56Z` | Last revised base commit: `7c8877d53389d73486286317d71bd055e335d884`
+
+- In practice, we treat Phase 3 reproduction as two related but different tasks:
+  - **Sanity-check reproduction**: run with **paper-provided artifacts** (profiling bundle + trace inputs) to confirm the pipeline runs end-to-end and Vidur produces reasonable simulator-side metrics.
+  - **Sim-vs-real gap reproduction**: **microbenchmark/profile on this host**, run Vidur with that profiling bundle, and compare Vidur vs Sarathi “real” so the error band is meaningful on this machine.
+- “Correctly reproduced” depends on which task you are doing:
+  - For the **sanity check**, correctness is: runs complete; artifacts are produced; Vidur’s sim `request_metrics.csv` is stable/sensible and aligns with the paper’s simulator-side expectations; we do **not** treat `% error` vs Sarathi on this host as a pass/fail signal.
+  - For the **gap reproduction**, correctness is: sim and real are both driven by host-matched profiling/stack; the resulting `% error` is in a sensible ballpark and trends like the paper (remaining drift usually indicates stack differences or missing CPU-overhead modeling).
+- `paper-fidelity repro` always executes **trace → sim (Vidur) → real (Sarathi) → score/report**; the difference between the two tasks is which profiling bundle you point Vidur at and how you interpret the reported `% error` (`src/gpu_simulate_test/cli/paper_fidelity.py`).
+- Dynamic runs follow the paper’s operating point definition: evaluate at **85% of capacity**, where capacity is discovered on the same host via P99 scheduling delay (`src/gpu_simulate_test/paper_fidelity/capacity.py`).
+
+## How do I run the Phase 3 “sanity-check reproduction” (paper artifacts), and what should I verify?
+> Last revised at: `2026-01-05T15:27:56Z` | Last revised base commit: `7c8877d53389d73486286317d71bd055e335d884`
+
+- Run a baseline scenario with the default (paper-provided) profiling bundle:
+  - `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static`
+  - `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload dynamic`
+- Confirm Vidur is using the paper-provided profiling root from the scenario config (default: `scenario.vidur.profiling_root=${paths.repo_root}/extern/tracked/vidur` in `configs/paper_fidelity/scenario/llama2_7b_arxiv.yaml`).
+- Verify the expected artifacts exist and have sensible values:
+  - Trace: `tmp/paper_fidelity/traces/<scenario>/trace.csv`
+  - Sim metrics (Vidur): `tmp/paper_fidelity/runs/<scenario>/sim/request_metrics.csv`
+  - Real metrics (Sarathi): `tmp/paper_fidelity/runs/<scenario>/real/request_metrics.csv`
+  - Report: `results/reports/<date>/paper_fidelity/<scenario>/summary.md`
+  - Dynamic-only: `tmp/paper_fidelity/runs/<scenario>/capacity/capacity.json`
+- Interpretation for the sanity check: focus on “pipeline runs + sim metrics are reasonable/paper-aligned”; treat sim-vs-real `% error` as informational only unless you have host-matched profiling.
+- Workspace hygiene: Vidur cache is written under `tmp/paper_fidelity/runs/<scenario>/sim/vidur-cache/` (no top-level `cache/`) (`src/gpu_simulate_test/vidur_ext/sim_runner.py`).
+
+## How do I run the Phase 3 “sim-vs-real gap reproduction” (host microbenchmarking), and what artifacts do I need?
+> Last revised at: `2026-01-05T15:27:56Z` | Last revised base commit: `7c8877d53389d73486286317d71bd055e335d884`
+
+- Generate a host-specific profiling bundle (Vidur’s profiling scripts use Sarathi modules and require a working GPU stack; see `extern/tracked/vidur/docs/profiling.md`):
+  - `pixi run python extern/tracked/vidur/vidur/profiling/mlp/main.py --models meta-llama/Llama-2-7b-hf --num_gpus 1 --num_tensor_parallel_workers 1 --output_dir tmp/paper_fidelity/profiling_outputs`
+  - `pixi run python extern/tracked/vidur/vidur/profiling/attention/main.py --models meta-llama/Llama-2-7b-hf --num_gpus 1 --num_tensor_parallel_workers 1 --output_dir tmp/paper_fidelity/profiling_outputs`
+- Build a profiling root that matches Vidur’s expected layout (minimum for TP=1/PP=1 is `mlp.csv` + `attention.csv` under `data/profiling/compute/<device>/<model_id>/`); point `scenario.vidur.profiling_root` at that directory (`src/gpu_simulate_test/vidur_ext/profiling_root.py`).
+- Run Phase 3 with the host profiling root:
+  - `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static scenario.vidur.profiling_root=tmp/paper_fidelity/profiling_root`
+  - `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload dynamic scenario.vidur.profiling_root=tmp/paper_fidelity/profiling_root`
+- Now the report’s sim-vs-real `% error` is meaningful on this host (both sim and real share the same serving stack); compare it to the paper’s reported error band/trends rather than expecting exact equality.
+- Caveat: current simulation runs with `skip_cpu_overhead_modeling=True` (`src/gpu_simulate_test/vidur_ext/sim_runner.py`), so some drift (especially for smaller models) may remain even after host profiling.
