@@ -165,6 +165,28 @@ Use this file (`tasks.md`) as the **authoritative checklist**; use the guides to
 
 ---
 
+## Phase 9: Host-calibrated gap reproduction (Host profiling) (Priority: P2)
+
+**Goal**: Support a second reproduction mode where Vidur simulation uses a profiling bundle generated on the current host, so sim-vs-real `% error` is meaningful on this machine.
+
+**Independent Test**:
+- Run `pixi run paper-fidelity profile --scenario llama2_7b_arxiv` and verify a Vidur-compatible profiling root is produced under `<WORKSPACE_ROOT>/tmp/paper_fidelity/profiling_roots/.../data/profiling/...`.
+- Run `paper-fidelity repro` with `scenario.vidur.profiling_root=<host profiling root>` and verify the report includes a `## Profiling` section indicating `mode=host`.
+
+### Validation (REQUIRED)
+
+- [X] T080 [P] Manual smoke run in `<WORKSPACE_ROOT>/tests/manual/test_paper_fidelity_profile_smoke.py` (GPU required; bounded via `profiling.max_tokens=<N>`)
+- [X] T081 [P] Unit test for profiling-root validation in `<WORKSPACE_ROOT>/tests/unit/test_paper_fidelity_profiling_root.py`
+
+### Implementation
+
+- [X] T082 Add Hydra config `<WORKSPACE_ROOT>/configs/paper_fidelity/profile.yaml` and `paper-fidelity profile` subcommand in `<WORKSPACE_ROOT>/src/gpu_simulate_test/cli/paper_fidelity.py`
+- [X] T083 Extend `<WORKSPACE_ROOT>/src/gpu_simulate_test/paper_fidelity/paths.py` with `profiling_outputs_dir(...)` and `profiling_root_dir(...)`
+- [X] T084 Implement host profiling orchestration in `<WORKSPACE_ROOT>/src/gpu_simulate_test/paper_fidelity/profiling.py` (writes profiling root + `profiling_meta.json` under `<WORKSPACE_ROOT>/tmp/paper_fidelity/`)
+- [X] T085 Extend `<WORKSPACE_ROOT>/src/gpu_simulate_test/vidur_ext/profile_runner.py` to accept an explicit staging directory and scenario-driven TP/max_tokens inputs
+- [X] T086 Record profiling provenance and interpretation mode (`paper|host|custom`) in the report and metadata (`<WORKSPACE_ROOT>/src/gpu_simulate_test/paper_fidelity/report.py`, `<WORKSPACE_ROOT>/src/gpu_simulate_test/cli/paper_fidelity.py`)
+- [X] T087 Document host profiling (“gap reproduction”) workflow in `<WORKSPACE_ROOT>/specs/002-reproduce-vidur-paper-fidelity/quickstart.md`
+
 ## Dependencies & Execution Order
 
 - **Phase 1–2** block everything else: standard schemas, configs, and artifact paths must exist first.

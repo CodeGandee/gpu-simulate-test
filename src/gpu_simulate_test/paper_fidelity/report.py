@@ -56,7 +56,6 @@ def write_summary_md(*, inputs: ReportInputs, results: list[ScoreResult], meta: 
     tables_dir = inputs.out_dir / "tables"
     tables_dir.mkdir(parents=True, exist_ok=True)
 
-    # Persist machine-readable metadata for provenance.
     write_json(inputs.out_dir / "run_meta.json", meta)
 
     lines: list[str] = []
@@ -66,6 +65,21 @@ def write_summary_md(*, inputs: ReportInputs, results: list[ScoreResult], meta: 
     lines.append(f"- sim: `{inputs.sim_csv}`")
     lines.append(f"- real: `{inputs.real_csv}`")
     lines.append("")
+
+    profiling = meta.get("profiling")
+    if isinstance(profiling, dict):
+        root = profiling.get("root")
+        mode = profiling.get("mode")
+        interpretation = profiling.get("interpretation")
+
+        lines.append("## Profiling")
+        if root:
+            lines.append(f"- root: `{root}`")
+        if mode:
+            lines.append(f"- mode: `{mode}`")
+        if interpretation:
+            lines.append(f"- interpretation: {interpretation}")
+        lines.append("")
 
     lines.append("## Scores")
     lines.append("| Metric | Percentile | Sim | Real | Percent error | Verdict |")
@@ -86,4 +100,3 @@ def write_summary_md(*, inputs: ReportInputs, results: list[ScoreResult], meta: 
 
     summary_md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return summary_md
-

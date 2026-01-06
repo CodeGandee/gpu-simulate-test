@@ -7,6 +7,8 @@ repro
     End-to-end reproduction (trace → sim → capacity/real → score → report).
 trace
     Generate/validate a canonical trace for a scenario/workload.
+profile
+    Generate a host profiling root for Vidur simulation.
 score
     Score existing sim vs real metrics and write a report.
 """
@@ -28,6 +30,7 @@ from gpu_simulate_test.config import register_omegaconf_resolvers
 from gpu_simulate_test.io import build_env_snapshot, get_git_info, stable_id, utcnow_iso, write_json
 from gpu_simulate_test.paper_fidelity.capacity import CapacityCriterion, discover_capacity, write_capacity_json
 from gpu_simulate_test.paper_fidelity.paths import PaperFidelityPaths
+from gpu_simulate_test.paper_fidelity.profiling import run_paper_fidelity_profiling
 from gpu_simulate_test.paper_fidelity.report import ReportInputs, write_summary_md
 from gpu_simulate_test.paper_fidelity.scoring import ScoreThresholds, load_metrics_csv, score_metric
 from gpu_simulate_test.paper_fidelity.traces import (
@@ -65,6 +68,9 @@ def main(argv: list[str] | None = None) -> None:
     trace.add_argument("--scenario", required=True)
     trace.add_argument("--workload", choices=["static", "dynamic"], required=True)
 
+    profile = sub.add_parser("profile")
+    profile.add_argument("--scenario", required=True)
+
     score = sub.add_parser("score")
     score.add_argument("--sim", required=True)
     score.add_argument("--real", required=True)
@@ -72,13 +78,15 @@ def main(argv: list[str] | None = None) -> None:
     args, hydra_overrides = parser.parse_known_args(argv)
     prog = sys.argv[0]
 
-    # Translate into Hydra overrides and invoke the Hydra app for the chosen command.
     if args.cmd == "repro":
         sys.argv = [prog, f"scenario={args.scenario}", f"workload={args.workload}", *hydra_overrides]
         _repro_main()
     elif args.cmd == "trace":
         sys.argv = [prog, f"scenario={args.scenario}", f"workload={args.workload}", *hydra_overrides]
         _trace_main()
+    elif args.cmd == "profile":
+        sys.argv = [prog, f"scenario={args.scenario}", *hydra_overrides]
+        _profile_main()
     elif args.cmd == "score":
         sim_csv = str(Path(args.sim).expanduser())
         real_csv = str(Path(args.real).expanduser())
@@ -172,7 +180,14 @@ def _run_trace(cfg: DictConfig, *, repo_root: Path) -> Path:
     return out_dir
 
 
-def _run_score_only(cfg: DictConfig, *, sim_csv: Path, real_csv: Path, repo_root: Path) -> Path:
+def _run_score_only(
+    cfg: DictConfig,
+    *,
+    sim_csv: Path,
+    real_csv: Path,
+    repo_root: Path,
+    profiling: dict[str, object] | None = None,
+) -> Path:
     sim_csv = sim_csv.expanduser()
     real_csv = real_csv.expanduser()
 
@@ -218,7 +233,7 @@ def _run_score_only(cfg: DictConfig, *, sim_csv: Path, real_csv: Path, repo_root
     ]
 
     git = get_git_info(repo_root=repo_root)
-    meta = {
+    meta: dict = {
         "schema_version": "v1",
         "run_type": "score",
         "run_id": stable_id([str(sim_csv), str(real_csv)], prefix="pf_score", length=12),
@@ -235,6 +250,8 @@ def _run_score_only(cfg: DictConfig, *, sim_csv: Path, real_csv: Path, repo_root
             "report_dir": str(report_dir.resolve()),
         },
     }
+    if profiling is not None:
+        meta["profiling"] = profiling
 
     write_summary_md(
         inputs=ReportInputs(scenario_name=scenario_name, sim_csv=sim_csv, real_csv=real_csv, out_dir=report_dir),
@@ -250,6 +267,23 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
     pf_paths = PaperFidelityPaths(repo_root=repo_root)
 
     started_at = utcnow_iso()
+    profiling_root_raw = Path(cfg.scenario.vidur.profiling_root).expanduser()
+    if profiling_root_raw.is_absolute():
+        profiling_root_resolved = profiling_root_raw.resolve()
+    else:
+        profiling_root_resolved = (repo_root / profiling_root_raw).resolve()
+
+    paper_profiling_root = (repo_root / "extern" / "tracked" / "vidur").resolve()
+    host_profiling_root = (repo_root / "tmp" / "paper_fidelity" / "profiling_roots").resolve()
+    if profiling_root_resolved.is_relative_to(paper_profiling_root):
+        profiling_mode = "paper"
+        profiling_interpretation = "sanity-check reproduction (paper-provided profiling bundle)"
+    elif profiling_root_resolved.is_relative_to(host_profiling_root):
+        profiling_mode = "host"
+        profiling_interpretation = "gap reproduction (profiled/microbenchmarked on this host)"
+    else:
+        profiling_mode = "custom"
+        profiling_interpretation = "custom profiling root (interpret % error accordingly)"
 
     if workload_mode == "dynamic":
         capacity_cfg = cfg.scenario.capacity_search
@@ -269,7 +303,6 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
         if trace_kind == "vidur_processed_lengths_csv":
             base = processed_lengths_csv_to_trace(trace_source_path, spec=trace_spec)
         else:
-            # For dynamic capacity discovery, require a token-length source.
             raise ValueError(f"capacity discovery requires vidur_processed_lengths_csv (got {trace_kind})")
 
         criterion = CapacityCriterion(
@@ -321,7 +354,6 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
             },
         )
 
-        # Generate final dynamic trace at the operating point.
         trace_dir = pf_paths.trace_dir(scenario_name)
         trace_dir.mkdir(parents=True, exist_ok=True)
         final_trace = add_poisson_arrivals(base, qps=float(capacity.qps_85), seed=int(cfg.workload.seed))
@@ -357,11 +389,13 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
         "env": build_env_snapshot(),
         "params": OmegaConf.to_container(cfg, resolve=True),
     }
+    skip_val = OmegaConf.select(cfg, "scenario.vidur.skip_cpu_overhead_modeling")
+    skip_cpu_overhead_modeling = bool(skip_val) if skip_val is not None else True
     run_vidur_paper_fidelity_sim(
         VidurPaperFidelitySimInputs(
             scenario_name=scenario_name,
             trace_csv=trace_csv,
-            profiling_root=Path(cfg.scenario.vidur.profiling_root).expanduser(),
+            profiling_root=profiling_root_resolved,
             model_id=str(cfg.scenario.model.model_id),
             device=str(cfg.scenario.vidur.device),
             network_device=str(cfg.scenario.vidur.network_device),
@@ -369,6 +403,7 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
             num_pipeline_stages=int(cfg.scenario.vidur.num_pipeline_stages),
             seed=int(cfg.scenario.vidur.seed),
             max_tokens=int(cfg.scenario.trace_source.max_tokens),
+            skip_cpu_overhead_modeling=skip_cpu_overhead_modeling,
         ),
         out_dir=sim_dir,
         run_meta=sim_run_meta,
@@ -396,8 +431,17 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
         sim_csv=sim_dir / "request_metrics.csv",
         real_csv=real_dir / "request_metrics.csv",
         repo_root=repo_root,
+        profiling={
+            "root": str(profiling_root_resolved),
+            "mode": profiling_mode,
+            "interpretation": profiling_interpretation,
+        },
     )
     return report_dir
+
+
+def _run_profile(cfg: DictConfig, *, repo_root: Path) -> Path:
+    return run_paper_fidelity_profiling(cfg, repo_root=repo_root)
 
 
 @hydra.main(
@@ -419,6 +463,17 @@ def _repro_main(cfg: DictConfig) -> None:
 def _trace_main(cfg: DictConfig) -> None:
     """Hydra main for `paper-fidelity trace` (see `configs/paper_fidelity/trace.yaml`)."""
     out_dir = _run_trace(cfg, repo_root=Path(cfg.paths.repo_root))
+    print(str(out_dir))
+
+
+@hydra.main(
+    config_path="../../../configs/paper_fidelity",
+    config_name="profile",
+    version_base=None,
+)
+def _profile_main(cfg: DictConfig) -> None:
+    """Hydra main for `paper-fidelity profile` (see `configs/paper_fidelity/profile.yaml`)."""
+    out_dir = _run_profile(cfg, repo_root=Path(cfg.paths.repo_root))
     print(str(out_dir))
 
 

@@ -107,13 +107,51 @@ sequenceDiagram
 
 ## 4. TODOs (Implementation Steps)
 
-- [ ] **Define config + CLI surface** Add `paper-fidelity profile --scenario <name>` with Hydra config `configs/paper_fidelity/profile.yaml` and documented outputs under `tmp/paper_fidelity/`.
-- [ ] **Add profiling path helpers** Extend `src/gpu_simulate_test/paper_fidelity/paths.py` with `profiling_outputs_dir(...)` and `profiling_root_dir(...)`.
-- [ ] **Implement profiling orchestration** Add `src/gpu_simulate_test/paper_fidelity/profiling.py` to build a host profiling root and write a provenance JSON.
-- [ ] **Wire CLI to orchestrator** Update `src/gpu_simulate_test/cli/paper_fidelity.py` to dispatch the new `profile` subcommand and print the profiling root path.
-- [ ] **Make profiling runner configurable** Update `src/gpu_simulate_test/vidur_ext/profile_runner.py` to accept scenario-driven parameters (model_id/device/network_device/tp/pp), and keep outputs deterministic and under `tmp/`.
-- [ ] **Expose CPU overhead toggle (optional)** Add `scenario.vidur.skip_cpu_overhead_modeling` (or similar) and plumb it into `src/gpu_simulate_test/vidur_ext/sim_runner.py`.
-- [ ] **Update reporting/provenance** Ensure `summary.md` and run metadata record the effective profiling root and profiling mode.
-- [ ] **Add unit tests** Create fixtures and unit tests for assembling a profiling root and for validating required files via `src/gpu_simulate_test/vidur_ext/profiling_root.py`.
-- [ ] **Add manual GPU smoke test** Provide a small, bounded profiling invocation (single model, constrained settings) under `tests/manual/`.
-- [ ] **Update specs docs** Extend `specs/002-reproduce-vidur-paper-fidelity/tasks.md` and `specs/002-reproduce-vidur-paper-fidelity/quickstart.md` with the new workflow and acceptance checks.
+Scope: implement a host-calibrated profiling workflow (“microbenchmark on this machine → run Vidur using that profiling root → compare to Sarathi real”) and document how to interpret results vs the existing “paper artifacts” sanity check.
+
+Planned outputs:
+- `paper-fidelity profile` that writes a host profiling root under `tmp/paper_fidelity/` and prints its path
+- Host profiling root layout compatible with Vidur (`data/profiling/...`) + provenance JSON
+- `paper-fidelity repro` runs using `scenario.vidur.profiling_root=<host-root>` without manual copying
+- Report/metadata records profiling root + interpretation mode
+- Tests: profiling-root assembly unit tests + a bounded GPU smoke test
+- Docs: update `specs/002-reproduce-vidur-paper-fidelity/{tasks,quickstart}.md` to cover gap reproduction
+
+Milestones (subtasks):
+
+### 4.1 Profile CLI + config scaffold
+
+Goal: add a `paper-fidelity profile` entrypoint (Hydra config + CLI wiring) without changing existing `repro/trace/score` behavior.
+
+- Subtask spec: `context/tasks/working/002-reproduce-vidur-paper-fidelity/subtasks-sim-vs-real-gap-reproduction/subtask-004-101-profile-cli-config.md`
+
+### 4.2 Profiling artifact paths and layouts
+
+Goal: define stable, repo-consistent paths for profiling outputs and host profiling roots under `tmp/paper_fidelity/`.
+
+- Subtask spec: `context/tasks/working/002-reproduce-vidur-paper-fidelity/subtasks-sim-vs-real-gap-reproduction/subtask-004-102-profiling-paths.md`
+
+### 4.3 Host profiling orchestration
+
+Goal: generate a host profiling root by running Vidur profiling entrypoints (MLP + attention) and staging required CSVs into `data/profiling/...`.
+
+- Subtask spec: `context/tasks/working/002-reproduce-vidur-paper-fidelity/subtasks-sim-vs-real-gap-reproduction/subtask-004-103-host-profiling-orchestration.md`
+
+### 4.4 Repro integration and interpretation
+
+Goal: make it easy to run `paper-fidelity repro` with a host profiling root, and ensure reports clearly record “paper vs host” profiling provenance.
+
+- Subtask spec: `context/tasks/working/002-reproduce-vidur-paper-fidelity/subtasks-sim-vs-real-gap-reproduction/subtask-004-104-repro-integration-reporting.md`
+
+### 4.5 Validation and docs
+
+Goal: add tests + smoke scripts for the host-profiling path and document how to run and interpret “gap reproduction”.
+
+- Subtask spec: `context/tasks/working/002-reproduce-vidur-paper-fidelity/subtasks-sim-vs-real-gap-reproduction/subtask-004-105-tests-and-docs.md`
+
+TODOs:
+- [X] Job-004-101 Complete subtask 4.1 (profile CLI + config scaffold)
+- [X] Job-004-102 Complete subtask 4.2 (profiling paths and layouts)
+- [X] Job-004-103 Complete subtask 4.3 (host profiling orchestration)
+- [X] Job-004-104 Complete subtask 4.4 (repro integration + reporting)
+- [X] Job-004-105 Complete subtask 4.5 (validation + docs)

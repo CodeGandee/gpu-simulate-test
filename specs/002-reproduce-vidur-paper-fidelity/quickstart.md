@@ -52,6 +52,27 @@ Expected artifacts:
 - Capacity (dynamic): `<WORKSPACE_ROOT>/tmp/paper_fidelity/runs/llama2_7b_arxiv/capacity/capacity.json`
 - Report: `<WORKSPACE_ROOT>/results/reports/<date>/paper_fidelity/llama2_7b_arxiv/summary.md`
 
+## Host-calibrated “gap reproduction” (optional)
+
+By default, scenarios use Vidur’s **paper-provided profiling bundle** (`extern/tracked/vidur`) for simulation. This is useful for a pipeline sanity check, but the sim-vs-real gap may drift on a different host stack.
+
+To make the sim-vs-real comparison meaningful on *this* host, first generate a **host profiling root**:
+
+- `pixi run paper-fidelity profile --scenario llama2_7b_arxiv`
+
+The command prints the profiling root path (under `<WORKSPACE_ROOT>/tmp/paper_fidelity/profiling_roots/...`). Then run repro while overriding the scenario’s profiling root:
+
+- `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static scenario.vidur.profiling_root=/abs/path/to/tmp/paper_fidelity/profiling_roots/...`
+- `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload dynamic scenario.vidur.profiling_root=/abs/path/to/tmp/paper_fidelity/profiling_roots/...`
+
+Additional artifacts:
+
+- Profiling outputs (large, intermediate): `<WORKSPACE_ROOT>/tmp/paper_fidelity/profiling_outputs/<scenario>/<run_id>/...`
+- Host profiling root: `<WORKSPACE_ROOT>/tmp/paper_fidelity/profiling_roots/<scenario>/<run_id>/data/profiling/...`
+- Profiling provenance: `<WORKSPACE_ROOT>/tmp/paper_fidelity/profiling_roots/<scenario>/<run_id>/profiling_meta.json`
+
+Reports include a `## Profiling` section indicating `mode=paper|host|custom` and how to interpret the reported `% error`.
+
 ## Scoring only
 
 If you already have metrics CSVs:

@@ -27,6 +27,10 @@ GPU note: PyTorch is pinned to a CUDA 12.8 build (`+cu128`). A working NVIDIA dr
 - Modules: keep simulator/workload integrations isolated (prefer new top-level packages under `src/`).
 - Files/dirs: use `snake_case` for Python; avoid committing large generated artifacts (use `tmp/`).
 
+## Documentation & Diagrams
+
+- If you add Mermaid `sequenceDiagram` figures, follow `magic-context/instructions/mermaid-seq-styling.md`.
+
 ## Testing Guidelines
 
 No test suite is committed yet. If you add tests:

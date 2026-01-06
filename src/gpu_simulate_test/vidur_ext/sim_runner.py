@@ -1,3 +1,10 @@
+"""
+Vidur simulation wrappers for paper-fidelity workflows.
+
+This module runs the Vidur simulator and converts its emitted metrics into the schemas used by
+this repository's paper-fidelity scoring pipeline.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -10,6 +17,18 @@ from gpu_simulate_test.vidur_ext.profiling_root import ProfilingRootLayout, vali
 
 
 def _default_vidur_cache_dir(*, out_dir: Path) -> Path:
+    """Return the default Vidur cache directory under a run output directory.
+
+    Parameters
+    ----------
+    out_dir
+        Simulation output directory.
+
+    Returns
+    -------
+    pathlib.Path
+        Cache directory path (`<out_dir>/vidur-cache`), created if missing.
+    """
     cache_dir = out_dir / "vidur-cache"
     cache_dir.mkdir(parents=True, exist_ok=True)
     return cache_dir
@@ -17,6 +36,8 @@ def _default_vidur_cache_dir(*, out_dir: Path) -> Path:
 
 @dataclass(frozen=True)
 class VidurSimInputs:
+    """Legacy inputs for `run_vidur_sim` (split-trace layout)."""
+
     workload_dir: Path
     profiling_root: Path
     model_id: str
@@ -260,6 +281,21 @@ def convert_vidur_request_metrics_to_paper_fidelity(raw_request_metrics_csv: Pat
 
     The primary transformation is renaming `Request Id` → `request_id`, while preserving
     Vidur's normalized metric columns without recomputation.
+
+    Parameters
+    ----------
+    raw_request_metrics_csv
+        Path to Vidur's raw `request_metrics.csv`.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame containing at least `request_id` and the required normalized metric columns.
+
+    Raises
+    ------
+    ValueError
+        If the input CSV does not match the expected Vidur schema.
     """
     raw = pd.read_csv(raw_request_metrics_csv)
     if "Request Id" not in raw.columns:
@@ -280,6 +316,8 @@ def convert_vidur_request_metrics_to_paper_fidelity(raw_request_metrics_csv: Pat
 
 @dataclass(frozen=True)
 class VidurPaperFidelitySimInputs:
+    """Inputs for running Vidur in the paper-fidelity pipeline."""
+
     scenario_name: str
     trace_csv: Path
     profiling_root: Path
@@ -290,6 +328,7 @@ class VidurPaperFidelitySimInputs:
     num_pipeline_stages: int = 1
     seed: int = 42
     max_tokens: int = 4096
+    skip_cpu_overhead_modeling: bool = True
 
 
 def run_vidur_paper_fidelity_sim(
@@ -298,7 +337,23 @@ def run_vidur_paper_fidelity_sim(
     out_dir: Path,
     run_meta: dict,
 ) -> Path:
-    """Run Vidur and write a paper-fidelity `request_metrics.csv` preserving normalized columns."""
+    """Run Vidur and write a paper-fidelity `request_metrics.csv`.
+
+    Parameters
+    ----------
+    inputs
+        Simulation inputs (scenario name, trace path, profiling root, and model/hardware settings).
+    out_dir
+        Output directory under which Vidur's raw metrics and the standardized paper-fidelity CSVs
+        are written.
+    run_meta
+        Metadata dict to persist as `run_meta.json` alongside the outputs.
+
+    Returns
+    -------
+    pathlib.Path
+        Path to the written `request_metrics.csv` in paper-fidelity schema.
+    """
     layout = ProfilingRootLayout(
         profiling_root=inputs.profiling_root,
         device=inputs.device,
@@ -306,7 +361,7 @@ def run_vidur_paper_fidelity_sim(
         network_device=inputs.network_device,
         tensor_parallel_size=inputs.tensor_parallel_size,
         num_pipeline_stages=inputs.num_pipeline_stages,
-        skip_cpu_overhead_modeling=True,
+        skip_cpu_overhead_modeling=bool(inputs.skip_cpu_overhead_modeling),
     )
     validate_profiling_root(layout)
 
@@ -344,7 +399,7 @@ def run_vidur_paper_fidelity_sim(
         all_reduce_input_file=str(profiling_base / "network/{NETWORK_DEVICE}/all_reduce.csv"),
         send_recv_input_file=str(profiling_base / "network/{NETWORK_DEVICE}/send_recv.csv"),
         cpu_overhead_input_file=str(profiling_base / "cpu_overhead/{NETWORK_DEVICE}/{MODEL}/cpu_overheads.csv"),
-        skip_cpu_overhead_modeling=True,
+        skip_cpu_overhead_modeling=bool(inputs.skip_cpu_overhead_modeling),
     )
 
     metrics_cfg = MetricsConfig(

@@ -43,6 +43,17 @@ class PaperFidelityPaths:
     def reports_dir(self, *, date: str, scenario_name: str) -> Path:
         return self.results_root / "reports" / date / "paper_fidelity" / scenario_name
 
+    def profiling_outputs_dir(self, scenario_name: str, run_id: str) -> Path:
+        """Large intermediate profiling outputs (timestamped by upstream profilers)."""
+        return self.tmp_root / "profiling_outputs" / scenario_name / run_id
+
+    def profiling_root_dir(self, scenario_name: str, run_id: str) -> Path:
+        """Vidur-compatible profiling root (`data/profiling/...`) for this host."""
+        return self.tmp_root / "profiling_roots" / scenario_name / run_id
+
+    def profiling_meta_path(self, scenario_name: str, run_id: str) -> Path:
+        return self.profiling_root_dir(scenario_name, run_id) / "profiling_meta.json"
+
 
 def build_run_meta(
     *,
@@ -76,4 +87,3 @@ def build_run_meta(
     if extra is not None:
         meta.update(dict(extra))
     return meta
-

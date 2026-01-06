@@ -1,0 +1,20 @@
+defaults:
+  - scenario: llama2_7b_arxiv
+  - _self_
+
+paths:
+  repo_root: ${hydra:runtime.cwd}
+  tmp_root: ${paths.repo_root}/tmp
+  results_root: ${paths.repo_root}/results
+
+profiling:
+  # Conservative defaults for a bounded local profiling run.
+  num_gpus: 1
+  max_tokens: ${scenario.trace_source.max_tokens}
+  tensor_parallel_size: ${scenario.vidur.tensor_parallel_size}
+
+hydra:
+  run:
+    dir: ${paths.tmp_root}/paper_fidelity/runs/${scenario.name}/profile
+  job:
+    chdir: true

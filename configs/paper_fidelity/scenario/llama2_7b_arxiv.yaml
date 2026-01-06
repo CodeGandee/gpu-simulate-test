@@ -18,6 +18,7 @@ vidur:
   tensor_parallel_size: 1
   num_pipeline_stages: 1
   seed: 42
+  skip_cpu_overhead_modeling: true
 
 real:
   backend: sarathi
