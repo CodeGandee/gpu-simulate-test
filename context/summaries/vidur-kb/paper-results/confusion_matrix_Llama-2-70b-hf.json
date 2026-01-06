@@ -1,0 +1,39 @@
+{
+  "col_labels": [
+    "ArxivSum",
+    "BWB-4K",
+    "Chat1M"
+  ],
+  "extraction": {
+    "method": "pdftotext_bbox"
+  },
+  "figure_type": "matrix",
+  "metric": "cost_ratio",
+  "output_json": "context/summaries/vidur-kb/paper-results/confusion_matrix_Llama-2-70b-hf.json",
+  "pdf_bytes": 15737,
+  "pdf_sha256": "3559741a4cabacd20d3160161e284ce0b0ac355623b4e90fcce9557c37eb8185",
+  "row_labels": [
+    "ArxivSum",
+    "BWB-4K",
+    "Chat1M"
+  ],
+  "source_pdf": "extern/tracked/vidur/paper/tex/graphs/confusion_matrix_Llama-2-70b-hf.pdf",
+  "unit": "ratio",
+  "values": [
+    [
+      1.0,
+      1.7,
+      2.0
+    ],
+    [
+      1.4,
+      1.0,
+      1.5
+    ],
+    [
+      1.3,
+      1.4,
+      1.0
+    ]
+  ]
+}

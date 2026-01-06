@@ -1,0 +1,32 @@
+{
+  "extraction": {
+    "method": "pdftotext"
+  },
+  "figure_type": "diagram_text",
+  "model_spec": {
+    "Attention Heads": "32",
+    "Hidden Dim": "11008",
+    "KV Heads": "8",
+    "Model Dim": "4096",
+    "Number of Layers": "32"
+  },
+  "output_json": "context/summaries/vidur-kb/paper-results/vidur-hld.json",
+  "pdf_bytes": 51423,
+  "pdf_sha256": "ccb7b87a1806584aa9ad9d227b7ab5fb23326c67a65a9a514f30ac47bc1d32d4",
+  "simulation_report": {
+    "Mean KV Cache Util": "70%",
+    "Mean MBU": "36%",
+    "Mean MFU": "30%",
+    "Median Latency": "35ms",
+    "Median TBT": "20ms",
+    "Median TTFT": "12ms"
+  },
+  "simulation_spec": {
+    "GPU": "A100",
+    "Number of Replicas": "8",
+    "Scheduler": "Sarathi",
+    "Tensor Parallel Size": "4",
+    "Trace": "Chat-1M"
+  },
+  "source_pdf": "extern/tracked/vidur/paper/tex/graphs/vidur-hld.pdf"
+}

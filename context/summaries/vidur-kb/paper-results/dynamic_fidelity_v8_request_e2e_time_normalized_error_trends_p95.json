@@ -1,0 +1,405 @@
+{
+  "axis": {
+    "y_ticks_percent": [
+      0.0,
+      -5.0,
+      -10.0
+    ]
+  },
+  "extraction": {
+    "method": "pdftocairo_svg_line_digitize"
+  },
+  "figure_type": "line_multi_subplot",
+  "metric": "percent_error_normalized_latency",
+  "output_json": "context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_error_trends_p95.json",
+  "pdf_bytes": 27160,
+  "pdf_sha256": "e09107c978347e558a1be54b5a0bd377272220a7b70849e10144611c5432ae7a",
+  "rows": [
+    {
+      "load_frac_of_capacity": 0.75,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-7B (TP1)",
+      "trace": "Chat-1M",
+      "unit": "percent",
+      "value": -3.5600936701902635
+    },
+    {
+      "load_frac_of_capacity": 0.8,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-7B (TP1)",
+      "trace": "Chat-1M",
+      "unit": "percent",
+      "value": -2.5389954621468105
+    },
+    {
+      "load_frac_of_capacity": 0.85,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-7B (TP1)",
+      "trace": "Chat-1M",
+      "unit": "percent",
+      "value": -4.554142953331245
+    },
+    {
+      "load_frac_of_capacity": 0.95,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-7B (TP1)",
+      "trace": "Chat-1M",
+      "unit": "percent",
+      "value": -5.3448741375797555
+    },
+    {
+      "load_frac_of_capacity": 0.75,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-7B (TP1)",
+      "trace": "Arxiv-4K",
+      "unit": "percent",
+      "value": -9.384185351628695
+    },
+    {
+      "load_frac_of_capacity": 0.8,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-7B (TP1)",
+      "trace": "Arxiv-4K",
+      "unit": "percent",
+      "value": -8.04030296928445
+    },
+    {
+      "load_frac_of_capacity": 0.85,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-7B (TP1)",
+      "trace": "Arxiv-4K",
+      "unit": "percent",
+      "value": -7.300063096196403
+    },
+    {
+      "load_frac_of_capacity": 0.95,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-7B (TP1)",
+      "trace": "Arxiv-4K",
+      "unit": "percent",
+      "value": -12.653953623568754
+    },
+    {
+      "load_frac_of_capacity": 0.75,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-7B (TP1)",
+      "trace": "BWB-4K",
+      "unit": "percent",
+      "value": -6.098187655788478
+    },
+    {
+      "load_frac_of_capacity": 0.8,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-7B (TP1)",
+      "trace": "BWB-4K",
+      "unit": "percent",
+      "value": -6.4827337469104185
+    },
+    {
+      "load_frac_of_capacity": 0.85,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-7B (TP1)",
+      "trace": "BWB-4K",
+      "unit": "percent",
+      "value": -7.470020712627439
+    },
+    {
+      "load_frac_of_capacity": 0.95,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-7B (TP1)",
+      "trace": "BWB-4K",
+      "unit": "percent",
+      "value": -9.1362366243386
+    },
+    {
+      "load_frac_of_capacity": 0.75,
+      "metric": "percent_error_normalized_latency",
+      "model": "InternLM-20B (TP2)",
+      "trace": "Chat-1M",
+      "unit": "percent",
+      "value": -1.9790820615582394
+    },
+    {
+      "load_frac_of_capacity": 0.8,
+      "metric": "percent_error_normalized_latency",
+      "model": "InternLM-20B (TP2)",
+      "trace": "Chat-1M",
+      "unit": "percent",
+      "value": -2.5565772805730855
+    },
+    {
+      "load_frac_of_capacity": 0.85,
+      "metric": "percent_error_normalized_latency",
+      "model": "InternLM-20B (TP2)",
+      "trace": "Chat-1M",
+      "unit": "percent",
+      "value": -4.577585339589237
+    },
+    {
+      "load_frac_of_capacity": 0.95,
+      "metric": "percent_error_normalized_latency",
+      "model": "InternLM-20B (TP2)",
+      "trace": "Chat-1M",
+      "unit": "percent",
+      "value": -8.355423306431288
+    },
+    {
+      "load_frac_of_capacity": 0.75,
+      "metric": "percent_error_normalized_latency",
+      "model": "InternLM-20B (TP2)",
+      "trace": "Arxiv-4K",
+      "unit": "percent",
+      "value": -2.2599403965136453
+    },
+    {
+      "load_frac_of_capacity": 0.8,
+      "metric": "percent_error_normalized_latency",
+      "model": "InternLM-20B (TP2)",
+      "trace": "Arxiv-4K",
+      "unit": "percent",
+      "value": -3.646199607930524
+    },
+    {
+      "load_frac_of_capacity": 0.85,
+      "metric": "percent_error_normalized_latency",
+      "model": "InternLM-20B (TP2)",
+      "trace": "Arxiv-4K",
+      "unit": "percent",
+      "value": -2.2482192608502096
+    },
+    {
+      "load_frac_of_capacity": 0.95,
+      "metric": "percent_error_normalized_latency",
+      "model": "InternLM-20B (TP2)",
+      "trace": "Arxiv-4K",
+      "unit": "percent",
+      "value": -3.7769361740684078
+    },
+    {
+      "load_frac_of_capacity": 0.75,
+      "metric": "percent_error_normalized_latency",
+      "model": "InternLM-20B (TP2)",
+      "trace": "BWB-4K",
+      "unit": "percent",
+      "value": 0.15823652394899845
+    },
+    {
+      "load_frac_of_capacity": 0.8,
+      "metric": "percent_error_normalized_latency",
+      "model": "InternLM-20B (TP2)",
+      "trace": "BWB-4K",
+      "unit": "percent",
+      "value": -0.689748403815063
+    },
+    {
+      "load_frac_of_capacity": 0.85,
+      "metric": "percent_error_normalized_latency",
+      "model": "InternLM-20B (TP2)",
+      "trace": "BWB-4K",
+      "unit": "percent",
+      "value": -0.12307268580252728
+    },
+    {
+      "load_frac_of_capacity": 0.95,
+      "metric": "percent_error_normalized_latency",
+      "model": "InternLM-20B (TP2)",
+      "trace": "BWB-4K",
+      "unit": "percent",
+      "value": -1.2582272762187081
+    },
+    {
+      "load_frac_of_capacity": 0.75,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-70B (TP4)",
+      "trace": "Chat-1M",
+      "unit": "percent",
+      "value": -1.587323008078462
+    },
+    {
+      "load_frac_of_capacity": 0.8,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-70B (TP4)",
+      "trace": "Chat-1M",
+      "unit": "percent",
+      "value": -0.15868708252007568
+    },
+    {
+      "load_frac_of_capacity": 0.85,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-70B (TP4)",
+      "trace": "Chat-1M",
+      "unit": "percent",
+      "value": -1.8163375224161626
+    },
+    {
+      "load_frac_of_capacity": 0.95,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-70B (TP4)",
+      "trace": "Chat-1M",
+      "unit": "percent",
+      "value": 0.8696240878812107
+    },
+    {
+      "load_frac_of_capacity": 0.75,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-70B (TP4)",
+      "trace": "Arxiv-4K",
+      "unit": "percent",
+      "value": -0.6626993639814653
+    },
+    {
+      "load_frac_of_capacity": 0.8,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-70B (TP4)",
+      "trace": "Arxiv-4K",
+      "unit": "percent",
+      "value": -1.3290054247199317
+    },
+    {
+      "load_frac_of_capacity": 0.85,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-70B (TP4)",
+      "trace": "Arxiv-4K",
+      "unit": "percent",
+      "value": -1.299251595834101
+    },
+    {
+      "load_frac_of_capacity": 0.95,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-70B (TP4)",
+      "trace": "Arxiv-4K",
+      "unit": "percent",
+      "value": -0.7947884395765925
+    },
+    {
+      "load_frac_of_capacity": 0.75,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-70B (TP4)",
+      "trace": "BWB-4K",
+      "unit": "percent",
+      "value": 1.6684699840798003
+    },
+    {
+      "load_frac_of_capacity": 0.8,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-70B (TP4)",
+      "trace": "BWB-4K",
+      "unit": "percent",
+      "value": 1.446217787166062
+    },
+    {
+      "load_frac_of_capacity": 0.85,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-70B (TP4)",
+      "trace": "BWB-4K",
+      "unit": "percent",
+      "value": 1.2329818219323996
+    },
+    {
+      "load_frac_of_capacity": 0.95,
+      "metric": "percent_error_normalized_latency",
+      "model": "LLaMA2-70B (TP4)",
+      "trace": "BWB-4K",
+      "unit": "percent",
+      "value": 0.03606542962619397
+    },
+    {
+      "load_frac_of_capacity": 0.75,
+      "metric": "percent_error_normalized_latency",
+      "model": "Qwen-72B (TP4)",
+      "trace": "Chat-1M",
+      "unit": "percent",
+      "value": 1.549003793740353
+    },
+    {
+      "load_frac_of_capacity": 0.8,
+      "metric": "percent_error_normalized_latency",
+      "model": "Qwen-72B (TP4)",
+      "trace": "Chat-1M",
+      "unit": "percent",
+      "value": 1.2068345316910456
+    },
+    {
+      "load_frac_of_capacity": 0.85,
+      "metric": "percent_error_normalized_latency",
+      "model": "Qwen-72B (TP4)",
+      "trace": "Chat-1M",
+      "unit": "percent",
+      "value": 0.7226580978431709
+    },
+    {
+      "load_frac_of_capacity": 0.95,
+      "metric": "percent_error_normalized_latency",
+      "model": "Qwen-72B (TP4)",
+      "trace": "Chat-1M",
+      "unit": "percent",
+      "value": 1.549003793740353
+    },
+    {
+      "load_frac_of_capacity": 0.75,
+      "metric": "percent_error_normalized_latency",
+      "model": "Qwen-72B (TP4)",
+      "trace": "Arxiv-4K",
+      "unit": "percent",
+      "value": 0.4674962932641158
+    },
+    {
+      "load_frac_of_capacity": 0.8,
+      "metric": "percent_error_normalized_latency",
+      "model": "Qwen-72B (TP4)",
+      "trace": "Arxiv-4K",
+      "unit": "percent",
+      "value": -0.2199981245451026
+    },
+    {
+      "load_frac_of_capacity": 0.85,
+      "metric": "percent_error_normalized_latency",
+      "model": "Qwen-72B (TP4)",
+      "trace": "Arxiv-4K",
+      "unit": "percent",
+      "value": -1.181137800020772
+    },
+    {
+      "load_frac_of_capacity": 0.95,
+      "metric": "percent_error_normalized_latency",
+      "model": "Qwen-72B (TP4)",
+      "trace": "Arxiv-4K",
+      "unit": "percent",
+      "value": -0.7830673039131533
+    },
+    {
+      "load_frac_of_capacity": 0.75,
+      "metric": "percent_error_normalized_latency",
+      "model": "Qwen-72B (TP4)",
+      "trace": "BWB-4K",
+      "unit": "percent",
+      "value": -0.13479393639708714
+    },
+    {
+      "load_frac_of_capacity": 0.8,
+      "metric": "percent_error_normalized_latency",
+      "model": "Qwen-72B (TP4)",
+      "trace": "BWB-4K",
+      "unit": "percent",
+      "value": -0.1271299843120035
+    },
+    {
+      "load_frac_of_capacity": 0.85,
+      "metric": "percent_error_normalized_latency",
+      "model": "Qwen-72B (TP4)",
+      "trace": "BWB-4K",
+      "unit": "percent",
+      "value": -0.1271299843120035
+    },
+    {
+      "load_frac_of_capacity": 0.95,
+      "metric": "percent_error_normalized_latency",
+      "model": "Qwen-72B (TP4)",
+      "trace": "BWB-4K",
+      "unit": "percent",
+      "value": -0.7447478882811209
+    }
+  ],
+  "source_pdf": "extern/tracked/vidur/paper/tex/graphs/dynamic_fidelity_v8_request_e2e_time_normalized_error_trends_p95.pdf",
+  "unit": "percent"
+}

@@ -1,0 +1,212 @@
+{
+  "axis": {
+    "y_max": 0.1
+  },
+  "extraction": {
+    "method": "pdftocairo_svg_bar_digitize"
+  },
+  "figure_type": "bar_multi_subplot",
+  "load_frac_of_capacity": 0.75,
+  "metric": "request_e2e_time_normalized",
+  "output_json": "context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_75_p50.json",
+  "pdf_bytes": 25628,
+  "pdf_sha256": "ac6a4a20be79bbb1241e83152c52d8271d97faea995600f1cf26372f85e65a3b",
+  "percentile": "p50",
+  "rows": [
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "LLaMA2-7B (TP1)",
+      "series": "real",
+      "trace": "Chat-1M",
+      "unit": "s/token",
+      "value": 0.022565599661081112
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "LLaMA2-7B (TP1)",
+      "series": "real",
+      "trace": "Arxiv-4K",
+      "unit": "s/token",
+      "value": 0.02451998718146682
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "LLaMA2-7B (TP1)",
+      "series": "real",
+      "trace": "BWB-4K",
+      "unit": "s/token",
+      "value": 0.018316307334757097
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "LLaMA2-7B (TP1)",
+      "series": "predicted",
+      "trace": "Chat-1M",
+      "unit": "s/token",
+      "value": 0.021652788651793334
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "LLaMA2-7B (TP1)",
+      "series": "predicted",
+      "trace": "Arxiv-4K",
+      "unit": "s/token",
+      "value": 0.0227630413180864
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "LLaMA2-7B (TP1)",
+      "series": "predicted",
+      "trace": "BWB-4K",
+      "unit": "s/token",
+      "value": 0.017140241271154166
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "InternLM-20B (TP2)",
+      "series": "real",
+      "trace": "Chat-1M",
+      "unit": "s/token",
+      "value": 0.039788822818940556
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "InternLM-20B (TP2)",
+      "series": "real",
+      "trace": "Arxiv-4K",
+      "unit": "s/token",
+      "value": 0.04216670951158413
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "InternLM-20B (TP2)",
+      "series": "real",
+      "trace": "BWB-4K",
+      "unit": "s/token",
+      "value": 0.03377113945799774
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "InternLM-20B (TP2)",
+      "series": "predicted",
+      "trace": "Chat-1M",
+      "unit": "s/token",
+      "value": 0.04022090586962721
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "InternLM-20B (TP2)",
+      "series": "predicted",
+      "trace": "Arxiv-4K",
+      "unit": "s/token",
+      "value": 0.0424042121980751
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "InternLM-20B (TP2)",
+      "series": "predicted",
+      "trace": "BWB-4K",
+      "unit": "s/token",
+      "value": 0.03438349494375644
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "LLaMA2-70B (TP4)",
+      "series": "real",
+      "trace": "Chat-1M",
+      "unit": "s/token",
+      "value": 0.08018141797774886
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "LLaMA2-70B (TP4)",
+      "series": "real",
+      "trace": "Arxiv-4K",
+      "unit": "s/token",
+      "value": 0.0862906685689014
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "LLaMA2-70B (TP4)",
+      "series": "real",
+      "trace": "BWB-4K",
+      "unit": "s/token",
+      "value": 0.06819755599151162
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "LLaMA2-70B (TP4)",
+      "series": "predicted",
+      "trace": "Chat-1M",
+      "unit": "s/token",
+      "value": 0.08195839435587211
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "LLaMA2-70B (TP4)",
+      "series": "predicted",
+      "trace": "Arxiv-4K",
+      "unit": "s/token",
+      "value": 0.08695739301326944
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "LLaMA2-70B (TP4)",
+      "series": "predicted",
+      "trace": "BWB-4K",
+      "unit": "s/token",
+      "value": 0.06914184341931845
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "Qwen-72B (TP4)",
+      "series": "real",
+      "trace": "Chat-1M",
+      "unit": "s/token",
+      "value": 0.06089793140763248
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "Qwen-72B (TP4)",
+      "series": "real",
+      "trace": "Arxiv-4K",
+      "unit": "s/token",
+      "value": 0.053718488447134706
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "Qwen-72B (TP4)",
+      "series": "real",
+      "trace": "BWB-4K",
+      "unit": "s/token",
+      "value": 0.05055655697955133
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "Qwen-72B (TP4)",
+      "series": "predicted",
+      "trace": "Chat-1M",
+      "unit": "s/token",
+      "value": 0.06274072191560345
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "Qwen-72B (TP4)",
+      "series": "predicted",
+      "trace": "Arxiv-4K",
+      "unit": "s/token",
+      "value": 0.0553981742768912
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "model": "Qwen-72B (TP4)",
+      "series": "predicted",
+      "trace": "BWB-4K",
+      "unit": "s/token",
+      "value": 0.05081695147359473
+    }
+  ],
+  "source_pdf": "extern/tracked/vidur/paper/tex/graphs/dynamic_fidelity_v8_request_e2e_time_normalized_75_p50.pdf",
+  "unit": "s/token",
+  "workload": "dynamic"
+}

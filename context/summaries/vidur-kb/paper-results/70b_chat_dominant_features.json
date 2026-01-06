@@ -1,0 +1,11 @@
+{
+  "extraction": {
+    "method": "none"
+  },
+  "figure_type": "unextracted",
+  "notes": "No numeric table extracted for this figure (not required for fidelity metric comparisons).",
+  "output_json": "context/summaries/vidur-kb/paper-results/70b_chat_dominant_features.json",
+  "pdf_bytes": 49360,
+  "pdf_sha256": "118e1a7d7275fa7c4866999fda5aa54706533cf00c7f66f4900ff26fa9ef496b",
+  "source_pdf": "extern/tracked/vidur/paper/tex/graphs/70b_chat_dominant_features.pdf"
+}

@@ -1,0 +1,234 @@
+{
+  "entries": [
+    {
+      "extraction": {
+        "method": "none"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/70b_chat_dominant_features.json",
+      "output_json_bytes": 471,
+      "output_json_sha256": "7d6494a16f6cc744b2b6a8e51c8c70d31fa5cfa9a6d157e8a6a4a13c9cf17141",
+      "pdf_bytes": 49360,
+      "pdf_sha256": "118e1a7d7275fa7c4866999fda5aa54706533cf00c7f66f4900ff26fa9ef496b",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/70b_chat_dominant_features.pdf",
+      "status": "skipped"
+    },
+    {
+      "extraction": {
+        "method": "pdftotext_parallel_coord"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/capacity_per_dollar.json",
+      "output_json_bytes": 2045,
+      "output_json_sha256": "53b0bdec29ae0d429078e370f44405257963e078eef61b81d035542aecd0d1b0",
+      "pdf_bytes": 12551,
+      "pdf_sha256": "4a25557d2ba842bebc5b68d33618b8aae0243731c895b62fc1639d3bd8002452",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/capacity_per_dollar.pdf",
+      "status": "ok"
+    },
+    {
+      "extraction": {
+        "method": "pdftotext_bbox"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/confusion_matrix_Llama-2-70b-hf.json",
+      "output_json_bytes": 711,
+      "output_json_sha256": "60294f5cce359e454890bceb3d195b23f287d60a5b80d29fb6a6ce9910657b5c",
+      "pdf_bytes": 15737,
+      "pdf_sha256": "3559741a4cabacd20d3160161e284ce0b0ac355623b4e90fcce9557c37eb8185",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/confusion_matrix_Llama-2-70b-hf.pdf",
+      "status": "ok"
+    },
+    {
+      "extraction": {
+        "method": "pdftocairo_svg_bar_digitize"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_75_p50.json",
+      "output_json_bytes": 5622,
+      "output_json_sha256": "b0f205441886b6df8af2afb047fd7b4ce9d1252be8331c69a4c42872856c03fb",
+      "pdf_bytes": 25628,
+      "pdf_sha256": "ac6a4a20be79bbb1241e83152c52d8271d97faea995600f1cf26372f85e65a3b",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/dynamic_fidelity_v8_request_e2e_time_normalized_75_p50.pdf",
+      "status": "ok"
+    },
+    {
+      "extraction": {
+        "method": "pdftocairo_svg_bar_digitize"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_75_p95.json",
+      "output_json_bytes": 5621,
+      "output_json_sha256": "8f49a969d7437de8f28834ebe38e223f4a8cf5f8b9cd8ff097d03fa40cf680cf",
+      "pdf_bytes": 20069,
+      "pdf_sha256": "7bd04a56814e28a56d44ca8b7c45b9118a3402d1c7075d10893adf4dd333b6bf",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/dynamic_fidelity_v8_request_e2e_time_normalized_75_p95.pdf",
+      "status": "ok"
+    },
+    {
+      "extraction": {
+        "method": "pdftocairo_svg_bar_digitize"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_85_p50.json",
+      "output_json_bytes": 5623,
+      "output_json_sha256": "8ee730be99fca42e106c5079056a330e675820b8cb2c1dbda887ff0bfb027459",
+      "pdf_bytes": 25681,
+      "pdf_sha256": "31f4a531c8a757943df376d892fa7e32740beac85c3c59539db55af32c547940",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/dynamic_fidelity_v8_request_e2e_time_normalized_85_p50.pdf",
+      "status": "ok"
+    },
+    {
+      "extraction": {
+        "method": "pdftocairo_svg_bar_digitize"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_85_p95.json",
+      "output_json_bytes": 5621,
+      "output_json_sha256": "850f823cf9147503eef28e73ef8d0108a9fe18b68f1fe6106c2a2bc466d0ffa8",
+      "pdf_bytes": 19018,
+      "pdf_sha256": "6795eb71cb49d2b11d07fb575a8761789c57024567299155ea5ffeec5cdbaf82",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/dynamic_fidelity_v8_request_e2e_time_normalized_85_p95.pdf",
+      "status": "ok"
+    },
+    {
+      "extraction": {
+        "method": "pdftocairo_svg_bar_digitize"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_95_p50.json",
+      "output_json_bytes": 5626,
+      "output_json_sha256": "f58ea83070e7524f557f5a83949fe184f83139a89fe121c0b12b8e2d322cadb9",
+      "pdf_bytes": 25275,
+      "pdf_sha256": "b8004386145b8b1a5025581bc021748a012f0b55ad2f5b3bae0f01dbea03e3b5",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/dynamic_fidelity_v8_request_e2e_time_normalized_95_p50.pdf",
+      "status": "ok"
+    },
+    {
+      "extraction": {
+        "method": "pdftocairo_svg_bar_digitize"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_95_p95.json",
+      "output_json_bytes": 5618,
+      "output_json_sha256": "d95877ed12063f4834397862eb3395ac7425b34212afe6d9afc278ef4c9def4d",
+      "pdf_bytes": 19969,
+      "pdf_sha256": "5a1824cbdca1e1df15bd05ac69ef4822525fe1477c8c5898c2e32b1f38afbed4",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/dynamic_fidelity_v8_request_e2e_time_normalized_95_p95.pdf",
+      "status": "ok"
+    },
+    {
+      "extraction": {
+        "method": "pdftocairo_svg_line_digitize"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_error_trends_p95.json",
+      "output_json_bytes": 11295,
+      "output_json_sha256": "6ca1afb39692086a73bc501bb2c53c70aa53afb6113644953015cebfb12d61c6",
+      "pdf_bytes": 27160,
+      "pdf_sha256": "e09107c978347e558a1be54b5a0bd377272220a7b70849e10144611c5432ae7a",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/dynamic_fidelity_v8_request_e2e_time_normalized_error_trends_p95.pdf",
+      "status": "ok"
+    },
+    {
+      "extraction": {
+        "method": "latex_parse_eval-e2e-stats"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/fidelity_runtimes.json",
+      "output_json_bytes": 2574,
+      "output_json_sha256": "67e00f8424825b8d7b742d6a1082ef163db3fdc2e18ef409f38928d976ddab01",
+      "pdf_bytes": 16098,
+      "pdf_sha256": "da8b6fccb0bc7bbfb5fa5d08c05aa39a1116ec66f15f24524ce71cb370910699",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/fidelity_runtimes.pdf",
+      "status": "ok"
+    },
+    {
+      "extraction": {
+        "method": "pdftotext"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/llama70b_Chat1M_ttft_tbt_90_99_2.0_0.2.json",
+      "output_json_bytes": 796,
+      "output_json_sha256": "feb7433be25eba0a2472cc144fe95a587ac181714f743e86a36cfe84a475c55a",
+      "pdf_bytes": 34034,
+      "pdf_sha256": "44f206d232c391483e5155b2be1eded84ea8c88b710c3983b9c98e0e5ba7c751",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/llama70b_Chat1M_ttft_tbt_90_99_2.0_0.2.pdf",
+      "status": "ok"
+    },
+    {
+      "extraction": {
+        "method": "pdftotext"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/parallel_coord.json",
+      "output_json_bytes": 1645,
+      "output_json_sha256": "e32103144b3b76af6660227d81fe56238e8b648075d55e473e7e9a4a66582040",
+      "pdf_bytes": 15431,
+      "pdf_sha256": "c9206f6d3fe20a90b6c3f9dafdfc8eb25ea2e07de9a5e96ea3bf22b18c75d91d",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/parallel_coord.pdf",
+      "status": "ok"
+    },
+    {
+      "extraction": {
+        "method": "pdftotext"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/qwen_ArxivSum_ttft_tbt_90_99_2.0_0.2.json",
+      "output_json_bytes": 793,
+      "output_json_sha256": "53bfa88e9ac588c04639492e23f3b2deb33beebdedc501d237816b3cb96526d4",
+      "pdf_bytes": 30084,
+      "pdf_sha256": "f1ff084b8096b02b27e9bbe4a138c3db913aa748c29f4a5ef06d212f2398d22e",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/qwen_ArxivSum_ttft_tbt_90_99_2.0_0.2.pdf",
+      "status": "ok"
+    },
+    {
+      "extraction": {
+        "method": "none"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/sched_whatif_capacity_vs_piecewise_latency_chat.json",
+      "output_json_bytes": 513,
+      "output_json_sha256": "243fb98b83936aee368e1b10e70ce13fa2d6d1d5f8de2fee6ed900a596db8f5b",
+      "pdf_bytes": 15842,
+      "pdf_sha256": "0c59ee5f55cfa0d217a65eab4d024d15c4612ae6e50564ff10fab9f0fe4978f0",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/sched_whatif_capacity_vs_piecewise_latency_chat.pdf",
+      "status": "skipped"
+    },
+    {
+      "extraction": {
+        "method": "pdftocairo_svg_bar_digitize"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p50.json",
+      "output_json_bytes": 6205,
+      "output_json_sha256": "8ff0ee9f69a10351525346753aab24ae991024cabc0ae7fd967d8cc81e49fa67",
+      "pdf_bytes": 25982,
+      "pdf_sha256": "5e8380adc6611caad657e6682e59e1cd394bfcb4fc10381f05705cb35706ab97",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p50.pdf",
+      "status": "ok"
+    },
+    {
+      "extraction": {
+        "method": "pdftocairo_svg_bar_digitize"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p95.json",
+      "output_json_bytes": 6201,
+      "output_json_sha256": "e111ebf6c49aebde1ebd77a7692d1742083e907429c6599f4453f3ae8a6a2508",
+      "pdf_bytes": 20349,
+      "pdf_sha256": "e45c2c0c6219d5516d89eb4466e218a55492e48ab30e0e74575b4463ceae16dc",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p95.pdf",
+      "status": "ok"
+    },
+    {
+      "extraction": {
+        "method": "none"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/tp_whatif_capacity_vs_piecewise_latency_chat.json",
+      "output_json_bytes": 507,
+      "output_json_sha256": "428cdc4f84f149ee08399c6613badfb6d81f0a9619bca702b8e9c7ae5bdf2b71",
+      "pdf_bytes": 15890,
+      "pdf_sha256": "b744e425fec09b9fc5e8c367fb33a6224e94d7b75dd5fd42b8f8126f5e430ff2",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/tp_whatif_capacity_vs_piecewise_latency_chat.pdf",
+      "status": "skipped"
+    },
+    {
+      "extraction": {
+        "method": "pdftotext"
+      },
+      "output_json": "context/summaries/vidur-kb/paper-results/vidur-hld.json",
+      "output_json_bytes": 845,
+      "output_json_sha256": "6edc7f7a763e5bf644b7cefbeb31d405c293fc04621118b6a2a28c460d8d5eec",
+      "pdf_bytes": 51423,
+      "pdf_sha256": "ccb7b87a1806584aa9ad9d227b7ab5fb23326c67a65a9a514f30ac47bc1d32d4",
+      "source_pdf": "extern/tracked/vidur/paper/tex/graphs/vidur-hld.pdf",
+      "status": "ok"
+    }
+  ],
+  "output_dir": "context/summaries/vidur-kb/paper-results",
+  "source_pdf_dir": "extern/tracked/vidur/paper/tex/graphs"
+}

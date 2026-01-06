@@ -1,0 +1,21 @@
+{
+  "best_config": {
+    "Batch Size": "128",
+    "Pipeline Parallel Dim": "1",
+    "SKU": "H100",
+    "Sarathi Chunk Size": "512",
+    "Scheduler": "Sarathi-Serve",
+    "Tensor Parallel Dim": "4"
+  },
+  "best_config_raw": "Pipeline Parallel Dim: 1, Tensor Parallel Dim: 4, Scheduler: Sarathi-Serve, Sarathi Chunk Size: 512, Batch Size: 128, SKU: H100",
+  "extraction": {
+    "method": "pdftotext"
+  },
+  "figure_type": "best_config_text",
+  "output_json": "context/summaries/vidur-kb/paper-results/qwen_ArxivSum_ttft_tbt_90_99_2.0_0.2.json",
+  "pdf_bytes": 30084,
+  "pdf_sha256": "f1ff084b8096b02b27e9bbe4a138c3db913aa748c29f4a5ef06d212f2398d22e",
+  "qps_per_dollar": 0.03,
+  "source_pdf": "extern/tracked/vidur/paper/tex/graphs/qwen_ArxivSum_ttft_tbt_90_99_2.0_0.2.pdf",
+  "unit": "QPS/$"
+}

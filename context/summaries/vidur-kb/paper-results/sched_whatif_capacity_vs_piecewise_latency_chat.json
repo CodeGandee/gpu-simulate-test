@@ -1,0 +1,11 @@
+{
+  "extraction": {
+    "method": "none"
+  },
+  "figure_type": "unextracted",
+  "notes": "No numeric table extracted for this figure (not required for fidelity metric comparisons).",
+  "output_json": "context/summaries/vidur-kb/paper-results/sched_whatif_capacity_vs_piecewise_latency_chat.json",
+  "pdf_bytes": 15842,
+  "pdf_sha256": "0c59ee5f55cfa0d217a65eab4d024d15c4612ae6e50564ff10fab9f0fe4978f0",
+  "source_pdf": "extern/tracked/vidur/paper/tex/graphs/sched_whatif_capacity_vs_piecewise_latency_chat.pdf"
+}

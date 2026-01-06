@@ -1,0 +1,212 @@
+{
+  "axis": {
+    "y_max": 0.8
+  },
+  "extraction": {
+    "method": "pdftocairo_svg_bar_digitize"
+  },
+  "figure_type": "bar_multi_subplot",
+  "load_frac_of_capacity": null,
+  "metric": "request_execution_plus_preemption_time_normalized",
+  "output_json": "context/summaries/vidur-kb/paper-results/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p95.json",
+  "pdf_bytes": 20349,
+  "pdf_sha256": "e45c2c0c6219d5516d89eb4466e218a55492e48ab30e0e74575b4463ceae16dc",
+  "percentile": "p95",
+  "rows": [
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "LLaMA2-7B (TP1)",
+      "series": "real",
+      "trace": "Chat-1M",
+      "unit": "s/token",
+      "value": 0.09877815105383003
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "LLaMA2-7B (TP1)",
+      "series": "real",
+      "trace": "Arxiv-4K",
+      "unit": "s/token",
+      "value": 0.08309726434548817
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "LLaMA2-7B (TP1)",
+      "series": "real",
+      "trace": "BWB-4K",
+      "unit": "s/token",
+      "value": 0.029393080897325747
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "LLaMA2-7B (TP1)",
+      "series": "predicted",
+      "trace": "Chat-1M",
+      "unit": "s/token",
+      "value": 0.10058660531554804
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "LLaMA2-7B (TP1)",
+      "series": "predicted",
+      "trace": "Arxiv-4K",
+      "unit": "s/token",
+      "value": 0.08126591974129342
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "LLaMA2-7B (TP1)",
+      "series": "predicted",
+      "trace": "BWB-4K",
+      "unit": "s/token",
+      "value": 0.02843162791027486
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "InternLM-20B (TP2)",
+      "series": "real",
+      "trace": "Chat-1M",
+      "unit": "s/token",
+      "value": 0.14909434112392947
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "InternLM-20B (TP2)",
+      "series": "real",
+      "trace": "Arxiv-4K",
+      "unit": "s/token",
+      "value": 0.09827453421782784
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "InternLM-20B (TP2)",
+      "series": "real",
+      "trace": "BWB-4K",
+      "unit": "s/token",
+      "value": 0.04113658256695163
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "InternLM-20B (TP2)",
+      "series": "predicted",
+      "trace": "Chat-1M",
+      "unit": "s/token",
+      "value": 0.14966664070796734
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "InternLM-20B (TP2)",
+      "series": "predicted",
+      "trace": "Arxiv-4K",
+      "unit": "s/token",
+      "value": 0.09692391610715853
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "InternLM-20B (TP2)",
+      "series": "predicted",
+      "trace": "BWB-4K",
+      "unit": "s/token",
+      "value": 0.041640199402953826
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "LLaMA2-70B (TP4)",
+      "series": "real",
+      "trace": "Chat-1M",
+      "unit": "s/token",
+      "value": 0.34440724902160236
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "LLaMA2-70B (TP4)",
+      "series": "real",
+      "trace": "Arxiv-4K",
+      "unit": "s/token",
+      "value": 0.6666781128146222
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "LLaMA2-70B (TP4)",
+      "series": "real",
+      "trace": "BWB-4K",
+      "unit": "s/token",
+      "value": 0.12924714837119589
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "LLaMA2-70B (TP4)",
+      "series": "predicted",
+      "trace": "Chat-1M",
+      "unit": "s/token",
+      "value": 0.34266746578731455
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "LLaMA2-70B (TP4)",
+      "series": "predicted",
+      "trace": "Arxiv-4K",
+      "unit": "s/token",
+      "value": 0.64760923858852
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "LLaMA2-70B (TP4)",
+      "series": "predicted",
+      "trace": "BWB-4K",
+      "unit": "s/token",
+      "value": 0.1295676307467786
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "Qwen-72B (TP4)",
+      "series": "real",
+      "trace": "Chat-1M",
+      "unit": "s/token",
+      "value": 0.249497811979058
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "Qwen-72B (TP4)",
+      "series": "real",
+      "trace": "Arxiv-4K",
+      "unit": "s/token",
+      "value": 0.15429078290340772
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "Qwen-72B (TP4)",
+      "series": "real",
+      "trace": "BWB-4K",
+      "unit": "s/token",
+      "value": 0.05956448618158562
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "Qwen-72B (TP4)",
+      "series": "predicted",
+      "trace": "Chat-1M",
+      "unit": "s/token",
+      "value": 0.25080264354447107
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "Qwen-72B (TP4)",
+      "series": "predicted",
+      "trace": "Arxiv-4K",
+      "unit": "s/token",
+      "value": 0.1516582235698021
+    },
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "model": "Qwen-72B (TP4)",
+      "series": "predicted",
+      "trace": "BWB-4K",
+      "unit": "s/token",
+      "value": 0.06054883537141598
+    }
+  ],
+  "source_pdf": "extern/tracked/vidur/paper/tex/graphs/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p95.pdf",
+  "unit": "s/token",
+  "workload": "static"
+}

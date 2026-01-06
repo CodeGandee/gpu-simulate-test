@@ -1,0 +1,21 @@
+{
+  "best_config": {
+    "Batch Size": "256",
+    "Pipeline Parallel Dim": "2",
+    "SKU": "H100",
+    "Sarathi Chunk Size": "512",
+    "Scheduler": "Sarathi-Serve",
+    "Tensor Parallel Dim": "2"
+  },
+  "best_config_raw": "Pipeline Parallel Dim: 2, Tensor Parallel Dim: 2, Scheduler: Sarathi-Serve, Sarathi Chunk Size: 512, Batch Size: 256, SKU: H100",
+  "extraction": {
+    "method": "pdftotext"
+  },
+  "figure_type": "best_config_text",
+  "output_json": "context/summaries/vidur-kb/paper-results/llama70b_Chat1M_ttft_tbt_90_99_2.0_0.2.json",
+  "pdf_bytes": 34034,
+  "pdf_sha256": "44f206d232c391483e5155b2be1eded84ea8c88b710c3983b9c98e0e5ba7c751",
+  "qps_per_dollar": 0.2,
+  "source_pdf": "extern/tracked/vidur/paper/tex/graphs/llama70b_Chat1M_ttft_tbt_90_99_2.0_0.2.pdf",
+  "unit": "QPS/$"
+}

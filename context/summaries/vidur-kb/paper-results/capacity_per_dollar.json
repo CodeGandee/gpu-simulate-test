@@ -1,0 +1,88 @@
+{
+  "data_source_pdf": "extern/tracked/vidur/paper/tex/graphs/parallel_coord.pdf",
+  "extraction": {
+    "method": "pdftotext_parallel_coord"
+  },
+  "figure_type": "derived_text_table",
+  "metric": "qps_per_dollar",
+  "notes": "Values extracted from parallel_coord.pdf text; capacity_per_dollar.pdf does not label bar values.",
+  "output_json": "context/summaries/vidur-kb/paper-results/capacity_per_dollar.json",
+  "pdf_bytes": 12551,
+  "pdf_sha256": "4a25557d2ba842bebc5b68d33618b8aae0243731c895b62fc1639d3bd8002452",
+  "rows": [
+    {
+      "model_size": "20B",
+      "qps_per_dollar": 0.162,
+      "trace": "ArxivSum",
+      "unit": "QPS/$"
+    },
+    {
+      "model_size": "20B",
+      "qps_per_dollar": 0.06,
+      "trace": "BWB",
+      "unit": "QPS/$"
+    },
+    {
+      "model_size": "20B",
+      "qps_per_dollar": 0.538,
+      "trace": "Chat1M",
+      "unit": "QPS/$"
+    },
+    {
+      "model_size": "70B",
+      "qps_per_dollar": 0.046,
+      "trace": "ArxivSum",
+      "unit": "QPS/$"
+    },
+    {
+      "model_size": "70B",
+      "qps_per_dollar": 0.026,
+      "trace": "BWB",
+      "unit": "QPS/$"
+    },
+    {
+      "model_size": "70B",
+      "qps_per_dollar": 0.201,
+      "trace": "Chat1M",
+      "unit": "QPS/$"
+    },
+    {
+      "model_size": "72B",
+      "qps_per_dollar": 0.027,
+      "trace": "ArxivSum",
+      "unit": "QPS/$"
+    },
+    {
+      "model_size": "72B",
+      "qps_per_dollar": 0.012,
+      "trace": "BWB",
+      "unit": "QPS/$"
+    },
+    {
+      "model_size": "72B",
+      "qps_per_dollar": 0.091,
+      "trace": "Chat1M",
+      "unit": "QPS/$"
+    },
+    {
+      "model_size": "7B",
+      "qps_per_dollar": 0.533,
+      "trace": "ArxivSum",
+      "unit": "QPS/$"
+    },
+    {
+      "model_size": "7B",
+      "qps_per_dollar": 0.179,
+      "trace": "BWB",
+      "unit": "QPS/$"
+    },
+    {
+      "model_size": "7B",
+      "qps_per_dollar": 1.831,
+      "trace": "Chat1M",
+      "unit": "QPS/$"
+    }
+  ],
+  "source_pdf": "extern/tracked/vidur/paper/tex/graphs/capacity_per_dollar.pdf",
+  "unit": "QPS/$"
+}

@@ -82,6 +82,10 @@ Dynamic fidelity @85% capacity (normalized end-to-end latency), P95:
   - Real metrics (Sarathi): `tmp/paper_fidelity/runs/<scenario>/real/request_metrics.csv`
   - Report: `results/reports/<date>/paper_fidelity/<scenario>/summary.md`
   - Dynamic-only: `tmp/paper_fidelity/runs/<scenario>/capacity/capacity.json`
+- For the simulator-only “paper artifacts” comparison (Vidur only), compare your Vidur sim percentiles against the paper’s **Predicted** bars extracted into `context/summaries/vidur-kb/paper-results/`:
+  - Static (compare `request_execution_plus_preemption_time_normalized` P50/P95): `context/summaries/vidur-kb/paper-results/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p50.json` and `context/summaries/vidur-kb/paper-results/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p95.json` (filter `series=predicted`).
+  - Dynamic @85% (compare `request_e2e_time_normalized` P50/P95): `context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_85_p50.json` and `context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_85_p95.json` (filter `series=predicted`; note our current pipeline’s dynamic operating point uses Sarathi-derived capacity on this host, so exact paper match is not guaranteed unless the offered load matches the paper’s 85% point).
+  - Baseline example (`llama2_7b_arxiv`): compare `model="LLaMA2-7B (TP1)"` and `trace="Arxiv-4K"`.
 - Interpretation for the sanity check: focus on “pipeline runs + sim metrics are reasonable/paper-aligned”; treat sim-vs-real `% error` as informational only unless you have host-matched profiling.
 - Workspace hygiene: Vidur cache is written under `tmp/paper_fidelity/runs/<scenario>/sim/vidur-cache/` (no top-level `cache/`) (`src/gpu_simulate_test/vidur_ext/sim_runner.py`).
 

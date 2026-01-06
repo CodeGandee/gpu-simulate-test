@@ -48,6 +48,14 @@ def _fmt_pct(x: float) -> str:
     return f"{x * 100:.2f}%"
 
 
+def _percent_error(*, sim_value: float, ref_value: float) -> float:
+    if ref_value == 0.0:
+        if sim_value == 0.0:
+            return 0.0
+        return float("inf")
+    return abs(sim_value - ref_value) / abs(ref_value)
+
+
 def write_summary_md(*, inputs: ReportInputs, results: list[ScoreResult], meta: dict) -> Path:
     """Write summary.md and return its path."""
     inputs.out_dir.mkdir(parents=True, exist_ok=True)
@@ -81,14 +89,77 @@ def write_summary_md(*, inputs: ReportInputs, results: list[ScoreResult], meta: 
             lines.append(f"- interpretation: {interpretation}")
         lines.append("")
 
+    paper_reference = meta.get("paper_reference")
+    paper_values: dict[tuple[str, str], float] = {}
+    paper_rows: list[dict] = []
+    if isinstance(paper_reference, dict):
+        rows = paper_reference.get("rows")
+        if isinstance(rows, list):
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                metric = row.get("metric")
+                percentile = row.get("percentile")
+                value = row.get("value")
+                if not isinstance(metric, str) or not isinstance(percentile, str):
+                    continue
+                try:
+                    paper_values[(metric, percentile)] = float(value)
+                except (TypeError, ValueError):
+                    continue
+                paper_rows.append(row)
+
+    if paper_values:
+        first = paper_rows[0] if paper_rows else {}
+        model = first.get("model")
+        trace = first.get("trace")
+        series = first.get("series")
+        load_frac = paper_reference.get("load_frac_of_capacity") if isinstance(paper_reference, dict) else None
+
+        sources: list[str] = []
+        for row in paper_rows:
+            source_json = row.get("source_json")
+            if isinstance(source_json, str) and source_json not in sources:
+                sources.append(source_json)
+
+        lines.append("## Paper Reference")
+        if isinstance(model, str):
+            lines.append(f"- model: `{model}`")
+        if isinstance(trace, str):
+            lines.append(f"- trace: `{trace}`")
+        if isinstance(series, str):
+            lines.append(f"- series: `{series}`")
+        if load_frac is not None:
+            lines.append(f"- load_frac_of_capacity: `{load_frac}`")
+        if sources:
+            lines.append(f"- sources: {', '.join([f'`{s}`' for s in sources])}")
+        lines.append("")
+
     lines.append("## Scores")
-    lines.append("| Metric | Percentile | Sim | Real | Percent error | Verdict |")
-    lines.append("|--------|------------|-----|------|---------------|---------|")
+    if paper_values:
+        lines.append("| Metric | Percentile | Paper | Sim | Real | Sim vs Paper | Sim vs Real | Verdict |")
+        lines.append("|--------|------------|-------|-----|------|--------------|-------------|---------|")
+    else:
+        lines.append("| Metric | Percentile | Sim | Real | Percent error | Verdict |")
+        lines.append("|--------|------------|-----|------|---------------|---------|")
     for r in results:
         for q in r.percentiles:
-            lines.append(
-                f"| {r.metric} | p{int(q * 100)} | {r.sim[q]:.6g} | {r.real[q]:.6g} | {_fmt_pct(r.pct_error[q])} | {r.verdict} |"
-            )
+            percentile = f"p{int(q * 100)}"
+            if paper_values:
+                paper_value = paper_values.get((r.metric, percentile))
+                if paper_value is None:
+                    lines.append(
+                        f"| {r.metric} | {percentile} | N/A | {r.sim[q]:.6g} | {r.real[q]:.6g} | N/A | {_fmt_pct(r.pct_error[q])} | {r.verdict} |"
+                    )
+                    continue
+                sim_vs_paper = _percent_error(sim_value=float(r.sim[q]), ref_value=float(paper_value))
+                lines.append(
+                    f"| {r.metric} | {percentile} | {paper_value:.6g} | {r.sim[q]:.6g} | {r.real[q]:.6g} | {_fmt_pct(sim_vs_paper)} | {_fmt_pct(r.pct_error[q])} | {r.verdict} |"
+                )
+            else:
+                lines.append(
+                    f"| {r.metric} | {percentile} | {r.sim[q]:.6g} | {r.real[q]:.6g} | {_fmt_pct(r.pct_error[q])} | {r.verdict} |"
+                )
 
     lines.append("")
 

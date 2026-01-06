@@ -1,0 +1,107 @@
+{
+  "data_source_tex": "extern/tracked/vidur/paper/tex/tables/eval-e2e-stats.tex",
+  "extraction": {
+    "method": "latex_parse_eval-e2e-stats"
+  },
+  "figure_type": "latex_table",
+  "metric": "request_execution_time",
+  "output_json": "context/summaries/vidur-kb/paper-results/fidelity_runtimes.json",
+  "pdf_bytes": 16098,
+  "pdf_sha256": "da8b6fccb0bc7bbfb5fa5d08c05aa39a1116ec66f15f24524ce71cb370910699",
+  "rows": [
+    {
+      "actual": 1.74,
+      "dataset": "LLaMA2-7B (TP-1)",
+      "error_percent": "+2.30%",
+      "merlin": 1.78,
+      "percentile": "p50",
+      "unit": "s"
+    },
+    {
+      "actual": 3.95,
+      "dataset": "LLaMA2-7B (TP-1)",
+      "error_percent": "+2.28%",
+      "merlin": 4.04,
+      "percentile": "p75",
+      "unit": "s"
+    },
+    {
+      "actual": 6.16,
+      "dataset": "LLaMA2-7B (TP-1)",
+      "error_percent": "+1.95%",
+      "merlin": 6.28,
+      "percentile": "p90",
+      "unit": "s"
+    },
+    {
+      "dataset": "LLaMA2-7B (TP-1)",
+      "deployment_minutes": 12.5,
+      "merlin_minutes": 0.5,
+      "metric": "experiment_time",
+      "unit": "min"
+    },
+    {
+      "actual": 5.6,
+      "dataset": "LLaMA2-34B (TP-2)",
+      "error_percent": "-2.32%",
+      "merlin": 5.47,
+      "percentile": "p50",
+      "unit": "s"
+    },
+    {
+      "actual": 12.64,
+      "dataset": "LLaMA2-34B (TP-2)",
+      "error_percent": "-3.09%",
+      "merlin": 12.25,
+      "percentile": "p75",
+      "unit": "s"
+    },
+    {
+      "actual": 19.29,
+      "dataset": "LLaMA2-34B (TP-2)",
+      "error_percent": "-2.64%",
+      "merlin": 18.78,
+      "percentile": "p90",
+      "unit": "s"
+    },
+    {
+      "dataset": "LLaMA2-34B (TP-2)",
+      "deployment_minutes": 13.1,
+      "merlin_minutes": 0.5,
+      "metric": "experiment_time",
+      "unit": "min"
+    },
+    {
+      "actual": 22.86,
+      "dataset": "LLaMA2-70B (TP-4)",
+      "error_percent": "+0.48%",
+      "merlin": 22.97,
+      "percentile": "p50",
+      "unit": "s"
+    },
+    {
+      "actual": 51.11,
+      "dataset": "LLaMA2-70B (TP-4)",
+      "error_percent": "-0.53%",
+      "merlin": 50.84,
+      "percentile": "p75",
+      "unit": "s"
+    },
+    {
+      "actual": 78.44,
+      "dataset": "LLaMA2-70B (TP-4)",
+      "error_percent": "-0.85%",
+      "merlin": 77.77,
+      "percentile": "p90",
+      "unit": "s"
+    },
+    {
+      "dataset": "LLaMA2-70B (TP-4)",
+      "deployment_minutes": 14.5,
+      "merlin_minutes": 0.5,
+      "metric": "experiment_time",
+      "unit": "min"
+    }
+  ],
+  "source_pdf": "extern/tracked/vidur/paper/tex/graphs/fidelity_runtimes.pdf"
+}

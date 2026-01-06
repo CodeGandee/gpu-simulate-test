@@ -30,6 +30,7 @@ from gpu_simulate_test.config import register_omegaconf_resolvers
 from gpu_simulate_test.io import build_env_snapshot, get_git_info, stable_id, utcnow_iso, write_json
 from gpu_simulate_test.paper_fidelity.capacity import CapacityCriterion, discover_capacity, write_capacity_json
 from gpu_simulate_test.paper_fidelity.paths import PaperFidelityPaths
+from gpu_simulate_test.paper_fidelity.paper_reference import maybe_load_paper_reference_rows_from_cfg
 from gpu_simulate_test.paper_fidelity.profiling import run_paper_fidelity_profiling
 from gpu_simulate_test.paper_fidelity.report import ReportInputs, write_summary_md
 from gpu_simulate_test.paper_fidelity.scoring import ScoreThresholds, load_metrics_csv, score_metric
@@ -233,6 +234,7 @@ def _run_score_only(
     ]
 
     git = get_git_info(repo_root=repo_root)
+    paper_reference_rows = maybe_load_paper_reference_rows_from_cfg(cfg, repo_root=repo_root)
     meta: dict = {
         "schema_version": "v1",
         "run_type": "score",
@@ -252,6 +254,30 @@ def _run_score_only(
     }
     if profiling is not None:
         meta["profiling"] = profiling
+    if paper_reference_rows is not None:
+        workload_mode = OmegaConf.select(cfg, "workload.mode")
+        load_frac = (
+            OmegaConf.select(cfg, "scenario.paper_reference.dynamic.load_frac_of_capacity")
+            if workload_mode == "dynamic"
+            else None
+        )
+        meta["paper_reference"] = {
+            "workload_mode": str(workload_mode) if workload_mode is not None else None,
+            "load_frac_of_capacity": float(load_frac) if load_frac is not None else None,
+            "rows": [
+                {
+                    "metric": row.metric,
+                    "percentile": row.percentile,
+                    "value": row.value,
+                    "model": row.model,
+                    "trace": row.trace,
+                    "series": row.series,
+                    "source_json": str(row.source_json),
+                    "source_pdf": row.source_pdf,
+                }
+                for row in paper_reference_rows
+            ],
+        }
 
     write_summary_md(
         inputs=ReportInputs(scenario_name=scenario_name, sim_csv=sim_csv, real_csv=real_csv, out_dir=report_dir),

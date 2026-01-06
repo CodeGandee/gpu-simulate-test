@@ -1,0 +1,74 @@
+{
+  "extraction": {
+    "method": "pdftotext"
+  },
+  "figure_type": "text_table",
+  "metric": "qps_per_dollar",
+  "output_json": "context/summaries/vidur-kb/paper-results/parallel_coord.json",
+  "pdf_bytes": 15431,
+  "pdf_sha256": "c9206f6d3fe20a90b6c3f9dafdfc8eb25ea2e07de9a5e96ea3bf22b18c75d91d",
+  "rows": [
+    {
+      "qps_per_dollar": 1.831,
+      "scenario": "Llama-7b-Chat1M",
+      "unit": "QPS/$"
+    },
+    {
+      "qps_per_dollar": 0.533,
+      "scenario": "Llama-7b-Arxiv",
+      "unit": "QPS/$"
+    },
+    {
+      "qps_per_dollar": 0.179,
+      "scenario": "Llama-7b-BWB",
+      "unit": "QPS/$"
+    },
+    {
+      "qps_per_dollar": 0.538,
+      "scenario": "InternLM-20b-Chat1M",
+      "unit": "QPS/$"
+    },
+    {
+      "qps_per_dollar": 0.162,
+      "scenario": "InternLM-20b-Arxiv",
+      "unit": "QPS/$"
+    },
+    {
+      "qps_per_dollar": 0.06,
+      "scenario": "InternLM-20b-BWB",
+      "unit": "QPS/$"
+    },
+    {
+      "qps_per_dollar": 0.201,
+      "scenario": "Llama-70b-Chat1M",
+      "unit": "QPS/$"
+    },
+    {
+      "qps_per_dollar": 0.046,
+      "scenario": "Llama-70b-Arxiv",
+      "unit": "QPS/$"
+    },
+    {
+      "qps_per_dollar": 0.026,
+      "scenario": "Llama-70b-BWB",
+      "unit": "QPS/$"
+    },
+    {
+      "qps_per_dollar": 0.091,
+      "scenario": "Qwen-72B-Chat1M",
+      "unit": "QPS/$"
+    },
+    {
+      "qps_per_dollar": 0.027,
+      "scenario": "Qwen-72B-Arxiv",
+      "unit": "QPS/$"
+    },
+    {
+      "qps_per_dollar": 0.012,
+      "scenario": "Qwen-72B-BWB",
+      "unit": "QPS/$"
+    }
+  ],
+  "source_pdf": "extern/tracked/vidur/paper/tex/graphs/parallel_coord.pdf",
+  "unit": "QPS/$"
+}
