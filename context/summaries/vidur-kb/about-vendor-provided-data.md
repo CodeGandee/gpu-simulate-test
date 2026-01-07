@@ -196,7 +196,7 @@ Vidur ships profiling scripts under `extern/tracked/vidur/vidur/profiling/`:
   - Output: `profiling_outputs/collective/<timestamp>/all_reduce.csv` and/or `send_recv.csv`
 - **CPU overhead (optional)**: `python extern/tracked/vidur/vidur/profiling/cpu_overhead/main.py ...`
   - Output: `profiling_outputs/cpu_overhead/<timestamp>/<model>/cpu_overhead.csv`
-  - Note: the simulator’s default input template expects `cpu_overheads.csv`; you may need to rename the output or override the input path.
+  - Note: the simulator’s default input template expects `cpu_overheads.csv`; if you run Vidur’s script directly you may need to rename the output or override the input path. This repo’s `vidur-profiling` bundle exporter stages the file as `data/profiling/cpu_overhead/<network_device>/<model>/cpu_overheads.csv` when enabled.
 
 Once generated, the “vendor-provided” layout under `extern/tracked/vidur/data/profiling/` is just the **stable place**
 to store these CSVs so simulations can run without GPUs.
@@ -212,7 +212,7 @@ This repo includes wrappers that run Vidur’s profilers on the current machine 
 Notes:
 
 - The exporter requires an explicit `output.dir` (useful outputs for the user). `output.cache_dir` is optional and defaults to `<output.dir>/cache` (debugging/intermediate outputs) (see `configs/vidur_profiling/bundle.yaml`, `src/gpu_simulate_test/vidur_ext/profiling_bundle.py`).
-- The `vidur-profiling` bundle defaults to **compute-only** (no network profiling, no CPU-overhead profiling) for TP=1/PP=1 workflows; extend as needed for TP>1/PP>1 or CPU-overhead modeling.
+- The `vidur-profiling` bundle defaults to **compute-only** (no network profiling, no CPU-overhead profiling) for TP=1/PP=1 workflows (matches the paper’s “optimized vLLM + CUDA graphs” setup). Enable CPU overhead profiling with `profiling.cpu_overhead.enabled=true` (and tune `profiling.cpu_overhead.max_batch_size`) when you want implementation-specific overhead modeling.
 - `vidur-profiling` defaults to `profiling.allow_attention_fallback=false` so failures in attention profiling surface early; set `profiling.allow_attention_fallback=true` to fall back to a packaged template `attention.csv` when needed.
 - `results/` is not ignored by git; avoid committing large profiling artifacts (prefer treating `results/raw/vidur-profiling/**` as local outputs unless you explicitly want to version them).
 

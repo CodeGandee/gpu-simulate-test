@@ -32,6 +32,12 @@ profiling:
   # By default, fail if attention profiling cannot be measured on this host.
   allow_attention_fallback: false
 
+  cpu_overhead:
+    # Optional. Disabled by default to match the Vidur paper's evaluation practice
+    # (optimized serving stack with CUDA graphs to eliminate unnecessary CPU overheads).
+    enabled: false
+    max_batch_size: 128
+
   attention:
     profile_mode: both
     backend: FLASHINFER

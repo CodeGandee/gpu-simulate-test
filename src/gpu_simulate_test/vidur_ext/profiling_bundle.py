@@ -1,8 +1,9 @@
 """
-Host profiling bundle exporter for Vidur compute microbenchmarks.
+Host profiling bundle exporter for Vidur microbenchmarks.
 
 This module runs Vidur profiling entrypoints on the current machine (GPU required) and exports a
-curated, Vidur-compatible profiling root under a user-provided output directory.
+curated, Vidur-compatible profiling root under a user-provided output directory. By default, it
+captures compute profiling (MLP + attention) and can optionally include CPU overhead profiling.
 """
 
 from __future__ import annotations
@@ -68,6 +69,8 @@ def run_vidur_profiling_bundle(cfg: DictConfig, *, repo_root: Path) -> Path:
             max_tokens=int(cfg.profiling.max_tokens),
             staging_root=cache_dir,
             include_network=bool(cfg.profiling.include_network),
+            include_cpu_overhead=bool(cfg.profiling.cpu_overhead.enabled),
+            cpu_overhead_max_batch_size=int(cfg.profiling.cpu_overhead.max_batch_size),
             attention_backend=attention_backend,
             attention_block_size=int(cfg.profiling.attention.block_size),
             attention_min_batch_size=int(cfg.profiling.attention.min_batch_size),
@@ -97,11 +100,19 @@ def run_vidur_profiling_bundle(cfg: DictConfig, *, repo_root: Path) -> Path:
         "git_dirty": git.dirty,
         "env": build_env_snapshot(),
         "params": params if isinstance(params, dict) else None,
-        "profiling_commands": {"mlp": vidur_result.mlp_cmd, "attention": vidur_result.attention_cmd},
+        "profiling_commands": {
+            "mlp": vidur_result.mlp_cmd,
+            "attention": vidur_result.attention_cmd,
+            "cpu_overhead": vidur_result.cpu_overhead_cmd,
+        },
         "profiling_outputs": {
             "mlp_csv": str(vidur_result.mlp_csv.resolve()),
             "attention_csv": str(vidur_result.attention_csv.resolve()),
             "attention_profiled": bool(vidur_result.attention_profiled),
+            "cpu_overheads_csv": str(vidur_result.cpu_overheads_csv.resolve())
+            if vidur_result.cpu_overheads_csv is not None
+            else None,
+            "cpu_overhead_profiled": bool(vidur_result.cpu_overhead_profiled),
         },
     }
 

@@ -28,8 +28,8 @@ def _file_safe_timestamp() -> str:
 def _vidur_profile_result_jsonable(result: VidurProfileResult) -> dict[str, Any]:
     """Convert a `VidurProfileResult` to a JSON-friendly dict."""
     data = asdict(result)
-    for key in ["profiling_root", "staging_root", "mlp_csv", "attention_csv"]:
-        if key in data:
+    for key in ["profiling_root", "staging_root", "mlp_csv", "attention_csv", "cpu_overheads_csv"]:
+        if key in data and data[key] is not None:
             data[key] = str(data[key])
     return data
 
