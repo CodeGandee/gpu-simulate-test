@@ -28,10 +28,29 @@ def _resolve_path(path: Path, *, repo_root: Path) -> Path:
     return (repo_root / path).resolve()
 
 
-def _ensure_empty_dir(path: Path) -> None:
-    path.mkdir(parents=True, exist_ok=True)
-    if any(path.iterdir()):
-        raise FileExistsError(f"output.dir must be empty (refusing to overwrite): {path}")
+def _ensure_clean_output_dir(*, output_dir: Path, cache_dir: Path) -> None:
+    """Ensure `output_dir` does not already contain curated outputs.
+
+    Hydra may create its run directory before user code runs. When `cache_dir` is inside
+    `output_dir`, we allow `output_dir` to contain only the top-level directory segment(s)
+    required for `cache_dir`.
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    allowed_top_level: set[str] = set()
+    try:
+        rel = cache_dir.resolve().relative_to(output_dir.resolve())
+    except ValueError:
+        rel = None
+    if rel is not None and rel.parts:
+        allowed_top_level.add(rel.parts[0])
+
+    for child in output_dir.iterdir():
+        if child.name in allowed_top_level:
+            continue
+        raise FileExistsError(
+            f"output.dir must not contain curated outputs (refusing to overwrite): {output_dir}"
+        )
 
 
 def run_vidur_profiling_bundle(cfg: DictConfig, *, repo_root: Path) -> Path:
@@ -48,7 +67,7 @@ def run_vidur_profiling_bundle(cfg: DictConfig, *, repo_root: Path) -> Path:
     profiling_root = _resolve_path(Path(cfg.output.dir).expanduser(), repo_root=repo_root)
     cache_dir = _resolve_path(Path(cfg.output.cache_dir).expanduser(), repo_root=repo_root)
 
-    _ensure_empty_dir(profiling_root)
+    _ensure_clean_output_dir(output_dir=profiling_root, cache_dir=cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
 
     model_id = str(cfg.model.model_id)

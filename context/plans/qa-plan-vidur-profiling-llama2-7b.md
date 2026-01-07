@@ -72,3 +72,10 @@ This Q&A captures implementation questions for the Vidur host-profiling bundle w
 - The CPU-overhead benchmark also computes `ray_comm_time_mean` as the leftover per-step wall time after subtracting the summed tracked CPU op times; this effectively captures un-attributed coordination overhead (e.g., Ray comm/scheduling) (`extern/tracked/vidur/vidur/profiling/cpu_overhead/benchmark_runner.py`).
 - Vidur’s repo explicitly recommends profiling CPU overhead “for better fidelity”, but notes it tightly couples the simulator to the specific implementation (e.g., vLLM), and the scripts are “not documented yet” (`extern/tracked/vidur/docs/profiling.md`).
 - The Vidur paper states their evaluations use an optimized vLLM fork with CUDA graphs, “which eliminates unnecessary CPU overheads”, and attributes the 7B model’s slightly higher error to higher CPU overhead; to align with paper conditions, keep the serving stack optimized (CUDA graphs / reduced CPU overhead) and consistent with what you simulate, or profile CPU overhead using that same stack (`extern/tracked/vidur/paper/tex/5-eval.tex`).
+
+## Do Vidur’s “vendor-provided” profiling bundles include CPU overhead results?
+> Last revised at: `2026-01-07T11:13:15Z` | Last revised base commit: `67fa08b5a545a035889b020fdcd823a04342b6a6`
+
+- In this repo’s Vidur submodule snapshot, `extern/tracked/vidur/data/profiling/` includes `compute/` and `network/`, and typically does **not** ship `cpu_overhead/` CSVs (the simulator schema supports it, but it’s not required to run the standard compute+network model).
+- The paper evaluates an optimized vLLM fork with CUDA graphs that “eliminates unnecessary CPU overheads”, so CPU overhead modeling is optional and may be omitted from “vendor” bundles (`extern/tracked/vidur/paper/tex/5-eval.tex`).
+- If you want CPU overhead calibration for this host/stack, enable `profiling.cpu_overhead.enabled=true` and run `pixi run vidur-profiling`; the exporter stages `data/profiling/cpu_overhead/<network_device>/<model>/cpu_overheads.csv` for Vidur simulations.

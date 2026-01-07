@@ -23,8 +23,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output_dir",
         type=str,
-        default="profiling_outputs",
-        help="Output directory for profiling results",
+        required=True,
+        help="Staging root for profiling results (writes under <output_dir>/cpu_overhead/<timestamp>/...)",
     )
     parser.add_argument(
         "--models",
@@ -54,10 +54,10 @@ def parse_args() -> argparse.Namespace:
     )
     args = parser.parse_args()
 
-    args.output_dir = (
-        f"{args.output_dir}/cpu_overhead/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
-    )
-    os.makedirs(args.output_dir, exist_ok=True)
+    output_root = Path(args.output_dir).expanduser()
+    run_dir = output_root / "cpu_overhead" / datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    run_dir.mkdir(parents=True, exist_ok=True)
+    args.output_dir = str(run_dir)
 
     return args
 
@@ -142,4 +142,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
