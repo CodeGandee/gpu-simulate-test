@@ -151,21 +151,50 @@ def _default_cuda_visible_devices() -> str | None:
 
     Some environments may have GPUs in MIG-enabled mode without instances (or other unusable states)
     that can cause PyTorch CUDA initialization to fail when all devices are visible.
+
+    If multiple MIG-disabled GPUs are available, prefer the one with the least VRAM currently used
+    (to avoid colliding with other jobs by default).
     """
     try:
+        out = subprocess.check_output(
+            [
+                "nvidia-smi",
+                "--query-gpu=index,mig.mode.current,memory.used",
+                "--format=csv,noheader,nounits",
+            ],
+            text=True,
+        )
+        candidates: list[tuple[int, int, str]] = []
+        for line in out.splitlines():
+            if not line.strip():
+                continue
+            parts = [p.strip() for p in line.split(",")]
+            if len(parts) < 3:
+                continue
+            idx, mig_mode, mem_used = parts[0], parts[1], parts[2]
+            if mig_mode.lower() != "disabled":
+                continue
+            try:
+                mem_used_mib = int(float(mem_used))
+                idx_int = int(idx)
+            except ValueError:
+                continue
+            candidates.append((mem_used_mib, idx_int, idx))
+        if candidates:
+            candidates.sort(key=lambda x: (x[0], x[1]))
+            return candidates[0][2]
+
+        # Fallback: at least try to avoid MIG-enabled devices.
         out = subprocess.check_output(
             ["nvidia-smi", "--query-gpu=index,mig.mode.current", "--format=csv,noheader"],
             text=True,
         )
-        candidates: list[str] = []
         for line in out.splitlines():
             if not line.strip():
                 continue
             idx, mig_mode = [p.strip() for p in line.split(",", 1)]
             if mig_mode.lower() == "disabled":
-                candidates.append(idx)
-        if candidates:
-            return ",".join(candidates)
+                return idx
     except Exception:
         pass
     return None
