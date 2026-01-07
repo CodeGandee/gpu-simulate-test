@@ -1,8 +1,13 @@
 # Hydra configs
 
-All user-facing commands are Hydra apps with presets under `configs/compare_vidur_real/`.
+All user-facing commands are Hydra apps with presets under:
+
+- `configs/compare_vidur_real/` (compare Vidur vs real timing)
+- `configs/paper_fidelity/` (paper fidelity reproduction)
 
 ## Stage configs
+
+### Compare workflow (`configs/compare_vidur_real/`)
 
 - Workload generation: `configs/compare_vidur_real/workload_spec.yaml`
 - Real timing: `configs/compare_vidur_real/real_bench.yaml`
@@ -14,11 +19,24 @@ Each stage sets `hydra.run.dir` so the outputs land under `tmp/.../<stable_id>/`
 
 ## Config groups
 
+### Compare workflow (`configs/compare_vidur_real/`)
+
 - `configs/compare_vidur_real/model/` (e.g. `qwen3_0_6b.yaml`)
 - `configs/compare_vidur_real/hardware/` (e.g. `a100.yaml`)
 - `configs/compare_vidur_real/workload/` (e.g. `default.yaml`)
 - `configs/compare_vidur_real/backend/` (`transformers.yaml`, `sarathi.yaml`)
 - `configs/compare_vidur_real/vidur/` (profiling root + model key)
+
+### Paper fidelity workflow (`configs/paper_fidelity/`)
+
+- Stage configs:
+  - `configs/paper_fidelity/repro.yaml`
+  - `configs/paper_fidelity/trace.yaml`
+  - `configs/paper_fidelity/profile.yaml`
+  - `configs/paper_fidelity/score.yaml`
+- Groups:
+  - `configs/paper_fidelity/scenario/` (model + trace source + Vidur/Sarathi knobs)
+  - `configs/paper_fidelity/workload/` (`static` vs `dynamic` arrivals)
 
 ## Common overrides
 
@@ -41,3 +59,14 @@ pixi run vidur-sim \
   workload.workload_dir=tmp/workloads/<workload_id>
 ```
 
+Paper fidelity overrides:
+
+```bash
+# Run a small trace subset (fast iteration)
+pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload dynamic \
+  trace_subset.kind=range trace_subset.begin=0 trace_subset.end=32
+
+# Override profiling root (host-calibrated sim)
+pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static \
+  scenario.vidur.profiling_root=/abs/path/to/tmp/paper_fidelity/profiling_roots/...
+```

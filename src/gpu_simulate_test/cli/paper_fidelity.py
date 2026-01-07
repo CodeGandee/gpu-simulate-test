@@ -37,6 +37,7 @@ from gpu_simulate_test.paper_fidelity.scoring import ScoreThresholds, load_metri
 from gpu_simulate_test.paper_fidelity.traces import (
     TraceSpec,
     add_poisson_arrivals,
+    apply_trace_subset,
     legacy_workload_dir_to_trace,
     make_static,
     processed_lengths_csv_to_trace,
@@ -121,6 +122,22 @@ def _infer_scenario_name(*, sim_csv: Path, real_csv: Path) -> str:
     return sim or real or stable_id([str(sim_csv), str(real_csv)], prefix="adhoc", length=12)
 
 
+def _trace_subset_from_cfg(cfg: DictConfig) -> tuple[str, object, object, list[object] | None]:
+    kind = str(OmegaConf.select(cfg, "trace_subset.kind") or "all")
+    begin = OmegaConf.select(cfg, "trace_subset.begin")
+    end = OmegaConf.select(cfg, "trace_subset.end")
+    indices_val = OmegaConf.select(cfg, "trace_subset.indices")
+    if indices_val is None:
+        indices = None
+    elif isinstance(indices_val, (list, tuple)):
+        indices = list(indices_val)
+    elif hasattr(indices_val, "__iter__") and not isinstance(indices_val, (str, bytes)):
+        indices = list(indices_val)
+    else:
+        raise ValueError(f"trace_subset.indices must be a list (e.g. [0,3,10,42]) (got {indices_val!r})")
+    return kind, begin, end, indices
+
+
 def _run_trace(cfg: DictConfig, *, repo_root: Path) -> Path:
     scenario_name = str(cfg.scenario.name)
     trace_kind = str(cfg.scenario.trace_source.kind)
@@ -141,18 +158,50 @@ def _run_trace(cfg: DictConfig, *, repo_root: Path) -> Path:
 
     trace_csv = out_dir / "trace.csv"
 
+    subset_kind, subset_begin, subset_end, subset_indices = _trace_subset_from_cfg(cfg)
+
     if trace_kind == "vidur_processed_lengths_csv":
         df = processed_lengths_csv_to_trace(trace_source_path, spec=spec)
+        df = apply_trace_subset(
+            df,
+            spec=spec,
+            kind=subset_kind,
+            begin=subset_begin,
+            end=subset_end,
+            indices=subset_indices,
+            allow_indices=True,
+            rebase_arrived_at=False,
+        )
         if str(cfg.workload.mode) == "dynamic":
             df = add_poisson_arrivals(df, qps=float(cfg.workload.qps), seed=int(cfg.workload.seed))
         else:
             df = make_static(df)
     elif trace_kind == "trace_csv":
         df = read_trace_csv(trace_source_path, spec=spec)
+        df = apply_trace_subset(
+            df,
+            spec=spec,
+            kind=subset_kind,
+            begin=subset_begin,
+            end=subset_end,
+            indices=subset_indices,
+            allow_indices=False,
+            rebase_arrived_at=True,
+        )
         if str(cfg.workload.mode) == "static":
             df = make_static(df)
     elif trace_kind == "legacy_workload_dir":
         df = legacy_workload_dir_to_trace(trace_source_path, out_csv=trace_csv, spec=spec)
+        df = apply_trace_subset(
+            df,
+            spec=spec,
+            kind=subset_kind,
+            begin=subset_begin,
+            end=subset_end,
+            indices=subset_indices,
+            allow_indices=False,
+            rebase_arrived_at=True,
+        )
         if str(cfg.workload.mode) == "static":
             df = make_static(df)
     else:
@@ -171,6 +220,12 @@ def _run_trace(cfg: DictConfig, *, repo_root: Path) -> Path:
             "max_tokens": max_tokens,
             "seed": seed,
             "num_requests": spec.num_requests,
+        },
+        "trace_subset": {
+            "kind": subset_kind,
+            "begin": subset_begin,
+            "end": subset_end,
+            "indices": subset_indices,
         },
         "generated_at": utcnow_iso(),
         "artifacts": {
@@ -334,6 +389,18 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
         else:
             raise ValueError(f"capacity discovery requires vidur_processed_lengths_csv (got {trace_kind})")
 
+        subset_kind, subset_begin, subset_end, subset_indices = _trace_subset_from_cfg(cfg)
+        base = apply_trace_subset(
+            base,
+            spec=trace_spec,
+            kind=subset_kind,
+            begin=subset_begin,
+            end=subset_end,
+            indices=subset_indices,
+            allow_indices=True,
+            rebase_arrived_at=False,
+        )
+
         criterion = CapacityCriterion(
             metric="request_scheduling_delay",
             quantile=0.99,
@@ -398,6 +465,12 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
                 "workload_mode": workload_mode,
                 "qps": float(capacity.qps_85),
                 "seed": int(cfg.workload.seed),
+                "trace_subset": {
+                    "kind": subset_kind,
+                    "begin": subset_begin,
+                    "end": subset_end,
+                    "indices": subset_indices,
+                },
                 "generated_at": utcnow_iso(),
             },
         )

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal, Sequence
 
 import numpy as np
 import pandas as pd
@@ -36,6 +37,124 @@ class TraceSpec:
     max_tokens: int = 4096
     seed: int = 42
     num_requests: int | None = None
+
+
+TraceSubsetKind = Literal["all", "range", "indices"]
+
+
+def _require_int(name: str, value: object) -> int:
+    if isinstance(value, bool):
+        raise ValueError(f"trace_subset.{name} must be an int (got bool)")
+    if isinstance(value, (int, np.integer)):
+        return int(value)
+    raise ValueError(f"trace_subset.{name} must be an int (got {value!r})")
+
+
+def _require_int_list(name: str, values: Sequence[object]) -> list[int]:
+    out: list[int] = []
+    for v in values:
+        out.append(_require_int(name, v))
+    return out
+
+
+def apply_trace_subset(
+    df: pd.DataFrame,
+    *,
+    spec: TraceSpec,
+    kind: TraceSubsetKind | str,
+    begin: int | None = None,
+    end: int | None = None,
+    indices: Sequence[object] | None = None,
+    allow_indices: bool,
+    rebase_arrived_at: bool,
+) -> pd.DataFrame:
+    """Return a subset of trace rows, validating inputs and preserving row order.
+
+    Parameters
+    ----------
+    df:
+        Canonical trace dataframe.
+    spec:
+        Trace validation parameters.
+    kind:
+        Subset mode: "all", "range", or "indices".
+    begin, end:
+        Row bounds for "range" selection (Python slicing semantics, end-exclusive). `None` means
+        open-ended (begin defaults to 0; end defaults to len(df)).
+    indices:
+        Discrete row indices for "indices" selection. Only allowed when `allow_indices=True`.
+    allow_indices:
+        If False, `kind="indices"` is rejected with an actionable error. This is intended for
+        already-timed trace sources where non-contiguous selection is ambiguous.
+    rebase_arrived_at:
+        If True and `kind="range"`, subtract the first selected row's `arrived_at` so the subset
+        starts at time 0.0.
+    """
+    kind_str = str(kind)
+    if kind_str == "all":
+        out = df.copy()
+        validate_trace(out, spec=spec)
+        return out
+
+    n = len(df)
+    if n == 0:
+        raise ValueError("trace_subset: cannot select from an empty trace")
+
+    if kind_str == "range":
+        b = 0 if begin is None else _require_int("begin", begin)
+        e = n if end is None else _require_int("end", end)
+
+        if b < 0:
+            raise ValueError(f"trace_subset.begin must be >= 0 (got {b})")
+        if e < 0:
+            raise ValueError(f"trace_subset.end must be >= 0 (got {e})")
+        if b > n:
+            raise ValueError(f"trace_subset.begin out of bounds: begin={b} len={n}")
+        if e > n:
+            raise ValueError(f"trace_subset.end out of bounds: end={e} len={n}")
+        if b >= e:
+            raise ValueError(f"trace_subset range must be non-empty (got begin={b}, end={e})")
+
+        out = df.iloc[b:e].copy().reset_index(drop=True)
+        if rebase_arrived_at:
+            t0 = float(pd.to_numeric(out["arrived_at"], errors="raise").iloc[0])
+            out["arrived_at"] = pd.to_numeric(out["arrived_at"], errors="raise").astype(float) - t0
+
+        validate_trace(out, spec=spec)
+        return out
+
+    if kind_str == "indices":
+        if not allow_indices:
+            raise ValueError(
+                "trace_subset.kind=indices is only supported for untimed trace sources (those where arrivals are "
+                "generated inside the workflow); for timed trace sources, use trace_subset.kind=range instead."
+            )
+        if indices is None:
+            raise ValueError("trace_subset.kind=indices requires trace_subset.indices")
+
+        idx = _require_int_list("indices", indices)
+        if len(idx) == 0:
+            raise ValueError("trace_subset.indices must be non-empty")
+
+        seen: set[int] = set()
+        dup: set[int] = set()
+        for i in idx:
+            if i in seen:
+                dup.add(i)
+            seen.add(i)
+        if dup:
+            raise ValueError(f"trace_subset.indices contains duplicate indices (e.g. {sorted(dup)[:5]})")
+
+        lo = min(idx)
+        hi = max(idx)
+        if lo < 0 or hi >= n:
+            raise ValueError(f"trace_subset.indices out of bounds for len={n}: min={lo} max={hi}")
+
+        out = df.iloc[sorted(idx)].copy().reset_index(drop=True)
+        validate_trace(out, spec=spec)
+        return out
+
+    raise ValueError(f"trace_subset.kind must be one of ['all', 'range', 'indices'] (got {kind_str!r})")
 
 
 def read_trace_csv(path: Path, *, spec: TraceSpec) -> pd.DataFrame:
@@ -196,4 +315,3 @@ def add_poisson_arrivals(df: pd.DataFrame, *, qps: float, seed: int) -> pd.DataF
 
     out["arrived_at"] = arrivals
     return out
-

@@ -1,6 +1,11 @@
 # Features (from `tasks.md`)
 
-This page maps the implemented feature set (see `specs/001-compare-vidur-real-timing/tasks.md`) to concrete entrypoints, modules, and validation.
+This page maps the implemented feature sets to concrete entrypoints, modules, and validation.
+
+Two task checklists exist:
+
+- `specs/001-compare-vidur-real-timing/tasks.md`
+- `specs/002-reproduce-vidur-paper-fidelity/tasks.md`
 
 ## Phase 1: Shared foundation (Hydra + artifacts)
 
@@ -75,3 +80,47 @@ This page maps the implemented feature set (see `specs/001-compare-vidur-real-ti
 - Quickstart commands: `specs/001-compare-vidur-real-timing/quickstart.md`
 - Troubleshooting: `context/runbooks/001-compare-vidur-real-timing-troubleshooting.md`
 
+---
+
+## Paper fidelity (`002-reproduce-vidur-paper-fidelity`)
+
+### Entrypoints
+
+- Pixi task: `pixi run paper-fidelity` → `src/gpu_simulate_test/cli/paper_fidelity.py`
+- Hydra configs: `configs/paper_fidelity/` (stage configs + `scenario/` and `workload/` groups)
+
+### Core modules
+
+- Trace schema + conversions + subsetting:
+  - `src/gpu_simulate_test/paper_fidelity/traces.py` (canonical `trace.csv`, validators, Poisson arrivals, `apply_trace_subset`)
+- Stable artifact paths + provenance helpers:
+  - `src/gpu_simulate_test/paper_fidelity/paths.py`
+- Vidur simulation (paper metric columns):
+  - `src/gpu_simulate_test/vidur_ext/sim_runner.py` (`run_vidur_paper_fidelity_sim`)
+- Sarathi real replay (paper metric columns):
+  - `src/gpu_simulate_test/real_bench/backends/sarathi_paper_fidelity_backend.py`
+- Dynamic capacity search (85% operating point):
+  - `src/gpu_simulate_test/paper_fidelity/capacity.py`
+- Scoring + report:
+  - `src/gpu_simulate_test/paper_fidelity/scoring.py`
+  - `src/gpu_simulate_test/paper_fidelity/report.py`
+- Host profiling workflow:
+  - `src/gpu_simulate_test/paper_fidelity/profiling.py`
+  - `src/gpu_simulate_test/vidur_ext/profile_runner.py`
+
+### Validation
+
+- Unit tests:
+  - `tests/unit/test_paper_fidelity_trace.py`
+  - `tests/unit/test_paper_fidelity_capacity_search.py`
+  - `tests/unit/test_paper_fidelity_profiling_root.py`
+  - `tests/test_paper_fidelity_scorer.py`
+- Manual smoke scripts:
+  - `tests/manual/test_paper_fidelity_trace_smoke.py`
+  - `tests/manual/test_paper_fidelity_vidur_sim_smoke.py`
+  - `tests/manual/test_paper_fidelity_real_smoke.py` (GPU)
+  - `tests/manual/test_paper_fidelity_repro_smoke.py` (GPU)
+
+### Docs
+
+- Quickstart (paper fidelity): `specs/002-reproduce-vidur-paper-fidelity/quickstart.md`

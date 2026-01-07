@@ -62,3 +62,9 @@ paper_reference:
     load_frac_of_capacity: 0.85
     p50_json: ${paths.repo_root}/context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_85_p50.json
     p95_json: ${paths.repo_root}/context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_85_p95.json
+
+# Debugging: trace subsetting for fast iteration (override at the command line).
+# - Range subset (Python slicing semantics; end-exclusive):
+#     trace_subset.kind=range trace_subset.begin=0 trace_subset.end=32
+# - Discrete indices (only for untimed trace sources like `vidur_processed_lengths_csv`):
+#     trace_subset.kind=indices trace_subset.indices=[0,3,10,42]

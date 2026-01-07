@@ -1,8 +1,13 @@
 # Artifacts and schemas
 
-This workflow standardizes outputs across the real run and the Vidur simulation to make comparisons straightforward.
+This repo emits two families of artifacts, depending on which workflow you run:
 
-## Workload spec (`tmp/workloads/<workload_id>/`)
+- `001-compare-vidur-real-timing`: workload spec + real/sim metrics + a comparison report
+- `002-reproduce-vidur-paper-fidelity`: canonical trace + sim/real paper-metric CSVs + a report
+
+## A) Compare Vidur vs real timing (`001-compare-vidur-real-timing`)
+
+### Workload spec (`tmp/workloads/<workload_id>/`)
 
 - `prompts.jsonl`: prompt id + prompt text
 - `trace_lengths.csv`: one row per request with token counts
@@ -11,9 +16,9 @@ This workflow standardizes outputs across the real run and the Vidur simulation 
   - required: `request_id`, `arrival_time_ns`, `inter_arrival_ns`
 - `workload_meta.json`: resolved config + provenance snapshot
 
-## Real run (`tmp/real_runs/<run_id>/`)
+### Real run (`tmp/real_runs/<run_id>/`)
 
-### `request_metrics.csv`
+#### `request_metrics.csv`
 
 One row per request.
 
@@ -34,7 +39,7 @@ Notes:
 - All timestamps are integer nanoseconds relative to run start (monotonic).
 - If multiple requests share the same `arrival_time_ns` and the runner is sequential, `ttft_ns` will include queueing behind earlier requests.
 
-### `token_metrics.csv`
+#### `token_metrics.csv`
 
 Long format: one row per decoded token.
 
@@ -45,7 +50,7 @@ Required columns (see `specs/001-compare-vidur-real-timing/contracts/token_metri
 - `token_time_ns`
 - `token_latency_ns` (delta from previous token for that request)
 
-## Vidur sim (`tmp/vidur_runs/<run_id>/`)
+### Vidur sim (`tmp/vidur_runs/<run_id>/`)
 
 The standardized outputs match the real run schema:
 
@@ -55,7 +60,7 @@ The standardized outputs match the real run schema:
 
 Important: Vidur’s simulator produces request-level metrics and the wrapper derives a token timeline from them. For details, see `src/gpu_simulate_test/vidur_ext/sim_runner.py`.
 
-## Comparison report (`tmp/comparisons/<comparison_id>/`)
+### Comparison report (`tmp/comparisons/<comparison_id>/`)
 
 - `summary.md`: quick read (p50/p90/p99 tables)
 - `tables/ttft_percentiles.csv`
@@ -64,3 +69,45 @@ Important: Vidur’s simulator produces request-level metrics and the wrapper de
 
 Token alignment note: comparisons truncate the sim series to match `num_decode_tokens_actual` from the real run (see `src/gpu_simulate_test/analysis/compare.py`).
 
+## B) Paper fidelity reproduction (`002-reproduce-vidur-paper-fidelity`)
+
+This workflow is trace-driven: a canonical `trace.csv` is the shared input to both Vidur simulation and Sarathi real replay.
+
+### Trace (`tmp/paper_fidelity/traces/<scenario>/`)
+
+- `trace.csv`: canonical trace input consumed end-to-end
+  - required: `arrived_at` (seconds since start), `num_prefill_tokens`, `num_decode_tokens`
+  - optional: `request_id`, `prompt_id`
+- `trace_meta.json`: trace provenance (source kind/path, seed, workload mode, and any `trace_subset` selection)
+
+Trace subsetting is supported via config overrides:
+
+- `trace_subset.kind=range trace_subset.begin=<b> trace_subset.end=<e>` for timed and untimed sources
+- `trace_subset.kind=indices trace_subset.indices=[...]` only for untimed sources (those where arrivals are generated inside the workflow)
+
+### Runs (`tmp/paper_fidelity/runs/<scenario>/`)
+
+- `sim/`
+  - `request_metrics.csv`: Vidur request-level paper metric columns (normalized metrics are preserved from Vidur raw outputs)
+  - `vidur_raw/`: Vidur’s raw metric directory (for debugging)
+  - `run_meta.json`
+- `real/`
+  - `request_metrics.csv`: Sarathi request-level paper metric columns (converted from Sarathi `sequence_metrics.csv`)
+  - `sarathi/replica_0/sequence_metrics.csv` (raw Sarathi metrics)
+  - `run_meta.json`
+- `capacity/` (dynamic repro only)
+  - `capacity.json`: discovered `capacity_qps` and `qps_85`, plus the overload criterion used
+  - `qps_<x>/`: per-candidate Sarathi runs during search
+
+Paper-fidelity request metric columns (required on both sim and real sides):
+
+- `request_id`
+- `request_scheduling_delay`
+- `request_execution_plus_preemption_time_normalized`
+- `request_e2e_time_normalized`
+- `request_num_decode_tokens`
+
+### Report (`results/reports/<date>/paper_fidelity/<scenario>/`)
+
+- `summary.md`: score tables + optional “gap diagnosis”
+- `run_meta.json`: resolved config, provenance, and (when enabled) paper reference metadata

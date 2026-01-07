@@ -3,6 +3,14 @@ defaults:
   - workload: static
   - _self_
 
+trace_subset:
+  # Subset selection is by row index in the canonical trace representation.
+  # kind: all|range|indices
+  kind: all
+  begin: 0
+  end: null
+  indices: null
+
 paths:
   repo_root: ${hydra:runtime.cwd}
   tmp_root: ${paths.repo_root}/tmp
@@ -13,4 +21,3 @@ hydra:
     dir: ${paths.tmp_root}/paper_fidelity/runs/${scenario.name}/trace
   job:
     chdir: true
-
