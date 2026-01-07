@@ -27,12 +27,45 @@ This Q&A captures implementation questions for the Vidur host-profiling bundle w
 - Useful bounded run (explicit output dir): `pixi run python -m gpu_simulate_test.cli.vidur_profiling_bundle output.dir=tmp/vidur_profiling_bundle_smoke/run1 profiling.max_tokens=256 profiling.attention.max_batch_size=1 profiling.attention.profile_mode=both`.
 - If you need to force knobs: override `model.model_id=meta-llama/Llama-2-7b-hf`, `hardware.hardware_id=<device>`, and attention settings like `profiling.attention.backend=FLASHINFER` in the same command line.
 
-## [question title]
-> Last revised at: `2026-01-07T08:11:45Z` | Last revised base commit: `4059227c22da9789a275dcd9e8ef1063520c3ed5`
+## Given GPU type and LLM model, what Vidur profiling options exist, and which are configurable in this repo?
+> Last revised at: `2026-01-07T09:09:26Z` | Last revised base commit: `710c808f79d5c2b6e475d0e541e9c663d48c5627`
 
-- [answer/code]
+- **Vidur compute profilers (upstream flags)**:
+  - MLP: `extern/tracked/vidur/vidur/profiling/mlp/main.py` supports `--num_gpus`, `--models`, `--num_tensor_parallel_workers`, `--max_tokens`, `--profile_method`, plus `--disable_ray` and `--output_dir`.
+  - Attention: `extern/tracked/vidur/vidur/profiling/attention/main.py` supports `--num_gpus`, `--models`, `--num_tensor_parallel_workers`, `--max_model_len`, `--max_seq_len`, `--min_batch_size`, `--max_batch_size`, `--profile_only_decode|--profile_only_prefill`, `--attention_backend`, `--block_size`, plus `--disable_ray` and `--output_dir`.
+- **Configurable via this repo’s wrapper (`configs/vidur_profiling/bundle.yaml`)**:
+  - `profiling.num_gpus` → `--num_gpus` (MLP + attention)
+  - `model.model_id` → `--models <hf_id>` (MLP + attention)
+  - `profiling.tensor_parallel_size` → `--num_tensor_parallel_workers <tp>` (MLP + attention)
+  - `profiling.max_tokens` → `--max_tokens` (MLP) and `--max_model_len/--max_seq_len` (attention)
+  - `profiling.attention.profile_mode` → `--profile_only_decode|--profile_only_prefill|<none>` (attention)
+  - `profiling.attention.backend` → `--attention_backend <FLASHINFER|NO_OP|...>` (attention; Sarathi backend)
+  - `profiling.attention.block_size` → `--block_size <n>` (attention)
+  - `profiling.attention.min_batch_size` / `profiling.attention.max_batch_size` → `--min_batch_size` / `--max_batch_size` (attention)
+  - `output.cache_dir` is used as Vidur’s `--output_dir` (where upstream profilers write timestamped outputs); curated CSVs land in the required `output.dir`.
+- **Not currently configurable via this repo’s wrapper (would require code changes)**:
+  - `--disable_ray` (MLP + attention) and MLP `--profile_method` (we always use Vidur defaults in the wrapper).
+  - Any changes to dtypes or other hardcoded profiler internals (e.g., attention uses `torch.float16` in `attention/main.py`).
+- **Other Vidur profilers (not used by `vidur-profiling` today)**:
+  - Network/collectives: `extern/tracked/vidur/vidur/profiling/collectives/main.py` (`--collective`, `--max_collective_size`, `--num_workers_per_node_combinations`, `--output_dir`).
+  - CPU overhead: `extern/tracked/vidur/vidur/profiling/cpu_overhead/main.py` (`--models`, `--num_tensor_parallel_workers`, `--max_batch_size`, `--output_dir`).
 
-## [question title]
-> Last revised at: `2026-01-07T08:11:45Z` | Last revised base commit: `4059227c22da9789a275dcd9e8ef1063520c3ed5`
+## What values are acceptable for Vidur’s MLP `--profile_method`, and what do they mean?
+> Last revised at: `2026-01-07T09:26:28Z` | Last revised base commit: `710c808f79d5c2b6e475d0e541e9c663d48c5627`
 
-- [answer/code]
+- Accepted values are the `ProfileMethod` enum values in `extern/tracked/vidur/vidur/profiling/utils/__init__.py`: `cuda_event`, `kineto`, `perf_counter`, `record_function` (wired into `extern/tracked/vidur/vidur/profiling/mlp/main.py` as `choices=[e.value for e in ProfileMethod]`).
+- `cuda_event`: uses CUDA events to time GPU work inside each `CudaTimer` scope (low overhead; GPU-time focused) (`extern/tracked/vidur/vidur/profiling/common/cuda_timer.py`).
+- `kineto`: uses `torch.profiler.profile` (Kineto) per `CudaTimer` scope and sums CUDA event times for the scope (highest overhead; useful for detailed profiling/diagnosis) (`extern/tracked/vidur/vidur/profiling/common/cuda_timer.py`).
+- `perf_counter`: uses `time.perf_counter()` with `torch.cuda.synchronize()` before/after the timed region (simple wall-clock; includes sync and some CPU overhead) (`extern/tracked/vidur/vidur/profiling/common/cuda_timer.py`).
+- `record_function`: captures a full profiler trace and then parses Chrome-trace events to attribute CUDA time to Vidur’s record-function annotations (detailed breakdown; writes JSON traces under `*/profiler_traces/`) (`extern/tracked/vidur/vidur/profiling/utils/record_function_tracer.py`, `extern/tracked/vidur/vidur/profiling/mlp/mlp_wrapper.py`).
+- Default in Vidur’s MLP profiler is `record_function` (`extern/tracked/vidur/vidur/profiling/mlp/main.py`). This repo’s `vidur-profiling` wrapper does not currently expose `--profile_method`; it relies on Vidur defaults (see `src/gpu_simulate_test/vidur_ext/profile_runner.py`).
+
+## For CPU overhead profiling, what does it measure, and what do the paper and Vidur repo recommend?
+> Last revised at: `2026-01-07T09:37:18Z` | Last revised base commit: `710c808f79d5c2b6e475d0e541e9c663d48c5627`
+
+- Vidur’s “CPU overhead” profiling is meant to capture implementation overheads in the serving stack (e.g., scheduling, sampling, detokenization / output processing) on top of pure GPU compute (`extern/tracked/vidur/docs/profiling.md`).
+- In the current upstream implementation, it runs Sarathi’s `LLMEngine` with `scheduler_type="vllm"` and `enable_cpu_op_level_metrics=True`, and reports per-step CPU operation metrics like `SCHEDULE`, `PREPARE_INPUTS_E2E`, `MODEL_EXECUTION_E2E`, `PROCESS_MODEL_OUTPUTS`, and `SAMPLER_E2E` (`extern/tracked/vidur/vidur/profiling/cpu_overhead/benchmark_runner.py`, `extern/tracked/sarathi-serve/sarathi/metrics/constants.py`).
+- Each “CPU op” metric is timed via `sarathi.metrics.cpu_timer.CpuTimer`, which uses `time.perf_counter()` and calls `torch.cuda.synchronize()` before recording; interpret these as host wall-clock times for the scoped region (they can include GPU-wait time inside the scope, not just pure CPU compute) (`extern/tracked/sarathi-serve/sarathi/metrics/cpu_timer.py`).
+- The CPU-overhead benchmark also computes `ray_comm_time_mean` as the leftover per-step wall time after subtracting the summed tracked CPU op times; this effectively captures un-attributed coordination overhead (e.g., Ray comm/scheduling) (`extern/tracked/vidur/vidur/profiling/cpu_overhead/benchmark_runner.py`).
+- Vidur’s repo explicitly recommends profiling CPU overhead “for better fidelity”, but notes it tightly couples the simulator to the specific implementation (e.g., vLLM), and the scripts are “not documented yet” (`extern/tracked/vidur/docs/profiling.md`).
+- The Vidur paper states their evaluations use an optimized vLLM fork with CUDA graphs, “which eliminates unnecessary CPU overheads”, and attributes the 7B model’s slightly higher error to higher CPU overhead; to align with paper conditions, keep the serving stack optimized (CUDA graphs / reduced CPU overhead) and consistent with what you simulate, or profile CPU overhead using that same stack (`extern/tracked/vidur/paper/tex/5-eval.tex`).
