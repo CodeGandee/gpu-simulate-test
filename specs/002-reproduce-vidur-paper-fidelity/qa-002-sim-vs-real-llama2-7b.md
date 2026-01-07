@@ -70,3 +70,19 @@ This Q&A is for developers (including future maintainers) comparing Vidur simula
   - Capacity search uses an intermediate trace at `tmp/paper_fidelity/runs/<scenario>/capacity/trace.csv` (overwritten as QPS candidates change).
   - The final dynamic trace used by both Vidur and Sarathi is written to `tmp/paper_fidelity/traces/<scenario>/trace.csv` (with `trace_meta.json` alongside).
   - `<output-dir>` (Hydra run dir) does not control these paths; it only controls Hydra’s working directory (`configs/paper_fidelity/repro.yaml`).
+
+## How do we run real LLaMA2-7B inference with Sarathi-Serve and generate comparable metrics from `extern/tracked/vidur/data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_v2.csv`, and do we need the original dataset?
+> Last revised at: `2026-01-07T14:08:53Z` | Last revised base commit: `2f4ba6ba9b90b79850bd22a1cba6b4a702d5ad5e`
+
+- You do **not** need the original text dataset: the Vidur processed trace CSV already contains the *token-length distribution* (`num_prefill_tokens`, `num_decode_tokens`) used by the paper; this workflow replays *lengths*, not raw prompts.
+- You **do** need the model weights available locally via `models/llama2-7b-hf/source-data` (symlink); bootstrap if needed:
+  - `bash models/llama2-7b-hf/bootstrap.sh` (or set `GSIM_MODELS_ROOT` as documented in `models/llama2-7b-hf/README.md`).
+- Generate a canonical `trace.csv` from the processed-lengths CSV (the baseline `llama2_7b_arxiv` scenario already points at that file in `configs/paper_fidelity/scenario/llama2_7b_arxiv.yaml`):
+  - Static: `pixi run paper-fidelity trace --scenario llama2_7b_arxiv --workload static`
+  - Dynamic (Poisson arrivals at chosen QPS): `pixi run paper-fidelity trace --scenario llama2_7b_arxiv --workload dynamic workload.qps=<qps>`
+  - Optional: bound run size with `scenario.trace_source.num_requests=<N>` (otherwise uses all available rows from the processed trace after max-token filtering).
+- Run the real replay (Sarathi-Serve) and write comparable, paper-aligned metrics:
+  - Easiest path is `paper-fidelity repro`, which runs both Vidur sim and Sarathi real on the same `trace.csv`; the Sarathi metrics you want are in `tmp/paper_fidelity/runs/<scenario>/real/request_metrics.csv`:
+    - `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static`
+    - `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload dynamic`
+  - Under the hood, Sarathi replays the canonical `trace.csv` and submits requests when wall-clock reaches `start + arrived_at`, while using in-engine metrics (not client timers) to emit `request_scheduling_delay`, `request_execution_plus_preemption_time_normalized`, and `request_e2e_time_normalized` (`src/gpu_simulate_test/real_bench/backends/sarathi_paper_fidelity_backend.py`).
