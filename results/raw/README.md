@@ -19,6 +19,8 @@ If you need to intentionally keep a specific raw directory in git, add a negatio
   machine.
   - Produced by `pixi run vidur-profiling` (`scripts/run_vidur_profiling_llama2_7b.sh`).
   - Layout: `results/raw/vidur-profiling/<model-slug>/<scheduler-name>/<run_id>/`
+  - Convenience: `results/raw/vidur-profiling/<model-slug>/<scheduler-name>/latest` is a local symlink that can point to
+    the most recent run on this host (note: it is ignored by git via `results/raw/.gitignore`).
   - Each run directory is a Vidur-compatible profiling root containing:
     - Curated outputs (useful): `data/profiling/compute/<device>/<org>/<model>/{mlp.csv,attention.csv}`
     - Provenance: `profiling_meta.json` (commands, params, environment snapshot)
@@ -28,4 +30,5 @@ If you need to intentionally keep a specific raw directory in git, add a negatio
     vendor bundles) and also depends on `--max_seq_len`, `--min_batch_size/--max_batch_size`, and
     `--profile_only_decode/--profile_only_prefill` (plus Vidur/Sarathi version/backends). Use `profiling_meta.json` to
     compare the actual knobs used.
-  - Example (complete run): `results/raw/vidur-profiling/llama2-7b/sarathi-serve/2026-01-07_10-43-39-975600338/`
+  - Example (latest run): `results/raw/vidur-profiling/llama2-7b/sarathi-serve/latest/`
+  - Example (timestamped run): `results/raw/vidur-profiling/llama2-7b/sarathi-serve/2026-01-07_15-15-15-281697026/`
