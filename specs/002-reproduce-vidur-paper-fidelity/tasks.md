@@ -11,8 +11,8 @@
 
 **Implementation guides**: Step-by-step implementation notes (APIs, flows, test inputs) live under:
 
-- `<WORKSPACE_ROOT>/context/tasks/working/002-reproduce-vidur-paper-fidelity/impl-phase-*.md`
-- `<WORKSPACE_ROOT>/context/tasks/working/002-reproduce-vidur-paper-fidelity/impl-integrate-phases.md`
+- `<WORKSPACE_ROOT>/context/tasks/done/002-reproduce-vidur-paper-fidelity/impl-phase-*.md`
+- `<WORKSPACE_ROOT>/context/tasks/done/002-reproduce-vidur-paper-fidelity/impl-integrate-phases.md`
 
 Use this file (`tasks.md`) as the **authoritative checklist**; use the guides to implement and validate each phase.
 

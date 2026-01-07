@@ -5,8 +5,8 @@
 This Q&A doc captures implementation questions and answers for Phase 3 (US1: end-to-end reproduction report) of the `002-reproduce-vidur-paper-fidelity` workflow, intended for developers (including future maintainers).
 
 **Related docs**
-- `context/tasks/working/002-reproduce-vidur-paper-fidelity/impl-phase-3-repro-report.md`
-- `context/tasks/working/002-reproduce-vidur-paper-fidelity/impl-integrate-phases.md`
+- `context/tasks/done/002-reproduce-vidur-paper-fidelity/impl-phase-3-repro-report.md`
+- `context/tasks/done/002-reproduce-vidur-paper-fidelity/impl-integrate-phases.md`
 - `specs/002-reproduce-vidur-paper-fidelity/spec.md`
 - `specs/002-reproduce-vidur-paper-fidelity/plan.md`
 - `specs/002-reproduce-vidur-paper-fidelity/tasks.md`
@@ -31,7 +31,7 @@ This Q&A doc captures implementation questions and answers for Phase 3 (US1: end
   - **Static fidelity metric**: `request_execution_plus_preemption_time_normalized` (paper: static trace figure).
   - **Dynamic fidelity metric**: `request_e2e_time_normalized` at the **85% capacity** operating point (paper: dynamic trace figure).
 - Paper references: `extern/tracked/vidur/paper/tex/figures-tex/fig-fidelity-static-trace.tex` and `extern/tracked/vidur/paper/tex/figures-tex/fig-fidelity-dynamic-trace.tex`.
-- Local SVG copies of the corresponding paper figures are under `context/tasks/working/002-reproduce-vidur-paper-fidelity/figures/` (converted from `extern/tracked/vidur/paper/tex/graphs/*.pdf` via Poppler `pdftocairo -svg`):
+- Local SVG copies of the corresponding paper figures are under `context/tasks/done/002-reproduce-vidur-paper-fidelity/figures/` (converted from `extern/tracked/vidur/paper/tex/graphs/*.pdf` via Poppler `pdftocairo -svg`):
   - Static P50: [static_fidelity_v12_request_execution_plus_preemption_time_normalized_p50.svg](figures/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p50.svg)
   - Static P95: [static_fidelity_v12_request_execution_plus_preemption_time_normalized_p95.svg](figures/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p95.svg)
   - Dynamic @85% capacity P50: [dynamic_fidelity_v8_request_e2e_time_normalized_85_p50.svg](figures/dynamic_fidelity_v8_request_e2e_time_normalized_85_p50.svg)

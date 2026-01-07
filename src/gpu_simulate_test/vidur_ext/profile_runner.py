@@ -39,6 +39,21 @@ class VidurProfileInputs:
     staging_root
         Optional directory for large intermediate profiler outputs; defaults to
         `<profiling_root>/_staging` when omitted.
+    include_network
+        Whether to stage Vidur network profiling CSVs into the profiling root when available.
+    attention_backend
+        Optional attention backend passed to Vidur's attention profiler (Sarathi backend name).
+        When unset, Vidur's default is used.
+    attention_block_size
+        Block size used for paged attention profiling.
+    attention_min_batch_size
+        Minimum decode batch size to profile in the attention profiler.
+    attention_max_batch_size
+        Maximum decode batch size to profile in the attention profiler.
+    attention_profile_mode
+        Which phase(s) to profile in the attention profiler: `decode`, `prefill`, or `both`.
+    allow_attention_fallback
+        Whether to fall back to a packaged template `attention.csv` when attention profiling fails.
     """
 
     model_id: str
@@ -49,6 +64,13 @@ class VidurProfileInputs:
     tensor_parallel_size: int = 1
     max_tokens: int = 4096
     staging_root: Path | None = None
+    include_network: bool = True
+    attention_backend: str | None = None
+    attention_block_size: int = 16
+    attention_min_batch_size: int = 1
+    attention_max_batch_size: int = 1
+    attention_profile_mode: str = "decode"
+    allow_attention_fallback: bool = True
 
 
 @dataclass(frozen=True)
@@ -197,15 +219,27 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
     if not torch.cuda.is_available():
         raise RuntimeError("Vidur profiling requires a CUDA-capable GPU (torch.cuda.is_available() is False).")
 
+    if inputs.attention_min_batch_size < 1 or inputs.attention_max_batch_size < 1:
+        raise ValueError("attention_min_batch_size and attention_max_batch_size must both be >= 1")
+    if inputs.attention_min_batch_size > inputs.attention_max_batch_size:
+        raise ValueError("attention_min_batch_size must be <= attention_max_batch_size")
+
     inputs.profiling_root.mkdir(parents=True, exist_ok=True)
 
     profiling_base = inputs.profiling_root / "data" / "profiling"
 
-    vidur_data = repo_root / "extern" / "tracked" / "vidur" / "data" / "profiling"
-    network_src = vidur_data / "network" / inputs.network_device
-    if network_src.exists():
-        _copy_if_missing(network_src / "all_reduce.csv", profiling_base / "network" / inputs.network_device / "all_reduce.csv")
-        _copy_if_missing(network_src / "send_recv.csv", profiling_base / "network" / inputs.network_device / "send_recv.csv")
+    if inputs.include_network:
+        vidur_data = repo_root / "extern" / "tracked" / "vidur" / "data" / "profiling"
+        network_src = vidur_data / "network" / inputs.network_device
+        if network_src.exists():
+            _copy_if_missing(
+                network_src / "all_reduce.csv",
+                profiling_base / "network" / inputs.network_device / "all_reduce.csv",
+            )
+            _copy_if_missing(
+                network_src / "send_recv.csv",
+                profiling_base / "network" / inputs.network_device / "send_recv.csv",
+            )
 
     if inputs.staging_root is None:
         staging = inputs.profiling_root / "_staging"
@@ -260,19 +294,31 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
         "--max_seq_len",
         str(int(inputs.max_tokens)),
         "--min_batch_size",
-        "1",
+        str(int(inputs.attention_min_batch_size)),
         "--max_batch_size",
-        "1",
-        "--profile_only_decode",
+        str(int(inputs.attention_max_batch_size)),
     ]
+    if inputs.attention_backend is not None:
+        attn_cmd.extend(["--attention_backend", str(inputs.attention_backend)])
+    attn_cmd.extend(["--block_size", str(int(inputs.attention_block_size))])
+
+    mode = str(inputs.attention_profile_mode).lower().strip()
+    if mode not in {"decode", "prefill", "both"}:
+        raise ValueError(f"Unsupported attention_profile_mode={inputs.attention_profile_mode!r} (expected decode|prefill|both)")
+    if mode == "decode":
+        attn_cmd.append("--profile_only_decode")
+    elif mode == "prefill":
+        attn_cmd.append("--profile_only_prefill")
 
     extra: dict[str, Any] = {}
     subprocess.check_call(mlp_cmd, cwd=repo_root)
+    attn_exc: subprocess.CalledProcessError | None = None
     try:
         subprocess.check_call(attn_cmd, cwd=repo_root)
         attention_ok = True
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
         attention_ok = False
+        attn_exc = e
 
     mlp_latest = _latest_dir(staging / "mlp")
     mlp_src = mlp_latest / inputs.model_id / "mlp.csv"
@@ -299,13 +345,16 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
             extra=extra,
         )
 
+    if not inputs.allow_attention_fallback:
+        raise attn_exc if attn_exc is not None else subprocess.CalledProcessError(returncode=1, cmd=attn_cmd)
+
     template = _pick_attention_template(repo_root=repo_root, hardware_id=inputs.hardware_id)
     _write_attention_fallback(
         template_csv=template,
         out_csv=attn_dst,
         model_id=inputs.model_id,
         tensor_parallel_size=int(inputs.tensor_parallel_size),
-        block_size=16,
+        block_size=int(inputs.attention_block_size),
     )
     return VidurProfileResult(
         profiling_root=inputs.profiling_root,

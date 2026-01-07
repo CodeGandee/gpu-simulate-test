@@ -201,6 +201,21 @@ Vidur ships profiling scripts under `extern/tracked/vidur/vidur/profiling/`:
 Once generated, the “vendor-provided” layout under `extern/tracked/vidur/data/profiling/` is just the **stable place**
 to store these CSVs so simulations can run without GPUs.
 
+### 5.3. Repo CLIs for host profiling bundles
+
+This repo includes wrappers that run Vidur’s profilers on the current machine (GPU required) and stage outputs into a Vidur-compatible profiling root (`data/profiling/...`):
+
+- `pixi run paper-fidelity profile --scenario llama2_7b_arxiv` produces a host profiling root under `tmp/paper_fidelity/profiling_roots/<scenario>/<run_id>/data/profiling/...` (see `src/gpu_simulate_test/cli/paper_fidelity.py`, `src/gpu_simulate_test/paper_fidelity/profiling.py`).
+- `pixi run vidur-profile ...` runs a generic profiling workflow (initially used for `001-compare-vidur-real-timing`) and writes under the configured `vidur.profiling.root` (see `src/gpu_simulate_test/cli/vidur_profile.py`).
+- `pixi run vidur-profiling` exports a curated compute-only bundle for LLaMA2-7B to a timestamped output directory under `results/raw/vidur-profiling/llama2-7b/sarathi-serve/<run_id>/` (scripted via `scripts/run_vidur_profiling_llama2_7b.sh`).
+
+Notes:
+
+- The exporter requires an explicit `output.dir` (useful outputs for the user). `output.cache_dir` is optional and defaults to `<output.dir>/cache` (debugging/intermediate outputs) (see `configs/vidur_profiling/bundle.yaml`, `src/gpu_simulate_test/vidur_ext/profiling_bundle.py`).
+- The `vidur-profiling` bundle defaults to **compute-only** (no network profiling, no CPU-overhead profiling) for TP=1/PP=1 workflows; extend as needed for TP>1/PP>1 or CPU-overhead modeling.
+- `vidur-profiling` defaults to `profiling.allow_attention_fallback=false` so failures in attention profiling surface early; set `profiling.allow_attention_fallback=true` to fall back to a packaged template `attention.csv` when needed.
+- `results/` is not ignored by git; avoid committing large profiling artifacts (prefer treating `results/raw/vidur-profiling/**` as local outputs unless you explicitly want to version them).
+
 ## 6. How the trace data is obtained (paper + repo assumptions)
 
 ### 6.1. Methodology in the paper

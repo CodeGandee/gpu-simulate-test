@@ -1,0 +1,46 @@
+defaults:
+  - _self_
+
+paths:
+  repo_root: ${hydra:runtime.cwd}
+  tmp_root: ${paths.repo_root}/tmp
+  results_root: ${paths.repo_root}/results
+
+output:
+  # Required. This is the "useful outputs" directory (profiling root) written for the user.
+  dir: ???
+  # Optional. Intermediate outputs for debugging. Defaults to <output.dir>/cache.
+  cache_dir: ${output.dir}/cache
+  model_slug: llama2-7b
+  scheduler_name: sarathi-serve
+
+model:
+  model_id: meta-llama/Llama-2-7b-hf
+
+hardware:
+  hardware_id: a100
+  network_device: a100_pairwise_nvlink
+
+profiling:
+  num_gpus: 1
+  tensor_parallel_size: 1
+  max_tokens: 4096
+
+  # Keep the exported bundle compute-only for TP=1/PP=1 experiments.
+  include_network: false
+
+  # By default, fail if attention profiling cannot be measured on this host.
+  allow_attention_fallback: false
+
+  attention:
+    profile_mode: both
+    backend: FLASHINFER
+    block_size: 16
+    min_batch_size: 1
+    max_batch_size: 128
+
+hydra:
+  run:
+    dir: ${output.cache_dir}/hydra
+  job:
+    chdir: true

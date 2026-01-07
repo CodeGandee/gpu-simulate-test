@@ -8,7 +8,7 @@
   - `specs/002-reproduce-vidur-paper-fidelity/spec.md` (success criteria and terminology)
   - `specs/002-reproduce-vidur-paper-fidelity/tasks.md` (current authoritative checklist; needs extension)
   - `specs/002-reproduce-vidur-paper-fidelity/quickstart.md` (user-facing run commands; needs host-profiling section)
-  - `context/tasks/working/002-reproduce-vidur-paper-fidelity/qa-impl-phase-3-repro-report.md` (defines “sanity-check vs gap reproduction” expectations)
+  - `context/tasks/done/002-reproduce-vidur-paper-fidelity/qa-impl-phase-3-repro-report.md` (defines “sanity-check vs gap reproduction” expectations)
   - `src/gpu_simulate_test/cli/paper_fidelity.py` (current orchestration entrypoint)
   - `src/gpu_simulate_test/vidur_ext/profile_runner.py` (existing Vidur profiling orchestration we can reuse)
   - `src/gpu_simulate_test/vidur_ext/sim_runner.py` (uses `scenario.vidur.profiling_root`; currently skips CPU-overhead modeling)
@@ -123,31 +123,31 @@ Milestones (subtasks):
 
 Goal: add a `paper-fidelity profile` entrypoint (Hydra config + CLI wiring) without changing existing `repro/trace/score` behavior.
 
-- Subtask spec: `context/tasks/working/002-reproduce-vidur-paper-fidelity/subtasks-sim-vs-real-gap-reproduction/subtask-004-101-profile-cli-config.md`
+- Subtask spec: `context/tasks/done/002-reproduce-vidur-paper-fidelity/subtasks-sim-vs-real-gap-reproduction/subtask-004-101-profile-cli-config.md`
 
 ### 4.2 Profiling artifact paths and layouts
 
 Goal: define stable, repo-consistent paths for profiling outputs and host profiling roots under `tmp/paper_fidelity/`.
 
-- Subtask spec: `context/tasks/working/002-reproduce-vidur-paper-fidelity/subtasks-sim-vs-real-gap-reproduction/subtask-004-102-profiling-paths.md`
+- Subtask spec: `context/tasks/done/002-reproduce-vidur-paper-fidelity/subtasks-sim-vs-real-gap-reproduction/subtask-004-102-profiling-paths.md`
 
 ### 4.3 Host profiling orchestration
 
 Goal: generate a host profiling root by running Vidur profiling entrypoints (MLP + attention) and staging required CSVs into `data/profiling/...`.
 
-- Subtask spec: `context/tasks/working/002-reproduce-vidur-paper-fidelity/subtasks-sim-vs-real-gap-reproduction/subtask-004-103-host-profiling-orchestration.md`
+- Subtask spec: `context/tasks/done/002-reproduce-vidur-paper-fidelity/subtasks-sim-vs-real-gap-reproduction/subtask-004-103-host-profiling-orchestration.md`
 
 ### 4.4 Repro integration and interpretation
 
 Goal: make it easy to run `paper-fidelity repro` with a host profiling root, and ensure reports clearly record “paper vs host” profiling provenance.
 
-- Subtask spec: `context/tasks/working/002-reproduce-vidur-paper-fidelity/subtasks-sim-vs-real-gap-reproduction/subtask-004-104-repro-integration-reporting.md`
+- Subtask spec: `context/tasks/done/002-reproduce-vidur-paper-fidelity/subtasks-sim-vs-real-gap-reproduction/subtask-004-104-repro-integration-reporting.md`
 
 ### 4.5 Validation and docs
 
 Goal: add tests + smoke scripts for the host-profiling path and document how to run and interpret “gap reproduction”.
 
-- Subtask spec: `context/tasks/working/002-reproduce-vidur-paper-fidelity/subtasks-sim-vs-real-gap-reproduction/subtask-004-105-tests-and-docs.md`
+- Subtask spec: `context/tasks/done/002-reproduce-vidur-paper-fidelity/subtasks-sim-vs-real-gap-reproduction/subtask-004-105-tests-and-docs.md`
 
 TODOs:
 - [X] Job-004-101 Complete subtask 4.1 (profile CLI + config scaffold)

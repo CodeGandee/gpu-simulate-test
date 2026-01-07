@@ -9,7 +9,7 @@
   - `extern/tracked/vidur/paper/tex/figures-tex/fig-fidelity-static-trace.tex` (static metric: `request_execution_plus_preemption_time_normalized`)
   - `extern/tracked/vidur/paper/tex/figures-tex/fig-fidelity-dynamic-trace.tex` (dynamic metric: `request_e2e_time_normalized` at 85% capacity)
   - `extern/tracked/vidur/docs/metrics.md` (definitions of `a_r`, `s_r`, `f_r`, `c_r` and derived metrics)
-  - `context/summaries/about-vidur-gpu-simulator.md` (Vidur design + timing boundaries)
+  - `context/summaries/vidur-kb/about-vidur-gpu-simulator.md` (Vidur design + timing boundaries)
   - `docs/developer/architecture.md` (repo pipeline: workload → real-bench/vidur-sim → compare)
   - `models/README.md` (local model references for paper models)
   - `extern/orphan/vllm/` (real engine reference checkout; ignored by git)

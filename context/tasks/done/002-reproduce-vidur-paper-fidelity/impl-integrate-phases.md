@@ -243,7 +243,7 @@ pixi run python tests/manual/test_paper_fidelity_repro_smoke.py
 
 ## References
 
-- Individual phase guides: `context/tasks/working/002-reproduce-vidur-paper-fidelity/impl-phase-*.md`
+- Individual phase guides: `context/tasks/done/002-reproduce-vidur-paper-fidelity/impl-phase-*.md`
 - Spec: `specs/002-reproduce-vidur-paper-fidelity/spec.md`
 - Data model: `specs/002-reproduce-vidur-paper-fidelity/data-model.md`
 - Contracts: `specs/002-reproduce-vidur-paper-fidelity/contracts/`

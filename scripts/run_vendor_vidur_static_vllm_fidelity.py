@@ -13,7 +13,7 @@ Outputs
 -------
 - Raw simulation outputs: `tmp/vendor-static-vllm/<gpu>-<model>-<trace>/...`
 - Summary index: `tmp/vendor-static-vllm/manifest.json`
-- Figures (SVG): `context/tasks/working/002-reproduce-vidur-paper-fidelity/figures/`
+- Figures (SVG): `context/tasks/done/002-reproduce-vidur-paper-fidelity/figures/`
 
 Notes
 -----

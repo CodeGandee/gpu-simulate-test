@@ -5,14 +5,14 @@
 This Q&A doc captures implementation questions and answers for the `001-compare-vidur-real-timing` workflow, intended for developers (including future maintainers).
 
 **Related docs**
-- `context/tasks/working/001-compare-vidur-real-timing/impl-integrate-phases.md`
-- `context/tasks/working/001-compare-vidur-real-timing/impl-phase-1-foundation.md`
-- `context/tasks/working/001-compare-vidur-real-timing/impl-phase-2-workload-spec.md`
-- `context/tasks/working/001-compare-vidur-real-timing/impl-phase-3-real-bench.md`
-- `context/tasks/working/001-compare-vidur-real-timing/impl-phase-4-vidur-integration.md`
-- `context/tasks/working/001-compare-vidur-real-timing/impl-phase-5-compare-runs.md`
-- `context/tasks/working/001-compare-vidur-real-timing/impl-phase-6-vidur-profile.md`
-- `context/tasks/working/001-compare-vidur-real-timing/impl-phase-7-docs.md`
+- `context/tasks/done/001-compare-vidur-real-timing/impl-integrate-phases.md`
+- `context/tasks/done/001-compare-vidur-real-timing/impl-phase-1-foundation.md`
+- `context/tasks/done/001-compare-vidur-real-timing/impl-phase-2-workload-spec.md`
+- `context/tasks/done/001-compare-vidur-real-timing/impl-phase-3-real-bench.md`
+- `context/tasks/done/001-compare-vidur-real-timing/impl-phase-4-vidur-integration.md`
+- `context/tasks/done/001-compare-vidur-real-timing/impl-phase-5-compare-runs.md`
+- `context/tasks/done/001-compare-vidur-real-timing/impl-phase-6-vidur-profile.md`
+- `context/tasks/done/001-compare-vidur-real-timing/impl-phase-7-docs.md`
 - `specs/001-compare-vidur-real-timing/spec.md`
 - `specs/001-compare-vidur-real-timing/plan.md`
 - `specs/001-compare-vidur-real-timing/tasks.md`

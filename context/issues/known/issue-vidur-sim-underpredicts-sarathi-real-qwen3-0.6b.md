@@ -64,4 +64,4 @@ Workload snapshot:
 
 - Experiment: `tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/summary.md`
 - Compare report: `tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/compare/summary.md`
-- Related design notes: `context/tasks/working/001-compare-vidur-real-timing/qa-001-compare-vidur-real-timing.md`
+- Related design notes: `context/tasks/done/001-compare-vidur-real-timing/qa-001-compare-vidur-real-timing.md`

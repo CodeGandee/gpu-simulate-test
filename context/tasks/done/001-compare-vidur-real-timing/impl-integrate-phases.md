@@ -104,7 +104,7 @@ pixi run python tests/manual/test_compare_runs_smoke.py         # CPU-only if in
 
 ## References
 
-- Individual phase guides: `context/tasks/working/001-compare-vidur-real-timing/impl-phase-*.md`
+- Individual phase guides: `context/tasks/done/001-compare-vidur-real-timing/impl-phase-*.md`
 - Spec: `specs/001-compare-vidur-real-timing/spec.md`
 - Tasks breakdown: `specs/001-compare-vidur-real-timing/tasks.md`
 - Data model: `specs/001-compare-vidur-real-timing/data-model.md`
