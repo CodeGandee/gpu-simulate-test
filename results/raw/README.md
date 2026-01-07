@@ -23,4 +23,9 @@ If you need to intentionally keep a specific raw directory in git, add a negatio
     - Curated outputs (useful): `data/profiling/compute/<device>/<org>/<model>/{mlp.csv,attention.csv}`
     - Provenance: `profiling_meta.json` (commands, params, environment snapshot)
     - Debug-only intermediates: `cache/` (raw profiler outputs; safe to delete if you only need the curated CSVs)
+  - Caveat: `attention.csv` row counts are not stable across runs and are not directly comparable to Vidur’s vendor CSVs.
+    The attention profiler’s grid size is mainly controlled by `--num_tensor_parallel_workers` (often multiple values in
+    vendor bundles) and also depends on `--max_seq_len`, `--min_batch_size/--max_batch_size`, and
+    `--profile_only_decode/--profile_only_prefill` (plus Vidur/Sarathi version/backends). Use `profiling_meta.json` to
+    compare the actual knobs used.
   - Example (complete run): `results/raw/vidur-profiling/llama2-7b/sarathi-serve/2026-01-07_10-43-39-975600338/`
