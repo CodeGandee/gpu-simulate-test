@@ -7,7 +7,7 @@ At a high level:
 - `extern/tracked/vidur/data/processed_traces/`: CSVs describing **request token lengths** (and sometimes **arrival times**) for workloads.
 - `extern/tracked/vidur/data/profiling/`: CSVs describing **per-op execution times** (compute) and **collective/network times** (communication), used by the simulator’s execution-time predictor.
 
-## Directory layout
+## 1. Directory layout
 
 ```text
 extern/tracked/vidur/data/
@@ -26,11 +26,11 @@ extern/tracked/vidur/data/
     # cpu_overhead/            # path exists in Vidur defaults, but may not be shipped here
 ```
 
-## Processed traces (`data/processed_traces/`)
+## 2. Processed traces (`data/processed_traces/`)
 
 Vidur uses “processed traces” as **token-length distributions** (and optionally arrival timestamps). These traces are already tokenized/filtered/trimmed to match the paper’s evaluation setup (e.g., 4K max context for LLaMA2-family experiments).
 
-### Two ways traces are consumed
+### 2.1. Two ways traces are consumed
 
 Vidur has two main trace ingestion modes (terminology based on Vidur config classes):
 
@@ -47,7 +47,7 @@ Vidur has two main trace ingestion modes (terminology based on Vidur config clas
    - `arrived_at` is interpreted as seconds from the beginning of the trace and can be rescaled via `time_scale_factor`.
    - Implementation: `extern/tracked/vidur/vidur/request_generator/trace_replay_request_generator.py`.
 
-### Column definitions (trace CSVs)
+### 2.2. Column definitions (trace CSVs)
 
 Common columns you will see:
 
@@ -60,7 +60,7 @@ Optional/derived columns that may exist (example: Arxiv trace):
 - `num_total_tokens`: `num_prefill_tokens + num_decode_tokens`.
 - `pd_ratio`: prompt-to-decode ratio (`num_prefill_tokens / num_decode_tokens`).
 
-### Token truncation and scaling semantics
+### 2.3. Token truncation and scaling semantics
 
 Both the length generator and the replay generator support:
 
@@ -73,7 +73,7 @@ See:
 - `extern/tracked/vidur/vidur/request_generator/trace_request_length_generator.py`
 - `extern/tracked/vidur/vidur/request_generator/trace_replay_request_generator.py`
 
-### What traces are shipped in this repo snapshot
+### 2.4. What traces are shipped in this repo snapshot
 
 This repo’s Vidur submodule snapshot currently includes:
 
@@ -86,7 +86,7 @@ This repo’s Vidur submodule snapshot currently includes:
 
 The Vidur paper references additional traces (e.g., Chat-1M, BWB-4K). Those may exist upstream but are not necessarily included in this submodule snapshot.
 
-## Profiling bundles (`data/profiling/`)
+## 3. Profiling bundles (`data/profiling/`)
 
 Vidur’s simulator predicts per-request timing by training regressors on profiling CSVs. The key idea is to decompose per-token latency into:
 
@@ -109,7 +109,7 @@ Placeholders are literal string replacements performed by Vidur:
 
 Implementation: `extern/tracked/vidur/vidur/execution_time_predictor/sklearn_execution_time_predictor.py` (`_get_input_files()`).
 
-### Compute profiling (`profiling/compute/<device>/<org>/<model>/`)
+### 3.1. Compute profiling (`profiling/compute/<device>/<org>/<model>/`)
 
 Files:
 
@@ -128,7 +128,7 @@ The exact feature filtering and model fitting logic lives in:
 **Important distinction** (also noted in Vidur docs): compute profiling depends on **GPU SKU** (A100 vs H100),
 and does *not* depend on the network topology (DGX vs pairwise NVLink), so it is keyed only by `<device>`.
 
-### Network profiling (`profiling/network/<network_device>/`)
+### 3.2. Network profiling (`profiling/network/<network_device>/`)
 
 Files:
 
@@ -139,7 +139,7 @@ These CSVs contain `time_stats.<collective>.<stat>` columns and metadata like `n
 and message `size`. Unlike compute profiling, network profiling depends strongly on node topology, so it is keyed
 by `<network_device>` (e.g., DGX vs pairwise NVLink).
 
-### CPU overhead profiling (often absent)
+### 3.3. CPU overhead profiling (often absent)
 
 Vidur has optional CPU/runtime overhead modeling (scheduler overheads, sampling overheads, etc.), with a default
 path under `data/profiling/cpu_overhead/...`.
@@ -153,7 +153,7 @@ See:
 - Behavior: `extern/tracked/vidur/vidur/execution_time_predictor/sklearn_execution_time_predictor.py`
 - Vidur docs note: `extern/tracked/vidur/docs/profiling.md` (“CPU Overhead Profiling”)
 
-## Practical mapping: from “paper config knobs” to data files
+## 4. Practical mapping: from “paper config knobs” to data files
 
 When you choose a simulation configuration, these are the key mappings to vendor-provided data:
 
@@ -164,12 +164,12 @@ When you choose a simulation configuration, these are the key mappings to vendor
 
 For examples of invoking Vidur with these artifacts, see `extern/tracked/vidur/README.md`.
 
-## How the profiling data is obtained (paper + repo tooling)
+## 5. How the profiling data is obtained (paper + repo tooling)
 
 Vidur’s profiling bundles are produced by running **microbenchmarks** on real hardware, then saving the measured
 latencies to CSV.
 
-### Methodology in the paper
+### 5.1. Methodology in the paper
 
 In the paper’s design section, Vidur’s profiler:
 
@@ -184,7 +184,7 @@ Relevant paper text:
 - `extern/tracked/vidur/paper/tex/3-design.tex` (`\\subsection{\\profiler}` / `\\vheading{Profiling Communication Operators}`)
 - `extern/tracked/vidur/paper/tex/5-eval.tex` (environment description: A100/H100 pairwise NVLink)
 
-### Tooling in the repo (what you actually run)
+### 5.2. Tooling in the repo (what you actually run)
 
 Vidur ships profiling scripts under `extern/tracked/vidur/vidur/profiling/`:
 
@@ -201,9 +201,9 @@ Vidur ships profiling scripts under `extern/tracked/vidur/vidur/profiling/`:
 Once generated, the “vendor-provided” layout under `extern/tracked/vidur/data/profiling/` is just the **stable place**
 to store these CSVs so simulations can run without GPUs.
 
-## How the trace data is obtained (paper + repo assumptions)
+## 6. How the trace data is obtained (paper + repo assumptions)
 
-### Methodology in the paper
+### 6.1. Methodology in the paper
 
 In the evaluation setup, the paper says it “generates traces by using the request length characteristics” from:
 
@@ -222,7 +222,7 @@ Operationally, this means the “paper traces” are primarily:
 - A distribution of `(num_prefill_tokens, num_decode_tokens)` pairs
 - Combined with a *synthetic* arrival process (static/offline or Poisson/online), rather than true per-request timestamps
 
-### What Vidur expects as input
+### 6.2. What Vidur expects as input
 
 Vidur’s simulator does not require the raw datasets. It only requires the **processed trace CSV** with the columns
 described above (token lengths, and optionally arrival times).
@@ -230,11 +230,11 @@ described above (token lengths, and optionally arrival times).
 In this vendored snapshot, `extern/tracked/vidur/data/processed_traces/` contains only a subset of the traces
 referenced in the paper (e.g., the Arxiv length trace is present; Chat-1M and BWB traces may be missing).
 
-## Onboarding checklist: new environment + new model
+## 7. Onboarding checklist: new environment + new model
 
 This is the practical “what do I run” checklist to reproduce Vidur-style vendor data for a new setup.
 
-### 1) Define identifiers (device + network_device + model name)
+### 7.1. Define identifiers (device + network_device + model name)
 
 - Pick `replica_config_device` (`a100`, `h100`, `a40`, …) and `replica_config_network_device`
   (`a100_pairwise_nvlink`, `a100_dgx`, …) such that:
@@ -248,7 +248,7 @@ This is the practical “what do I run” checklist to reproduce Vidur-style ven
 If your GPU SKU or topology is new, you must add a new DeviceSKU/NodeSKU type and config (and create new profiling
 folders) before simulation will work.
 
-### 2) Add the model architecture config (required for profiling + simulation)
+### 7.2. Add the model architecture config (required for profiling + simulation)
 
 In this vendored Vidur snapshot, model configs are code-defined (not YAML). Add a new `BaseModelConfig` subclass in:
 
@@ -260,7 +260,7 @@ Make sure `get_name()` returns the exact HuggingFace model id you will pass as `
 Note: `extern/tracked/vidur/docs/profiling.md` describes adding `data/model_configs/*.yml`, but that directory is not
 present in this snapshot; the source of truth here is `vidur/config/model_config.py`.
 
-### 3) Produce compute profiling (MLP + attention)
+### 7.3. Produce compute profiling (MLP + attention)
 
 Run on a machine with the target GPU SKU (A100/H100/…).
 
@@ -291,7 +291,7 @@ Then copy outputs into Vidur’s expected layout (create folders as needed):
 - `profiling_outputs/mlp/<timestamp>/<hf_model_id>/mlp.csv` → `extern/tracked/vidur/data/profiling/compute/<device>/<org>/<model>/mlp.csv`
 - `profiling_outputs/attention/<timestamp>/<hf_model_id>/attention.csv` → `extern/tracked/vidur/data/profiling/compute/<device>/<org>/<model>/attention.csv`
 
-### 4) Produce network profiling (all_reduce + send_recv)
+### 7.4. Produce network profiling (all_reduce + send_recv)
 
 Network profiling is model-agnostic but topology-specific. It uses Ray to coordinate the run.
 
@@ -317,7 +317,7 @@ Copy outputs:
 - `profiling_outputs/collective/<timestamp>/all_reduce.csv` → `extern/tracked/vidur/data/profiling/network/<network_device>/all_reduce.csv`
 - `profiling_outputs/collective/<timestamp>/send_recv.csv` → `extern/tracked/vidur/data/profiling/network/<network_device>/send_recv.csv`
 
-### 5) (Optional) CPU overhead profiling
+### 7.5. (Optional) CPU overhead profiling
 
 The paper notes it evaluates on an optimized vLLM fork that eliminates unnecessary CPU overheads, and Vidur defaults to
 `skip_cpu_overhead_modeling=true`. If you need CPU overhead fidelity for a specific framework/runtime, use:
@@ -329,7 +329,7 @@ python extern/tracked/vidur/vidur/profiling/cpu_overhead/main.py --models <hf_mo
 Then either rename `cpu_overhead.csv` → `cpu_overheads.csv`, or override the simulator config
 (`--random_forrest_execution_time_predictor_config_cpu_overhead_input_file ...`) to point at the generated file.
 
-### 6) Produce processed traces for the new model/workload
+### 7.6. Produce processed traces for the new model/workload
 
 Vidur does not require full prompts/outputs; it only needs token counts. For best fidelity, tokenize using the **same
 tokenizer as the model you plan to serve** (token counts differ across model families).
@@ -342,7 +342,7 @@ tokenizer as the model you plan to serve** (token counts differ across model fam
 If you are replicating the paper’s setup for LLaMA2-family workloads, cap to 4096 total tokens (or your model’s context
 limit). If you will use `TraceReplayRequestGenerator`, ensure `num_decode_tokens <= max_tokens - 1`.
 
-### 7) Sanity-check by running a simulation
+### 7.7. Sanity-check by running a simulation
 
 From `extern/tracked/vidur/`, run a small simulation referencing your new data (paths shown here use the vendored layout):
 
