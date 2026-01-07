@@ -69,6 +69,29 @@ Vendor simulation (A100; Poisson QPS=6.45; “Real” plotted as 0 placeholder f
 
 ![Dynamic fidelity P95 (vendor)](figures/vendor_a100_dynamic_fidelity_request_e2e_time_normalized_p95.svg)
 
+- **Re-run using “optimal deployment configuration” knobs (Arxiv-4K only)**:
+  - Paper scheduler note (fidelity figs): `extern/tracked/vidur/paper/tex/5-eval.tex` says *“We use the default vLLM scheduler for all these experiments.”*
+  - Config source: `context/summaries/vidur-kb/paper-configs.json` (Figure 6 “parallel_coord”; corrected `Llama-70b + Arxiv` SKU to `H100`).
+  - Applied knobs: `tp_dim`, `batch_size` (mapped to vLLM `batch_size_cap`); **scheduler is forced to vLLM for all runs**.
+  - Additional overrides for sensitivity testing: **PP=1** for all runs and **A100** for all runs.
+  - Result: this re-run still does **not** reconcile the known static-fidelity mismatch for **LLaMA2-70B (TP4) + Arxiv-4K** (P50 paper `~0.487 s/token` vs re-run `~0.312 s/token`).
+
+Static fidelity (Arxiv-4K), P50 (paper predicted vs re-run; vLLM scheduler; A100; PP=1):
+
+![Static fidelity P50 (optimal-config rerun)](figures/rerun_optimal_config_static_fidelity_request_execution_plus_preemption_time_normalized_p50.svg)
+
+Static fidelity (Arxiv-4K), P95 (paper predicted vs re-run; vLLM scheduler; A100; PP=1):
+
+![Static fidelity P95 (optimal-config rerun)](figures/rerun_optimal_config_static_fidelity_request_execution_plus_preemption_time_normalized_p95.svg)
+
+Dynamic fidelity @85% capacity (Arxiv-4K), P50 (paper predicted vs re-run; vLLM scheduler; A100; PP=1):
+
+![Dynamic fidelity P50 (optimal-config rerun)](figures/rerun_optimal_config_dynamic_fidelity_request_e2e_time_normalized_p50.svg)
+
+Dynamic fidelity @85% capacity (Arxiv-4K), P95 (paper predicted vs re-run; vLLM scheduler; A100; PP=1):
+
+![Dynamic fidelity P95 (optimal-config rerun)](figures/rerun_optimal_config_dynamic_fidelity_request_e2e_time_normalized_p95.svg)
+
 - For both metrics, we compute **P50/P95** and report **percent error** `abs(sim - real) / real` in `results/reports/<date>/paper_fidelity/<scenario>/summary.md` (`src/gpu_simulate_test/paper_fidelity/report.py`).
 - Dynamic “85% capacity” is derived via capacity search using **P99 scheduling delay** (`request_scheduling_delay`) against the configured threshold (default 5s), producing `tmp/paper_fidelity/runs/<scenario>/capacity/capacity.json` (`src/gpu_simulate_test/paper_fidelity/capacity.py`).
 - The repro workflow always scores both normalized metrics (see the `metrics = [...]` list in `src/gpu_simulate_test/cli/paper_fidelity.py`), but these two correspond to the paper’s fidelity plots.

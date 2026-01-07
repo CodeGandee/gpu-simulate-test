@@ -65,7 +65,7 @@
   {
     "model": "Llama-70b",
     "dataset": "Arxiv",
-    "sku": "A100",
+    "sku": "H100",
     "batch_size": 64,
     "scheduler": "Sarathi-Serve",
     "tp_dim": 4,
