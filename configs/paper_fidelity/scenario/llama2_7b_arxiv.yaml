@@ -22,6 +22,8 @@ vidur:
 
 real:
   backend: sarathi
+  sampling:
+    ignore_eos: true
   scheduler:
     chunk_size: 16
     max_num_seqs: 16

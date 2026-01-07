@@ -292,6 +292,9 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
     workload_mode = str(cfg.workload.mode)
     pf_paths = PaperFidelityPaths(repo_root=repo_root)
 
+    ignore_eos_val = OmegaConf.select(cfg, "scenario.real.sampling.ignore_eos")
+    ignore_eos = bool(ignore_eos_val) if ignore_eos_val is not None else True
+
     started_at = utcnow_iso()
     profiling_root_raw = Path(cfg.scenario.vidur.profiling_root).expanduser()
     if profiling_root_raw.is_absolute():
@@ -354,6 +357,7 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
                     max_num_seqs=int(cfg.scenario.real.scheduler.max_num_seqs),
                     tensor_parallel_size=int(cfg.scenario.real.parallel.tensor_parallel_size),
                     pipeline_parallel_size=int(cfg.scenario.real.parallel.pipeline_parallel_size),
+                    ignore_eos=ignore_eos,
                 ),
                 out_dir=out_dir,
             )
@@ -448,6 +452,7 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
             max_num_seqs=int(cfg.scenario.real.scheduler.max_num_seqs),
             tensor_parallel_size=int(cfg.scenario.real.parallel.tensor_parallel_size),
             pipeline_parallel_size=int(cfg.scenario.real.parallel.pipeline_parallel_size),
+            ignore_eos=ignore_eos,
         ),
         out_dir=real_dir,
     )

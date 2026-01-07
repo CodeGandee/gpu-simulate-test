@@ -32,6 +32,8 @@ This Q&A is for developers (including future maintainers) comparing Vidur simula
   - MLP: `python -m gpu_simulate_test.vidur_ext.vidur_profiling_mlp_main ...`
   - Attention: `python -m gpu_simulate_test.vidur_ext.vidur_profiling_attention_main ...`
   - This run is compute-only (no network profiling, no CPU overhead profiling), with TP=1, `max_tokens=4096`, attention backend `FLASHINFER`, and attention `profile_mode=both` (all recorded in `profiling_meta.json`).
+- Warm-up: the underlying Vidur compute profiling runners include explicit warm-up iterations before recording timing stats (e.g. `WARMUP_STEPS=2` for MLP and attention), so the CSVs are produced with warm-up and then measured “active steps” (`extern/tracked/vidur/vidur/profiling/mlp/mlp_wrapper.py`, `extern/tracked/vidur/vidur/profiling/attention/attention_wrapper.py`).
+- Warm-up (CPU overhead profiling): if/when CPU overhead profiling is enabled, Vidur’s CPU overhead benchmark runner also performs an engine warm-up and then resets metrics before recording CPU op timings (`extern/tracked/vidur/vidur/profiling/cpu_overhead/benchmark_runner.py`).
 - Curated profiling CSVs (the “useful outputs” for simulation) live under:
   - `data/profiling/compute/a100/meta-llama/Llama-2-7b-hf/mlp.csv` (per-op `time_stats.*` for embedding, layernorm, attention projections, MLP projections/activation, etc., across `num_tokens` for `num_tensor_parallel_workers=1`).
   - `data/profiling/compute/a100/meta-llama/Llama-2-7b-hf/attention.csv` (per-op `time_stats.*` for attention input reshape / KV cache save / prefill / decode / output reshape, across `(is_prefill, prefill_chunk_size, kv_cache_size, batch_size, ...)` for `num_tensor_parallel_workers=1`).
@@ -86,3 +88,10 @@ This Q&A is for developers (including future maintainers) comparing Vidur simula
     - `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static`
     - `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload dynamic`
   - Under the hood, Sarathi replays the canonical `trace.csv` and submits requests when wall-clock reaches `start + arrived_at`, while using in-engine metrics (not client timers) to emit `request_scheduling_delay`, `request_execution_plus_preemption_time_normalized`, and `request_e2e_time_normalized` (`src/gpu_simulate_test/real_bench/backends/sarathi_paper_fidelity_backend.py`).
+
+## In the current implementation, in real run (Sarathi-Serve), do we have a warm-up stage?
+> Last revised at: `2026-01-07T15:05:05Z` | Last revised base commit: `68dbfbc77f3e5432ee9dc2abe71bec52d9a6f9bc`
+
+- Yes. The paper-fidelity Sarathi runner (`src/gpu_simulate_test/real_bench/backends/sarathi_paper_fidelity_backend.py`) runs a small warm-up request before starting trace replay, then calls `engine.reset_metrics()` so warm-up does not affect the recorded `sequence_metrics.csv` / `request_metrics.csv`.
+- Rationale (required practice): warm-up avoids “first request” artifacts (kernel autotune/compilation, allocator initialization, Ray/worker initialization effects) contaminating the tail latency distribution we compare against Vidur.
+- Note: The older `real_bench` CLI path does call `backend.warmup()` for Sarathi (`src/gpu_simulate_test/cli/real_bench.py` + `src/gpu_simulate_test/real_bench/backends/sarathi_backend.py`), but that warm-up mechanism is not used by the paper-fidelity workflow.

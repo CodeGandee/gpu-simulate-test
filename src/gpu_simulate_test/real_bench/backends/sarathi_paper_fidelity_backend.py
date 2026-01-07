@@ -42,6 +42,7 @@ class SarathiPaperFidelityInputs:
     max_num_seqs: int = 16
     tensor_parallel_size: int = 1
     pipeline_parallel_size: int = 1
+    ignore_eos: bool = True
     cuda_visible_devices: str | None = None
 
 
@@ -56,6 +57,93 @@ def convert_sequence_metrics_to_request_metrics(sequence_metrics_csv: Path) -> p
     if missing:
         raise ValueError(f"{sequence_metrics_csv}: missing required columns: {missing}")
     return out
+
+
+def _parse_sarathi_request_id(value: object) -> int:
+    """Convert Sarathi 'Request Id' values like '0_12' into trace request_id ints."""
+    s = str(value)
+    if "_" in s:
+        _, s = s.split("_", 1)
+    try:
+        return int(s)
+    except ValueError as e:
+        raise ValueError(f"Unexpected Sarathi Request Id value: {value!r}") from e
+
+
+def _validate_decode_token_counts(
+    *,
+    trace: pd.DataFrame,
+    request_df: pd.DataFrame,
+    ignore_eos: bool,
+) -> None:
+    """Ensure Sarathi produced exactly `num_decode_tokens` per request.
+
+    For paper-fidelity, Vidur assumes fixed-length decode per request (as in the trace). Sarathi
+    can stop early if it encounters EOS (or stop strings) unless `ignore_eos=True`.
+    """
+    if "request_id" in trace.columns:
+        trace_request_ids = pd.to_numeric(trace["request_id"], errors="raise").astype(int)
+    else:
+        trace_request_ids = pd.Series(range(len(trace)), dtype=int)
+    expected_decode = pd.to_numeric(trace["num_decode_tokens"], errors="raise").astype(int)
+    expected = pd.DataFrame(
+        {
+            "trace_request_id": trace_request_ids,
+            "expected_num_decode_tokens": expected_decode,
+        }
+    )
+
+    if expected["trace_request_id"].duplicated().any():
+        dup = expected.loc[expected["trace_request_id"].duplicated(), "trace_request_id"].unique()[:5].tolist()
+        raise ValueError(f"trace.csv has duplicate request_id values (e.g. {dup}); request_id must be unique.")
+
+    actual = request_df[["request_id", "request_num_decode_tokens"]].copy()
+    actual["trace_request_id"] = actual["request_id"].map(_parse_sarathi_request_id)
+    actual["actual_num_decode_tokens"] = pd.to_numeric(actual["request_num_decode_tokens"], errors="raise").astype(int)
+    actual = actual[["trace_request_id", "actual_num_decode_tokens"]]
+
+    if actual["trace_request_id"].duplicated().any():
+        dup = actual.loc[actual["trace_request_id"].duplicated(), "trace_request_id"].unique()[:5].tolist()
+        raise ValueError(
+            f"Sarathi produced duplicate request ids after parsing (e.g. {dup}); "
+            "this runner assumes a single replica."
+        )
+
+    expected_ids = set(expected["trace_request_id"].tolist())
+    actual_ids = set(actual["trace_request_id"].tolist())
+    missing = sorted(expected_ids - actual_ids)[:5]
+    extra = sorted(actual_ids - expected_ids)[:5]
+    if missing or extra:
+        raise ValueError(
+            "Sarathi replay request ids do not match trace request ids. "
+            f"missing_in_sarathi={missing}, extra_in_sarathi={extra}"
+        )
+
+    merged = actual.merge(expected, on="trace_request_id", how="inner")
+    mismatches = merged.loc[merged["actual_num_decode_tokens"] != merged["expected_num_decode_tokens"]]
+    if len(mismatches) == 0:
+        return
+
+    sample = mismatches.head(10)
+    details = "; ".join(
+        f"id={int(rid)} expected={int(exp)} got={int(got)}"
+        for rid, exp, got in zip(
+            sample["trace_request_id"].tolist(),
+            sample["expected_num_decode_tokens"].tolist(),
+            sample["actual_num_decode_tokens"].tolist(),
+        )
+    )
+    remedy = (
+        "Set `scenario.real.sampling.ignore_eos=true` (and ensure no stop strings) "
+        "to force fixed-length decode."
+    )
+    if ignore_eos:
+        remedy = f"Even with ignore_eos=true, token counts mismatched. {remedy}"
+
+    raise ValueError(
+        "Sarathi replay produced request_num_decode_tokens that do not match trace num_decode_tokens "
+        f"(ignore_eos={ignore_eos}). First mismatches: {details}. {remedy}"
+    )
 
 
 def _default_cuda_visible_devices() -> str | None:
@@ -202,6 +290,25 @@ def run_sarathi_paper_fidelity(
             prompt_cache[n] = cached
         return cached
 
+    warmup_prefill = max(1, min(int(inputs.chunk_size), int(inputs.max_tokens) - 1))
+    warmup_decode = 1
+    warmup_sampling_params = SamplingParams(
+        temperature=0.0,
+        top_p=1.0,
+        ignore_eos=bool(inputs.ignore_eos),
+        max_tokens=warmup_decode,
+    )
+    engine.add_request(
+        prompt=None,
+        prompt_token_ids=_prompt_token_ids(warmup_prefill),
+        sampling_params=warmup_sampling_params,
+        arrival_time=time.monotonic(),
+        seq_id="warmup",
+    )
+    while engine.has_unfinished_requests():
+        engine.step()
+    engine.reset_metrics()
+
     start = time.monotonic()
     next_idx = 0
     while next_idx < len(trace) or engine.has_unfinished_requests():
@@ -212,7 +319,12 @@ def run_sarathi_paper_fidelity(
             prefill = int(trace.loc[next_idx, "num_prefill_tokens"])
             decode = int(trace.loc[next_idx, "num_decode_tokens"])
             seq_id = str(int(trace.loc[next_idx, "request_id"]) if "request_id" in trace.columns else next_idx)
-            sampling_params = SamplingParams(temperature=0.0, top_p=1.0, max_tokens=decode)
+            sampling_params = SamplingParams(
+                temperature=0.0,
+                top_p=1.0,
+                ignore_eos=bool(inputs.ignore_eos),
+                max_tokens=decode,
+            )
             engine.add_request(
                 prompt=None,
                 prompt_token_ids=_prompt_token_ids(prefill),
@@ -249,6 +361,7 @@ def run_sarathi_paper_fidelity(
         raise FileNotFoundError(f"Sarathi did not produce sequence_metrics.csv at {seq_csv}")
 
     request_df = convert_sequence_metrics_to_request_metrics(seq_csv)
+    _validate_decode_token_counts(trace=trace, request_df=request_df, ignore_eos=bool(inputs.ignore_eos))
     req_csv = out_dir / "request_metrics.csv"
     write_csv(req_csv, request_df, required_columns=["request_id", *PAPER_FIDELITY_REQUIRED_SARATHI_COLUMNS])
 
@@ -258,6 +371,12 @@ def run_sarathi_paper_fidelity(
         "scenario_name": inputs.scenario_name,
         "started_at": None,
         "ended_at": None,
+        "warmup": {
+            "enabled": True,
+            "prefill_tokens": warmup_prefill,
+            "decode_tokens": warmup_decode,
+            "ignore_eos": bool(inputs.ignore_eos),
+        },
         "trace_csv": str(inputs.trace_csv.resolve()),
         "sarathi_sequence_metrics_csv": str(seq_csv.resolve()),
         "request_metrics_csv": str(req_csv.resolve()),
