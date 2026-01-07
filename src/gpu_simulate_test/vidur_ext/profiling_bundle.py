@@ -35,7 +35,7 @@ def _ensure_empty_dir(path: Path) -> None:
 
 
 def run_vidur_profiling_bundle(cfg: DictConfig, *, repo_root: Path) -> Path:
-    """Run Vidur profiling and export a compute-only profiling bundle.
+    """Run Vidur profiling and export a profiling bundle.
 
     Returns the created profiling root directory (cfg.output.dir).
     """
