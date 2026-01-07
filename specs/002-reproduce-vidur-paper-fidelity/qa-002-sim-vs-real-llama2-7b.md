@@ -39,10 +39,21 @@ This Q&A is for developers (including future maintainers) comparing Vidur simula
 - Intermediate/debug outputs are stored under `cache/` (raw Vidur profiler outputs + Hydra logs; may include large traces such as `cache/mlp/*/profiler_traces/*.json`) and are not required once you have the curated CSVs.
 - Caveat for sim-vs-real: the profiling grid (and thus `attention.csv` row count) is controlled by Vidur profiler args like `--num_tensor_parallel_workers`, `--max_seq_len`, `--min_batch_size/--max_batch_size`, and `--profile_only_decode/--profile_only_prefill`; this bundle is TP=1 only, so simulations for other TP degrees require re-profiling with matching knobs.
 
-## [question title]
-> Last revised at: `2026-01-07T13:41:28Z` | Last revised base commit: `4532f445d0bee8ac33644b44885a4aba671a691d`
+## How do we use the host profiling bundle to run a Vidur simulation for LLaMA2-7B on this host?
+> Last revised at: `2026-01-07T13:51:47Z` | Last revised base commit: `122e75940eb4f2ce02913dba85dd0990bf55f702`
 
-- [answer/code]
+- Use the profiling root as `scenario.vidur.profiling_root` and run the paper-fidelity pipeline (it invokes Vidur under the hood):
+  - Static: `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static scenario.vidur.profiling_root=results/raw/vidur-profiling/llama2-7b/sarathi-serve/2026-01-07_10-43-39-975600338`
+  - Dynamic: `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload dynamic scenario.vidur.profiling_root=results/raw/vidur-profiling/llama2-7b/sarathi-serve/2026-01-07_10-43-39-975600338`
+- Vidur simulation uses `src/gpu_simulate_test/vidur_ext/sim_runner.py` to:
+  - Validate required profiling inputs exist (always `mlp.csv` + `attention.csv`; network/CPU overhead only when TP/PP or CPU modeling is enabled) (`src/gpu_simulate_test/vidur_ext/profiling_root.py`).
+  - Configure Vidur’s predictor to read from `<profiling_root>/data/profiling/...` via absolute paths in `RandomForrestExecutionTimePredictorConfig` (so the simulator does not depend on `cwd`).
+- Outputs to compare against real timing are written under `tmp/paper_fidelity/runs/llama2_7b_arxiv/sim/`:
+  - `request_metrics.csv` (paper-fidelity schema, derived from Vidur’s `vidur_raw/request_metrics.csv`)
+  - `run_meta.json` and `vidur_raw/` (Vidur’s native outputs + `config.json`).
+- Constraints for this particular profiling bundle:
+  - It is compute-only and TP=1/PP=1 calibrated, so keep `scenario.vidur.tensor_parallel_size=1` and `scenario.vidur.num_pipeline_stages=1` unless you also provide the required network profiling CSVs.
+  - CPU overhead modeling is skipped by default (`scenario.vidur.skip_cpu_overhead_modeling=true`); if you enable CPU overhead modeling, you must also provide `data/profiling/cpu_overhead/<network_device>/<model>/cpu_overheads.csv`.
 
 ## [question title]
 > Last revised at: `2026-01-07T13:41:28Z` | Last revised base commit: `4532f445d0bee8ac33644b44885a4aba671a691d`
