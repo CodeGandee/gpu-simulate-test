@@ -495,7 +495,7 @@ def write_summary_md(
     return summary_md
 
 
-def regenerate_summary_md_from_report_dir(report_dir: Path) -> Path:
+def regenerate_summary_md_from_report_dir(report_dir: Path, *, include_paper_reference: bool = True) -> Path:
     """Regenerate `summary.md` for an existing report directory.
 
     This reads `run_meta.json` and `scores.json` from `report_dir` and rewrites
@@ -506,6 +506,9 @@ def regenerate_summary_md_from_report_dir(report_dir: Path) -> Path:
     report_dir
         A `results/reports/.../paper_fidelity/<scenario>/` directory containing
         `run_meta.json` and `scores.json`.
+    include_paper_reference
+        Whether to include paper reference stats in the regenerated report, if
+        present in `run_meta.json` and/or `scores.json`.
 
     Returns
     -------
@@ -538,8 +541,12 @@ def regenerate_summary_md_from_report_dir(report_dir: Path) -> Path:
     if not isinstance(sim_csv, str) or not isinstance(real_csv, str):
         raise ValueError(f"{scores_path}: inputs.sim_csv and inputs.real_csv must be strings")
 
-    if "paper_reference" not in meta and "paper_reference" in scores:
-        meta = {**meta, "paper_reference": scores["paper_reference"]}
+    if include_paper_reference:
+        if "paper_reference" not in meta and "paper_reference" in scores:
+            meta = {**meta, "paper_reference": scores["paper_reference"]}
+    else:
+        if "paper_reference" in meta:
+            meta = {k: v for k, v in meta.items() if k != "paper_reference"}
 
     results = load_score_results_from_scores_json(scores)
     return write_summary_md(

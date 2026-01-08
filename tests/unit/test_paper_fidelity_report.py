@@ -103,3 +103,66 @@ def test_paper_fidelity_report_regeneration_only_rewrites_md(tmp_path: Path) -> 
     assert "# Paper Fidelity Report: unit_test" in summary
     assert "## Scores" in summary
     assert "request_execution_plus_preemption_time_normalized" in summary
+
+
+def test_paper_fidelity_report_regeneration_can_omit_paper_reference(tmp_path: Path) -> None:
+    report_dir = tmp_path / "report_dir"
+    report_dir.mkdir(parents=True, exist_ok=True)
+
+    meta_path = report_dir / "run_meta.json"
+    scores_path = report_dir / "scores.json"
+
+    paper_reference = {
+        "schema_version": "v1",
+        "requested": True,
+        "matched": True,
+        "workload_mode": "static",
+        "load_frac_of_capacity": None,
+        "criteria": {
+            "metric": "request_execution_plus_preemption_time_normalized",
+            "model": "llama2-7b",
+            "trace": "arxiv",
+            "series": "predicted",
+            "p50_json": "paper_p50.json",
+            "p95_json": "paper_p95.json",
+        },
+        "rows": [
+            {
+                "metric": "request_execution_plus_preemption_time_normalized",
+                "percentile": "p50",
+                "value": 0.9,
+                "source_json": "paper_p50.json",
+            }
+        ],
+    }
+
+    meta = {"schema_version": "v1", "scenario_name": "unit_test", "paper_reference": paper_reference}
+    scores = {
+        "schema_version": "v1",
+        "scenario_name": "unit_test",
+        "generated_at": "2026-01-01T00:00:00Z",
+        "inputs": {"sim_csv": "/abs/sim.csv", "real_csv": "/abs/real.csv"},
+        "paper_reference": paper_reference,
+        "metrics": [
+            {
+                "metric": "request_execution_plus_preemption_time_normalized",
+                "verdict": "pass",
+                "percentiles": {
+                    "p50": {"sim": 1.0, "real": 1.1, "pct_error": 0.090909, "paper": 0.9, "sim_vs_paper_pct_error": 0.111111},
+                },
+            }
+        ],
+    }
+    meta_path.write_text(json.dumps(meta, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    scores_path.write_text(json.dumps(scores, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    regenerate_summary_md_from_report_dir(report_dir, include_paper_reference=True)
+    summary_with_paper = (report_dir / "summary.md").read_text(encoding="utf-8")
+    assert "## Paper Reference" in summary_with_paper
+    assert "| Metric | Percentile | Paper | Sim | Real |" in summary_with_paper
+
+    regenerate_summary_md_from_report_dir(report_dir, include_paper_reference=False)
+    summary_without_paper = (report_dir / "summary.md").read_text(encoding="utf-8")
+    assert "## Paper Reference" not in summary_without_paper
+    assert "| Metric | Percentile | Paper | Sim | Real |" not in summary_without_paper
+    assert "| Metric | Percentile | Sim | Real |" in summary_without_paper
