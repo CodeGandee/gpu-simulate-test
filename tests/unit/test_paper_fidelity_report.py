@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pandas as pd
 
-from gpu_simulate_test.paper_fidelity.report import ReportInputs, write_summary_md
+from gpu_simulate_test.paper_fidelity.report import ReportInputs, regenerate_summary_md_from_report_dir, write_summary_md
 from gpu_simulate_test.paper_fidelity.scoring import ScoreThresholds, load_metrics_csv, score_metric
 
 
@@ -60,3 +61,45 @@ def test_paper_fidelity_report_writes_json_and_svgs(tmp_path: Path) -> None:
     assert (out_dir / "figs" / "request_e2e_time_normalized_ecdf.svg").exists()
     assert (out_dir / "figs" / "request_execution_plus_preemption_time_normalized_percentiles.svg").exists()
     assert (out_dir / "figs" / "request_e2e_time_normalized_percentiles.svg").exists()
+
+
+def test_paper_fidelity_report_regeneration_only_rewrites_md(tmp_path: Path) -> None:
+    report_dir = tmp_path / "report_dir"
+    report_dir.mkdir(parents=True, exist_ok=True)
+
+    meta_path = report_dir / "run_meta.json"
+    scores_path = report_dir / "scores.json"
+    summary_path = report_dir / "summary.md"
+
+    meta = {"schema_version": "v1", "scenario_name": "unit_test"}
+    scores = {
+        "schema_version": "v1",
+        "scenario_name": "unit_test",
+        "generated_at": "2026-01-01T00:00:00Z",
+        "inputs": {"sim_csv": "/abs/sim.csv", "real_csv": "/abs/real.csv"},
+        "metrics": [
+            {
+                "metric": "request_execution_plus_preemption_time_normalized",
+                "verdict": "pass",
+                "percentiles": {
+                    "p50": {"sim": 1.0, "real": 1.1, "pct_error": 0.090909},
+                },
+            }
+        ],
+    }
+    meta_path.write_text(json.dumps(meta, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    scores_path.write_text(json.dumps(scores, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    summary_path.write_text("old\n", encoding="utf-8")
+
+    meta_before = meta_path.read_text(encoding="utf-8")
+    scores_before = scores_path.read_text(encoding="utf-8")
+
+    regenerate_summary_md_from_report_dir(report_dir)
+
+    assert meta_path.read_text(encoding="utf-8") == meta_before
+    assert scores_path.read_text(encoding="utf-8") == scores_before
+
+    summary = summary_path.read_text(encoding="utf-8")
+    assert "# Paper Fidelity Report: unit_test" in summary
+    assert "## Scores" in summary
+    assert "request_execution_plus_preemption_time_normalized" in summary

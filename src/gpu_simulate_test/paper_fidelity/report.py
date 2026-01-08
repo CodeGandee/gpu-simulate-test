@@ -11,10 +11,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
-from gpu_simulate_test.io import write_json
+from gpu_simulate_test.io import read_json, write_json
 from gpu_simulate_test.paper_fidelity.scoring import ScoreResult, load_metrics_csv
 
 
@@ -49,6 +50,18 @@ def _fmt_pct(x: float) -> str:
     if x == float("inf"):
         return "inf"
     return f"{x * 100:.2f}%"
+
+
+def _parse_percentile_label(label: str) -> float:
+    if not label.startswith("p"):
+        raise ValueError(f"Invalid percentile label: {label!r} (expected 'p50', 'p99', etc.)")
+    suffix = label[1:]
+    if not suffix.isdigit():
+        raise ValueError(f"Invalid percentile label: {label!r} (expected digits after 'p')")
+    value = int(suffix)
+    if not (0 <= value <= 100):
+        raise ValueError(f"Invalid percentile label: {label!r} (expected p0..p100)")
+    return value / 100.0
 
 
 def _percent_error(*, sim_value: float, ref_value: float) -> float:
@@ -145,17 +158,115 @@ def _write_percentiles_svg(
     plt.close(fig)
 
 
-def write_summary_md(*, inputs: ReportInputs, results: list[ScoreResult], meta: dict) -> Path:
-    """Write summary.md and return its path."""
+def load_score_results_from_scores_json(scores: dict[str, Any]) -> list[ScoreResult]:
+    """Parse `scores.json` into `ScoreResult` records.
+
+    Parameters
+    ----------
+    scores
+        Parsed JSON dictionary produced by `write_summary_md`.
+
+    Returns
+    -------
+    list[ScoreResult]
+        A list of metric results suitable for report regeneration.
+    """
+    metrics_val = scores.get("metrics")
+    if not isinstance(metrics_val, list):
+        raise ValueError("scores.json: missing or invalid `metrics` list")
+
+    results: list[ScoreResult] = []
+    for idx, metric_entry in enumerate(metrics_val):
+        if not isinstance(metric_entry, dict):
+            raise ValueError(f"scores.json: metrics[{idx}] must be an object")
+
+        metric = metric_entry.get("metric")
+        verdict = metric_entry.get("verdict")
+        percentiles_val = metric_entry.get("percentiles")
+        if not isinstance(metric, str):
+            raise ValueError(f"scores.json: metrics[{idx}].metric must be a string")
+        if not isinstance(verdict, str):
+            raise ValueError(f"scores.json: metrics[{idx}].verdict must be a string")
+        if not isinstance(percentiles_val, dict):
+            raise ValueError(f"scores.json: metrics[{idx}].percentiles must be an object")
+
+        percentiles: list[float] = []
+        sim: dict[float, float] = {}
+        real: dict[float, float] = {}
+        pct_error: dict[float, float] = {}
+
+        for label, values in percentiles_val.items():
+            if not isinstance(label, str):
+                raise ValueError(f"scores.json: metrics[{idx}].percentiles keys must be strings")
+            if not isinstance(values, dict):
+                raise ValueError(f"scores.json: metrics[{idx}].percentiles[{label}] must be an object")
+
+            q = _parse_percentile_label(label)
+            try:
+                sim[q] = float(values["sim"])
+                real[q] = float(values["real"])
+                pct_error[q] = float(values["pct_error"])
+            except KeyError as e:
+                raise ValueError(f"scores.json: metrics[{idx}].percentiles[{label}] missing key: {e}") from e
+            except (TypeError, ValueError) as e:
+                raise ValueError(f"scores.json: metrics[{idx}].percentiles[{label}] has invalid numeric values") from e
+            percentiles.append(q)
+
+        percentiles = sorted(set(percentiles))
+        results.append(
+            ScoreResult(
+                metric=metric,
+                percentiles=percentiles,
+                sim=sim,
+                real=real,
+                pct_error=pct_error,
+                verdict=verdict,
+            )
+        )
+
+    return results
+
+
+def write_summary_md(
+    *,
+    inputs: ReportInputs,
+    results: list[ScoreResult],
+    meta: dict,
+    write_run_meta: bool = True,
+    write_scores_json: bool = True,
+    write_figures: bool = True,
+) -> Path:
+    """Write `summary.md` (and optional side artifacts) for a paper-fidelity run.
+
+    Parameters
+    ----------
+    inputs
+        Report inputs (paths and scenario name).
+    results
+        Scoring results.
+    meta
+        Run metadata written to `run_meta.json` when enabled.
+    write_run_meta
+        Whether to write `run_meta.json`.
+    write_scores_json
+        Whether to write `scores.json`.
+    write_figures
+        Whether to (re)generate SVG figures under `figs/`.
+    """
+    if not (write_run_meta or write_scores_json or write_figures) and not inputs.out_dir.exists():
+        raise ValueError(f"Report directory does not exist: {inputs.out_dir}")
     inputs.out_dir.mkdir(parents=True, exist_ok=True)
 
     summary_md = inputs.out_dir / "summary.md"
-    tables_dir = inputs.out_dir / "tables"
-    tables_dir.mkdir(parents=True, exist_ok=True)
+    if write_scores_json:
+        tables_dir = inputs.out_dir / "tables"
+        tables_dir.mkdir(parents=True, exist_ok=True)
     figs_dir = inputs.out_dir / "figs"
-    figs_dir.mkdir(parents=True, exist_ok=True)
+    if write_figures:
+        figs_dir.mkdir(parents=True, exist_ok=True)
 
-    write_json(inputs.out_dir / "run_meta.json", meta)
+    if write_run_meta:
+        write_json(inputs.out_dir / "run_meta.json", meta)
 
     lines: list[str] = []
     lines.append(f"# Paper Fidelity Report: {inputs.scenario_name}")
@@ -183,7 +294,11 @@ def write_summary_md(*, inputs: ReportInputs, results: list[ScoreResult], meta: 
     paper_reference = meta.get("paper_reference")
     paper_values: dict[tuple[str, str], float] = {}
     paper_rows: list[dict] = []
+    paper_requested = False
+    paper_error = None
     if isinstance(paper_reference, dict):
+        paper_requested = bool(paper_reference.get("requested") or False)
+        paper_error = paper_reference.get("error")
         rows = paper_reference.get("rows")
         if isinstance(rows, list):
             for row in rows:
@@ -200,11 +315,10 @@ def write_summary_md(*, inputs: ReportInputs, results: list[ScoreResult], meta: 
                     continue
                 paper_rows.append(row)
 
-    if paper_values:
-        first = paper_rows[0] if paper_rows else {}
-        model = first.get("model")
-        trace = first.get("trace")
-        series = first.get("series")
+    if paper_requested:
+        criteria = paper_reference.get("criteria") if isinstance(paper_reference, dict) else None
+        workload_mode = paper_reference.get("workload_mode") if isinstance(paper_reference, dict) else None
+        matched = paper_reference.get("matched") if isinstance(paper_reference, dict) else None
         load_frac = paper_reference.get("load_frac_of_capacity") if isinstance(paper_reference, dict) else None
 
         sources: list[str] = []
@@ -214,16 +328,31 @@ def write_summary_md(*, inputs: ReportInputs, results: list[ScoreResult], meta: 
                 sources.append(source_json)
 
         lines.append("## Paper Reference")
-        if isinstance(model, str):
-            lines.append(f"- model: `{model}`")
-        if isinstance(trace, str):
-            lines.append(f"- trace: `{trace}`")
-        if isinstance(series, str):
-            lines.append(f"- series: `{series}`")
+        if workload_mode is not None:
+            lines.append(f"- workload_mode: `{workload_mode}`")
+        if matched is not None:
+            lines.append(f"- matched: `{matched}`")
+        if criteria and isinstance(criteria, dict):
+            model = criteria.get("model")
+            trace = criteria.get("trace")
+            series = criteria.get("series")
+            metric = criteria.get("metric")
+            if isinstance(model, str):
+                lines.append(f"- model: `{model}`")
+            if isinstance(trace, str):
+                lines.append(f"- trace: `{trace}`")
+            if isinstance(series, str):
+                lines.append(f"- series: `{series}`")
+            if isinstance(metric, str):
+                lines.append(f"- metric: `{metric}`")
         if load_frac is not None:
             lines.append(f"- load_frac_of_capacity: `{load_frac}`")
+        if paper_error:
+            lines.append(f"- error: `{paper_error}`")
         if sources:
             lines.append(f"- sources: {', '.join([f'`{s}`' for s in sources])}")
+        if not paper_rows:
+            lines.append("- rows: `0`")
         lines.append("")
 
     lines.append("## Scores")
@@ -254,89 +383,107 @@ def write_summary_md(*, inputs: ReportInputs, results: list[ScoreResult], meta: 
 
     lines.append("")
 
-    # Machine-readable scores for programmatic analysis.
-    scores: dict[str, object] = {
-        "schema_version": "v1",
-        "scenario_name": inputs.scenario_name,
-        "generated_at": _utcnow_iso(),
-        "inputs": {"sim_csv": str(inputs.sim_csv), "real_csv": str(inputs.real_csv)},
-        "metrics": [],
-    }
-    if paper_values:
-        scores["paper_reference"] = meta.get("paper_reference")
-    for r in results:
-        per: dict[str, object] = {}
-        for q in r.percentiles:
-            percentile = f"p{int(q * 100)}"
-            entry: dict[str, object] = {
-                "sim": float(r.sim[q]),
-                "real": float(r.real[q]),
-                "pct_error": float(r.pct_error[q]),
-            }
-            if paper_values:
-                paper_value = paper_values.get((r.metric, percentile))
-                if paper_value is not None:
-                    entry["paper"] = float(paper_value)
-                    entry["sim_vs_paper_pct_error"] = float(_percent_error(sim_value=float(r.sim[q]), ref_value=float(paper_value)))
-            per[percentile] = entry
-        scores["metrics"].append(
-            {
-                "metric": r.metric,
-                "verdict": r.verdict,
-                "percentiles": per,
-            }
-        )
-    write_json(inputs.out_dir / "scores.json", scores)
+    if write_scores_json:
+        scores: dict[str, object] = {
+            "schema_version": "v1",
+            "scenario_name": inputs.scenario_name,
+            "generated_at": _utcnow_iso(),
+            "inputs": {"sim_csv": str(inputs.sim_csv), "real_csv": str(inputs.real_csv)},
+            "metrics": [],
+        }
+        if isinstance(paper_reference, dict):
+            scores["paper_reference"] = paper_reference
+        for r in results:
+            per: dict[str, object] = {}
+            for q in r.percentiles:
+                percentile = f"p{int(q * 100)}"
+                entry: dict[str, object] = {
+                    "sim": float(r.sim[q]),
+                    "real": float(r.real[q]),
+                    "pct_error": float(r.pct_error[q]),
+                }
+                if paper_values:
+                    paper_value = paper_values.get((r.metric, percentile))
+                    if paper_value is not None:
+                        entry["paper"] = float(paper_value)
+                        entry["sim_vs_paper_pct_error"] = float(
+                            _percent_error(sim_value=float(r.sim[q]), ref_value=float(paper_value))
+                        )
+                per[percentile] = entry
+            scores["metrics"].append(
+                {
+                    "metric": r.metric,
+                    "verdict": r.verdict,
+                    "percentiles": per,
+                }
+            )
+        write_json(inputs.out_dir / "scores.json", scores)
 
     # Figures: sim vs real ECDFs for the two paper-facing normalized metrics.
     lines.append("## Figures")
-    try:
-        sim_df = load_metrics_csv(inputs.sim_csv)
-        real_df = load_metrics_csv(inputs.real_csv)
+    figure_specs = [
+        ("Static normalized latency", "request_execution_plus_preemption_time_normalized"),
+        ("Dynamic normalized latency", "request_e2e_time_normalized"),
+    ]
+    if write_figures:
+        try:
+            sim_df = load_metrics_csv(inputs.sim_csv)
+            real_df = load_metrics_csv(inputs.real_csv)
 
-        figure_specs = [
-            ("Static normalized latency", "request_execution_plus_preemption_time_normalized"),
-            ("Dynamic normalized latency", "request_e2e_time_normalized"),
-        ]
-        for title, metric in figure_specs:
-            sim_values = np.asarray(sim_df[metric], dtype=float)
-            real_values = np.asarray(real_df[metric], dtype=float)
-            sim_values = sim_values[np.isfinite(sim_values)]
-            real_values = real_values[np.isfinite(real_values)]
-            if len(sim_values) == 0 or len(real_values) == 0:
-                continue
+            for title, metric in figure_specs:
+                sim_values = np.asarray(sim_df[metric], dtype=float)
+                real_values = np.asarray(real_df[metric], dtype=float)
+                sim_values = sim_values[np.isfinite(sim_values)]
+                real_values = real_values[np.isfinite(real_values)]
+                if len(sim_values) == 0 or len(real_values) == 0:
+                    continue
 
-            out_svg = figs_dir / f"{metric}_ecdf.svg"
-            _write_ecdf_svg(sim_values=sim_values, real_values=real_values, metric=metric, out_path=out_svg)
+                out_svg = figs_dir / f"{metric}_ecdf.svg"
+                _write_ecdf_svg(sim_values=sim_values, real_values=real_values, metric=metric, out_path=out_svg)
 
-            score = next((r for r in results if r.metric == metric), None)
-            pct_svg = None
-            if score is not None:
-                paper_by_label = None
-                if paper_values:
-                    paper_by_label = {
-                        f"p{int(q * 100)}": float(paper_values[(metric, f"p{int(q * 100)}")])
-                        for q in score.percentiles
-                        if (metric, f"p{int(q * 100)}") in paper_values
-                    }
-                pct_svg = figs_dir / f"{metric}_percentiles.svg"
-                _write_percentiles_svg(
-                    metric=metric,
-                    percentiles=score.percentiles,
-                    sim=score.sim,
-                    real=score.real,
-                    paper_by_label=paper_by_label,
-                    out_path=pct_svg,
-                )
+                score = next((r for r in results if r.metric == metric), None)
+                pct_svg = None
+                if score is not None:
+                    paper_by_label = None
+                    if paper_values:
+                        paper_by_label = {
+                            f"p{int(q * 100)}": float(paper_values[(metric, f"p{int(q * 100)}")])
+                            for q in score.percentiles
+                            if (metric, f"p{int(q * 100)}") in paper_values
+                        }
+                    pct_svg = figs_dir / f"{metric}_percentiles.svg"
+                    _write_percentiles_svg(
+                        metric=metric,
+                        percentiles=score.percentiles,
+                        sim=score.sim,
+                        real=score.real,
+                        paper_by_label=paper_by_label,
+                        out_path=pct_svg,
+                    )
 
-            lines.append(f"### {title}")
-            lines.append(f"![ECDF: {metric}](figs/{out_svg.name})")
-            if pct_svg is not None:
-                lines.append(f"![Percentiles: {metric}](figs/{pct_svg.name})")
+                lines.append(f"### {title}")
+                lines.append(f"![ECDF: {metric}](figs/{out_svg.name})")
+                if pct_svg is not None:
+                    lines.append(f"![Percentiles: {metric}](figs/{pct_svg.name})")
+                lines.append("")
+        except Exception as e:
+            lines.append(f"- Failed to generate figures: {type(e).__name__}: {e}")
             lines.append("")
-    except Exception as e:
-        lines.append(f"- Failed to generate figures: {type(e).__name__}: {e}")
-        lines.append("")
+    else:
+        found = False
+        for title, metric in figure_specs:
+            out_svg = figs_dir / f"{metric}_ecdf.svg"
+            pct_svg = figs_dir / f"{metric}_percentiles.svg"
+            if out_svg.exists():
+                found = True
+                lines.append(f"### {title}")
+                lines.append(f"![ECDF: {metric}](figs/{out_svg.name})")
+                if pct_svg.exists():
+                    lines.append(f"![Percentiles: {metric}](figs/{pct_svg.name})")
+                lines.append("")
+        if not found:
+            lines.append("- Figures not regenerated (no existing SVGs found).")
+            lines.append("")
 
     if any(r.verdict in {"warn", "fail"} for r in results):
         lines.append("## Gap Diagnosis")
@@ -346,3 +493,65 @@ def write_summary_md(*, inputs: ReportInputs, results: list[ScoreResult], meta: 
 
     summary_md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return summary_md
+
+
+def regenerate_summary_md_from_report_dir(report_dir: Path) -> Path:
+    """Regenerate `summary.md` for an existing report directory.
+
+    This reads `run_meta.json` and `scores.json` from `report_dir` and rewrites
+    `summary.md` in-place without modifying other artifacts (JSON or figures).
+
+    Parameters
+    ----------
+    report_dir
+        A `results/reports/.../paper_fidelity/<scenario>/` directory containing
+        `run_meta.json` and `scores.json`.
+
+    Returns
+    -------
+    pathlib.Path
+        Path to the regenerated `summary.md`.
+    """
+    report_dir = report_dir.expanduser()
+    if not report_dir.exists():
+        raise ValueError(f"Report directory does not exist: {report_dir}")
+
+    meta_path = report_dir / "run_meta.json"
+    scores_path = report_dir / "scores.json"
+    if not meta_path.exists():
+        raise ValueError(f"Missing run metadata: {meta_path}")
+    if not scores_path.exists():
+        raise ValueError(f"Missing scores JSON: {scores_path}")
+
+    meta = read_json(meta_path)
+    scores = read_json(scores_path)
+
+    scenario_name = scores.get("scenario_name") or meta.get("scenario_name") or report_dir.name
+    if not isinstance(scenario_name, str) or not scenario_name:
+        raise ValueError(f"{scores_path}: missing scenario_name")
+
+    inputs = scores.get("inputs")
+    if not isinstance(inputs, dict):
+        raise ValueError(f"{scores_path}: missing inputs")
+    sim_csv = inputs.get("sim_csv")
+    real_csv = inputs.get("real_csv")
+    if not isinstance(sim_csv, str) or not isinstance(real_csv, str):
+        raise ValueError(f"{scores_path}: inputs.sim_csv and inputs.real_csv must be strings")
+
+    if "paper_reference" not in meta and "paper_reference" in scores:
+        meta = {**meta, "paper_reference": scores["paper_reference"]}
+
+    results = load_score_results_from_scores_json(scores)
+    return write_summary_md(
+        inputs=ReportInputs(
+            scenario_name=scenario_name,
+            sim_csv=Path(sim_csv),
+            real_csv=Path(real_csv),
+            out_dir=report_dir,
+        ),
+        results=results,
+        meta=meta,
+        write_run_meta=False,
+        write_scores_json=False,
+        write_figures=False,
+    )

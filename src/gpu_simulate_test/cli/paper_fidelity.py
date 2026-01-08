@@ -11,6 +11,8 @@ profile
     Generate a host profiling root for Vidur simulation.
 score
     Score existing sim vs real metrics and write a report.
+report
+    Regenerate `summary.md` from an existing report directory (no rerun).
 """
 
 from __future__ import annotations
@@ -29,10 +31,10 @@ from omegaconf import OmegaConf
 from gpu_simulate_test.config import register_omegaconf_resolvers
 from gpu_simulate_test.io import build_env_snapshot, get_git_info, stable_id, utcnow_iso, write_json
 from gpu_simulate_test.paper_fidelity.capacity import CapacityCriterion, discover_capacity, write_capacity_json
-from gpu_simulate_test.paper_fidelity.paths import PaperFidelityPaths
 from gpu_simulate_test.paper_fidelity.paper_reference import maybe_load_paper_reference_rows_from_cfg
+from gpu_simulate_test.paper_fidelity.paths import PaperFidelityPaths
 from gpu_simulate_test.paper_fidelity.profiling import run_paper_fidelity_profiling
-from gpu_simulate_test.paper_fidelity.report import ReportInputs, write_summary_md
+from gpu_simulate_test.paper_fidelity.report import ReportInputs, regenerate_summary_md_from_report_dir, write_summary_md
 from gpu_simulate_test.paper_fidelity.scoring import (
     ScoreThresholds,
     load_metrics_csv,
@@ -84,6 +86,9 @@ def main(argv: list[str] | None = None) -> None:
     score.add_argument("--sim", required=True)
     score.add_argument("--real", required=True)
 
+    report = sub.add_parser("report")
+    report.add_argument("--dir", required=True)
+
     args, hydra_overrides = parser.parse_known_args(argv)
     prog = sys.argv[0]
 
@@ -105,6 +110,11 @@ def main(argv: list[str] | None = None) -> None:
         real_csv = str(Path(args.real).expanduser())
         sys.argv = [prog, f"inputs.sim_csv={sim_csv}", f"inputs.real_csv={real_csv}", *hydra_overrides]
         _score_main()
+    elif args.cmd == "report":
+        if hydra_overrides:
+            raise ValueError(f"`paper-fidelity report` does not accept Hydra overrides (got {hydra_overrides})")
+        summary_md = regenerate_summary_md_from_report_dir(Path(args.dir).expanduser())
+        print(str(summary_md))
     else:  # pragma: no cover
         raise ValueError(f"Unhandled cmd: {args.cmd}")
 
@@ -293,8 +303,12 @@ def _run_score_only(
     )
 
     metrics = [
+        # Request-level metrics (paper-fidelity main comparisons).
         "request_execution_plus_preemption_time_normalized",
         "request_e2e_time_normalized",
+        # Stage-level metrics (prefill vs decode, token-normalized).
+        "prefill_time_execution_plus_preemption_normalized",
+        "decode_time_execution_plus_preemption_normalized",
     ]
     results = [
         score_metric(sim_df=sim_df, real_df=real_df, metric=m, percentiles=percentiles, thresholds=thresholds)
@@ -302,7 +316,6 @@ def _run_score_only(
     ]
 
     git = get_git_info(repo_root=repo_root)
-    paper_reference_rows = maybe_load_paper_reference_rows_from_cfg(cfg, repo_root=repo_root)
     meta: dict = {
         "schema_version": "v1",
         "run_type": "score",
@@ -322,30 +335,63 @@ def _run_score_only(
     }
     if profiling is not None:
         meta["profiling"] = profiling
-    if paper_reference_rows is not None:
+
+    paper_reference_requested = bool(OmegaConf.select(cfg, "paper_reference.enabled") or False)
+    if paper_reference_requested:
         workload_mode = OmegaConf.select(cfg, "workload.mode")
         load_frac = (
             OmegaConf.select(cfg, "scenario.paper_reference.dynamic.load_frac_of_capacity")
             if workload_mode == "dynamic"
             else None
         )
-        meta["paper_reference"] = {
+        paper_meta: dict[str, object] = {
+            "schema_version": "v1",
+            "requested": True,
+            "matched": False,
             "workload_mode": str(workload_mode) if workload_mode is not None else None,
             "load_frac_of_capacity": float(load_frac) if load_frac is not None else None,
-            "rows": [
-                {
-                    "metric": row.metric,
-                    "percentile": row.percentile,
-                    "value": row.value,
-                    "model": row.model,
-                    "trace": row.trace,
-                    "series": row.series,
-                    "source_json": str(row.source_json),
-                    "source_pdf": row.source_pdf,
-                }
-                for row in paper_reference_rows
-            ],
+            "criteria": {
+                "metric": OmegaConf.select(cfg, f"scenario.paper_reference.{workload_mode}.metric"),
+                "model": OmegaConf.select(cfg, "scenario.paper_reference.model"),
+                "trace": OmegaConf.select(cfg, "scenario.paper_reference.trace"),
+                "series": OmegaConf.select(cfg, "scenario.paper_reference.series") or "predicted",
+                "p50_json": OmegaConf.select(cfg, f"scenario.paper_reference.{workload_mode}.p50_json"),
+                "p95_json": OmegaConf.select(cfg, f"scenario.paper_reference.{workload_mode}.p95_json"),
+            },
+            "rows": [],
+            "error": None,
         }
+
+        try:
+            paper_rows = maybe_load_paper_reference_rows_from_cfg(cfg, repo_root=repo_root)
+        except Exception as e:
+            paper_meta["error"] = f"{type(e).__name__}: {e}"
+        else:
+            if paper_rows is None:
+                paper_ref_cfg = OmegaConf.select(cfg, "scenario.paper_reference")
+                if paper_ref_cfg is None:
+                    paper_meta["error"] = "scenario.paper_reference is missing"
+                elif not bool(OmegaConf.select(cfg, "scenario.paper_reference.enabled") or False):
+                    paper_meta["error"] = "scenario.paper_reference.enabled=false"
+                else:
+                    paper_meta["error"] = "paper reference unavailable"
+            else:
+                paper_meta["matched"] = True
+                paper_meta["rows"] = [
+                    {
+                        "metric": row.metric,
+                        "percentile": row.percentile,
+                        "value": row.value,
+                        "model": row.model,
+                        "trace": row.trace,
+                        "series": row.series,
+                        "source_json": str(row.source_json),
+                        "source_pdf": row.source_pdf,
+                    }
+                    for row in paper_rows
+                ]
+
+        meta["paper_reference"] = paper_meta
 
     write_summary_md(
         inputs=ReportInputs(scenario_name=scenario_name, sim_csv=sim_csv, real_csv=real_csv, out_dir=report_dir),

@@ -1,4 +1,6 @@
 defaults:
+  - scenario: llama2_7b_arxiv
+  - workload: static
   - _self_
 
 paths:
@@ -9,6 +11,9 @@ paths:
 inputs:
   sim_csv: ""
   real_csv: ""
+
+paper_reference:
+  enabled: false
 
 scoring:
   percentiles: [0.5, 0.95]
@@ -21,4 +26,3 @@ hydra:
     dir: ${paths.tmp_root}/paper_fidelity/score/${stable_id:score,${inputs.sim_csv},${inputs.real_csv}}
   job:
     chdir: true
-

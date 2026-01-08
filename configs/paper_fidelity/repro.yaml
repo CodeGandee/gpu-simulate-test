@@ -12,6 +12,10 @@ trace_subset:
   end: null
   indices: null
 
+# Optional: include paper reference values (when available for the scenario/workload).
+paper_reference:
+  enabled: false
+
 paths:
   repo_root: ${hydra:runtime.cwd}
   tmp_root: ${paths.repo_root}/tmp
