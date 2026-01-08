@@ -8,6 +8,7 @@ Writes a human-readable `summary.md` under:
 
 from __future__ import annotations
 
+import shutil
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,6 +26,15 @@ class ReportInputs:
     sim_csv: Path
     real_csv: Path
     out_dir: Path
+
+
+def _copy_request_metrics_csv(*, src: Path, dst: Path) -> None:
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    src_resolved = src.expanduser().resolve()
+    dst_resolved = dst.expanduser().resolve()
+    if src_resolved == dst_resolved:
+        return
+    shutil.copy2(src_resolved, dst_resolved)
 
 
 def diagnose_gap(*, sim_csv: Path, real_csv: Path, sim_meta: dict | None) -> list[str]:
@@ -235,6 +245,7 @@ def write_summary_md(
     write_run_meta: bool = True,
     write_scores_json: bool = True,
     write_figures: bool = True,
+    copy_request_metrics: bool = True,
 ) -> Path:
     """Write `summary.md` (and optional side artifacts) for a paper-fidelity run.
 
@@ -268,6 +279,15 @@ def write_summary_md(
     if write_run_meta:
         write_json(inputs.out_dir / "run_meta.json", meta)
 
+    if copy_request_metrics:
+        inputs_dir = inputs.out_dir / "inputs"
+        sim_src = inputs.sim_csv.expanduser()
+        real_src = inputs.real_csv.expanduser()
+        if sim_src.exists():
+            _copy_request_metrics_csv(src=sim_src, dst=inputs_dir / "sim_request_metrics.csv")
+        if real_src.exists():
+            _copy_request_metrics_csv(src=real_src, dst=inputs_dir / "real_request_metrics.csv")
+
     lines: list[str] = []
     lines.append(f"# Paper Fidelity Report: {inputs.scenario_name}")
     lines.append("")
@@ -295,8 +315,10 @@ def write_summary_md(
     paper_values: dict[tuple[str, str], float] = {}
     paper_rows: list[dict] = []
     paper_requested = False
+    paper_is_legacy = False
     paper_error = None
     if isinstance(paper_reference, dict):
+        paper_is_legacy = "requested" not in paper_reference
         paper_requested = bool(paper_reference.get("requested") or False)
         paper_error = paper_reference.get("error")
         rows = paper_reference.get("rows")
@@ -315,6 +337,8 @@ def write_summary_md(
                     continue
                 paper_rows.append(row)
 
+    paper_requested = paper_requested or bool(paper_rows)
+
     if paper_requested:
         criteria = paper_reference.get("criteria") if isinstance(paper_reference, dict) else None
         workload_mode = paper_reference.get("workload_mode") if isinstance(paper_reference, dict) else None
@@ -328,30 +352,42 @@ def write_summary_md(
                 sources.append(source_json)
 
         lines.append("## Paper Reference")
-        if workload_mode is not None:
-            lines.append(f"- workload_mode: `{workload_mode}`")
-        if matched is not None:
-            lines.append(f"- matched: `{matched}`")
-        if criteria and isinstance(criteria, dict):
-            model = criteria.get("model")
-            trace = criteria.get("trace")
-            series = criteria.get("series")
-            metric = criteria.get("metric")
+        if paper_is_legacy and paper_rows:
+            first = paper_rows[0]
+            model = first.get("model")
+            trace = first.get("trace")
+            series = first.get("series")
             if isinstance(model, str):
                 lines.append(f"- model: `{model}`")
             if isinstance(trace, str):
                 lines.append(f"- trace: `{trace}`")
             if isinstance(series, str):
                 lines.append(f"- series: `{series}`")
-            if isinstance(metric, str):
-                lines.append(f"- metric: `{metric}`")
-        if load_frac is not None:
-            lines.append(f"- load_frac_of_capacity: `{load_frac}`")
+        else:
+            if workload_mode is not None:
+                lines.append(f"- workload_mode: `{workload_mode}`")
+            if matched is not None:
+                lines.append(f"- matched: `{matched}`")
+            if criteria and isinstance(criteria, dict):
+                model = criteria.get("model")
+                trace = criteria.get("trace")
+                series = criteria.get("series")
+                metric = criteria.get("metric")
+                if isinstance(model, str):
+                    lines.append(f"- model: `{model}`")
+                if isinstance(trace, str):
+                    lines.append(f"- trace: `{trace}`")
+                if isinstance(series, str):
+                    lines.append(f"- series: `{series}`")
+                if isinstance(metric, str):
+                    lines.append(f"- metric: `{metric}`")
+            if load_frac is not None:
+                lines.append(f"- load_frac_of_capacity: `{load_frac}`")
         if paper_error:
             lines.append(f"- error: `{paper_error}`")
         if sources:
             lines.append(f"- sources: {', '.join([f'`{s}`' for s in sources])}")
-        if not paper_rows:
+        if not paper_rows and not paper_is_legacy:
             lines.append("- rows: `0`")
         lines.append("")
 
@@ -495,7 +531,12 @@ def write_summary_md(
     return summary_md
 
 
-def regenerate_summary_md_from_report_dir(report_dir: Path, *, include_paper_reference: bool = True) -> Path:
+def regenerate_summary_md_from_report_dir(
+    report_dir: Path,
+    *,
+    include_paper_reference: bool = True,
+    copy_request_metrics: bool = True,
+) -> Path:
     """Regenerate `summary.md` for an existing report directory.
 
     This reads `run_meta.json` and `scores.json` from `report_dir` and rewrites
@@ -509,6 +550,9 @@ def regenerate_summary_md_from_report_dir(report_dir: Path, *, include_paper_ref
     include_paper_reference
         Whether to include paper reference stats in the regenerated report, if
         present in `run_meta.json` and/or `scores.json`.
+    copy_request_metrics
+        Whether to copy `request_metrics.csv` inputs into `report_dir/inputs/`
+        for easier recomputation.
 
     Returns
     -------
@@ -561,4 +605,5 @@ def regenerate_summary_md_from_report_dir(report_dir: Path, *, include_paper_ref
         write_run_meta=False,
         write_scores_json=False,
         write_figures=False,
+        copy_request_metrics=copy_request_metrics,
     )

@@ -57,6 +57,8 @@ def test_paper_fidelity_report_writes_json_and_svgs(tmp_path: Path) -> None:
     assert (out_dir / "summary.md").exists()
     assert (out_dir / "run_meta.json").exists()
     assert (out_dir / "scores.json").exists()
+    assert (out_dir / "inputs" / "sim_request_metrics.csv").exists()
+    assert (out_dir / "inputs" / "real_request_metrics.csv").exists()
     assert (out_dir / "figs" / "request_execution_plus_preemption_time_normalized_ecdf.svg").exists()
     assert (out_dir / "figs" / "request_e2e_time_normalized_ecdf.svg").exists()
     assert (out_dir / "figs" / "request_execution_plus_preemption_time_normalized_percentiles.svg").exists()

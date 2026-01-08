@@ -89,6 +89,7 @@ def main(argv: list[str] | None = None) -> None:
     report = sub.add_parser("report")
     report.add_argument("--dir", required=True)
     report.add_argument("--paper-reference", choices=["include", "omit"], default="include")
+    report.add_argument("--copy-metrics", action=argparse.BooleanOptionalAction, default=True)
 
     args, hydra_overrides = parser.parse_known_args(argv)
     prog = sys.argv[0]
@@ -115,7 +116,11 @@ def main(argv: list[str] | None = None) -> None:
         if hydra_overrides:
             raise ValueError(f"`paper-fidelity report` does not accept Hydra overrides (got {hydra_overrides})")
         include_paper = str(args.paper_reference) == "include"
-        summary_md = regenerate_summary_md_from_report_dir(Path(args.dir).expanduser(), include_paper_reference=include_paper)
+        summary_md = regenerate_summary_md_from_report_dir(
+            Path(args.dir).expanduser(),
+            include_paper_reference=include_paper,
+            copy_request_metrics=bool(args.copy_metrics),
+        )
         print(str(summary_md))
     else:  # pragma: no cover
         raise ValueError(f"Unhandled cmd: {args.cmd}")
