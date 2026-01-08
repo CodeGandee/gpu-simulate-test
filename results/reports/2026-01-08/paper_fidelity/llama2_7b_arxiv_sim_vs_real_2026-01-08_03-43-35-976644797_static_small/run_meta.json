@@ -1,0 +1,147 @@
+{
+  "artifacts": {
+    "real_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv_sim_vs_real_2026-01-08_03-43-35-976644797_static_small/real/request_metrics.csv",
+    "report_dir": "/data1/huangzhe/code/gpu-simulate-test/results/reports/2026-01-08/paper_fidelity/llama2_7b_arxiv_sim_vs_real_2026-01-08_03-43-35-976644797_static_small",
+    "sim_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv_sim_vs_real_2026-01-08_03-43-35-976644797_static_small/sim/request_metrics.csv"
+  },
+  "ended_at": "2026-01-08T03:47:49.509563+00:00",
+  "env": {
+    "cuda_available": true,
+    "cuda_device_name": "NVIDIA A100-SXM4-80GB",
+    "cwd": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv_sim_vs_real_2026-01-08_03-43-35-976644797_static_small/repro",
+    "platform": "Linux-6.8.0-90-generic-x86_64-with-glibc2.39",
+    "python": "3.13.11",
+    "torch": "2.9.1+cu128"
+  },
+  "git_commit": "347ebf4ed2163cc82f0500b992ec30387b7c2264",
+  "git_dirty": true,
+  "paper_reference": {
+    "load_frac_of_capacity": null,
+    "rows": [
+      {
+        "metric": "request_execution_plus_preemption_time_normalized",
+        "model": "LLaMA2-7B (TP1)",
+        "percentile": "p50",
+        "series": "predicted",
+        "source_json": "/data1/huangzhe/code/gpu-simulate-test/context/summaries/vidur-kb/paper-results/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p50.json",
+        "source_pdf": "extern/tracked/vidur/paper/tex/graphs/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p50.pdf",
+        "trace": "Arxiv-4K",
+        "value": 0.07477036751694556
+      },
+      {
+        "metric": "request_execution_plus_preemption_time_normalized",
+        "model": "LLaMA2-7B (TP1)",
+        "percentile": "p95",
+        "series": "predicted",
+        "source_json": "/data1/huangzhe/code/gpu-simulate-test/context/summaries/vidur-kb/paper-results/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p95.json",
+        "source_pdf": "extern/tracked/vidur/paper/tex/graphs/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p95.pdf",
+        "trace": "Arxiv-4K",
+        "value": 0.08126591974129342
+      }
+    ],
+    "workload_mode": "static"
+  },
+  "params": {
+    "paths": {
+      "repo_root": "/data1/huangzhe/code/gpu-simulate-test",
+      "results_root": "/data1/huangzhe/code/gpu-simulate-test/results",
+      "tmp_root": "/data1/huangzhe/code/gpu-simulate-test/tmp"
+    },
+    "scale": "small",
+    "scenario": {
+      "capacity_search": {
+        "enabled": true,
+        "max_iters": 6,
+        "max_qps": 20.0,
+        "min_qps": 1.0,
+        "overload_p99_scheduling_delay_s": 5.0,
+        "qps_operating_point_fraction": 0.85
+      },
+      "model": {
+        "model_id": "meta-llama/Llama-2-7b-hf",
+        "model_ref": "/data1/huangzhe/code/gpu-simulate-test/models/llama2-7b-hf/source-data"
+      },
+      "name": "llama2_7b_arxiv_sim_vs_real_2026-01-08_03-43-35-976644797_static_small",
+      "paper_reference": {
+        "dynamic": {
+          "load_frac_of_capacity": 0.85,
+          "metric": "request_e2e_time_normalized",
+          "p50_json": "/data1/huangzhe/code/gpu-simulate-test/context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_85_p50.json",
+          "p95_json": "/data1/huangzhe/code/gpu-simulate-test/context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_85_p95.json"
+        },
+        "enabled": true,
+        "model": "LLaMA2-7B (TP1)",
+        "series": "predicted",
+        "static": {
+          "metric": "request_execution_plus_preemption_time_normalized",
+          "p50_json": "/data1/huangzhe/code/gpu-simulate-test/context/summaries/vidur-kb/paper-results/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p50.json",
+          "p95_json": "/data1/huangzhe/code/gpu-simulate-test/context/summaries/vidur-kb/paper-results/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p95.json"
+        },
+        "trace": "Arxiv-4K"
+      },
+      "real": {
+        "backend": "sarathi",
+        "metrics": {
+          "enable_chrome_trace": false,
+          "write_metrics": true
+        },
+        "parallel": {
+          "pipeline_parallel_size": 1,
+          "tensor_parallel_size": 1
+        },
+        "sampling": {
+          "ignore_eos": true
+        },
+        "scheduler": {
+          "chunk_size": 16,
+          "max_num_seqs": 16
+        }
+      },
+      "scoring": {
+        "percentiles": [
+          0.5,
+          0.95
+        ],
+        "thresholds": {
+          "pass_pct": 0.05,
+          "warn_pct": 0.09
+        }
+      },
+      "trace_source": {
+        "kind": "vidur_processed_lengths_csv",
+        "max_tokens": 4096,
+        "num_requests": null,
+        "path": "/data1/huangzhe/code/gpu-simulate-test/extern/tracked/vidur/data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_v2.csv",
+        "seed": 42
+      },
+      "vidur": {
+        "device": "a100",
+        "network_device": "a100_pairwise_nvlink",
+        "num_pipeline_stages": 1,
+        "profiling_root": "results/raw/vidur-profiling/llama2-7b/sarathi-serve/latest",
+        "seed": 42,
+        "skip_cpu_overhead_modeling": true,
+        "tensor_parallel_size": 1
+      }
+    },
+    "trace_subset": {
+      "begin": 0,
+      "end": 50,
+      "indices": null,
+      "kind": "range"
+    },
+    "workload": {
+      "mode": "static"
+    }
+  },
+  "profiling": {
+    "interpretation": "gap reproduction (host profiling bundle under results/raw/vidur-profiling)",
+    "mode": "host",
+    "root": "/data1/huangzhe/code/gpu-simulate-test/results/raw/vidur-profiling/llama2-7b/sarathi-serve/2026-01-07_15-15-15-281697026"
+  },
+  "run_id": "pf_score_183315b668f2",
+  "run_type": "score",
+  "scenario_name": "llama2_7b_arxiv_sim_vs_real_2026-01-08_03-43-35-976644797_static_small",
+  "schema_version": "v1",
+  "started_at": "2026-01-08T03:47:49.509547+00:00"
+}

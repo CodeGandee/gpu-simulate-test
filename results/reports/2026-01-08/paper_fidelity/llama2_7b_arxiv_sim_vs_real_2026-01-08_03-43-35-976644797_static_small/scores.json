@@ -1,0 +1,73 @@
+{
+  "generated_at": "2026-01-08T03:47:49.518341+00:00",
+  "inputs": {
+    "real_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv_sim_vs_real_2026-01-08_03-43-35-976644797_static_small/real/request_metrics.csv",
+    "sim_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv_sim_vs_real_2026-01-08_03-43-35-976644797_static_small/sim/request_metrics.csv"
+  },
+  "metrics": [
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "percentiles": {
+        "p50": {
+          "paper": 0.07477036751694556,
+          "pct_error": 0.12715419994680227,
+          "real": 0.035539530732461605,
+          "sim": 0.04005853132923255,
+          "sim_vs_paper_pct_error": 0.4642458950044093
+        },
+        "p95": {
+          "paper": 0.08126591974129342,
+          "pct_error": 0.33339615430164227,
+          "real": 0.0701833739544258,
+          "sim": 0.04678450698210619,
+          "sim_vs_paper_pct_error": 0.42430348255403166
+        }
+      },
+      "verdict": "fail"
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.8558350836719948,
+          "real": 0.44752444613247133,
+          "sim": 0.0645173243314246
+        },
+        "p95": {
+          "pct_error": 0.8981552888552584,
+          "real": 1.1436527210284317,
+          "sim": 0.1164749810230383
+        }
+      },
+      "verdict": "fail"
+    }
+  ],
+  "paper_reference": {
+    "load_frac_of_capacity": null,
+    "rows": [
+      {
+        "metric": "request_execution_plus_preemption_time_normalized",
+        "model": "LLaMA2-7B (TP1)",
+        "percentile": "p50",
+        "series": "predicted",
+        "source_json": "/data1/huangzhe/code/gpu-simulate-test/context/summaries/vidur-kb/paper-results/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p50.json",
+        "source_pdf": "extern/tracked/vidur/paper/tex/graphs/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p50.pdf",
+        "trace": "Arxiv-4K",
+        "value": 0.07477036751694556
+      },
+      {
+        "metric": "request_execution_plus_preemption_time_normalized",
+        "model": "LLaMA2-7B (TP1)",
+        "percentile": "p95",
+        "series": "predicted",
+        "source_json": "/data1/huangzhe/code/gpu-simulate-test/context/summaries/vidur-kb/paper-results/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p95.json",
+        "source_pdf": "extern/tracked/vidur/paper/tex/graphs/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p95.pdf",
+        "trace": "Arxiv-4K",
+        "value": 0.08126591974129342
+      }
+    ],
+    "workload_mode": "static"
+  },
+  "scenario_name": "llama2_7b_arxiv_sim_vs_real_2026-01-08_03-43-35-976644797_static_small",
+  "schema_version": "v1"
+}

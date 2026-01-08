@@ -1,0 +1,92 @@
+{
+  "generated_at": "2026-01-08T04:50:34.726950+00:00",
+  "inputs": {
+    "real_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv_sim_vs_real_2026-01-08_03-43-35-976644797_dynamic_small/real/request_metrics.csv",
+    "sim_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv_sim_vs_real_2026-01-08_03-43-35-976644797_dynamic_small/sim/request_metrics.csv"
+  },
+  "metrics": [
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.5605723478013175,
+          "real": 0.03523101211678165,
+          "sim": 0.0154814809390607
+        },
+        "p95": {
+          "pct_error": 0.7368503932988423,
+          "real": 0.07005661689692248,
+          "sim": 0.018435371183238836
+        }
+      },
+      "verdict": "fail"
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.9448558293809526,
+          "real": 0.2816830106109809,
+          "sim": 0.0155331759976189
+        },
+        "p95": {
+          "pct_error": 0.9760570661164254,
+          "real": 0.7715448961131192,
+          "sim": 0.01847304843584587
+        }
+      },
+      "verdict": "fail"
+    },
+    {
+      "metric": "prefill_time_execution_plus_preemption_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.9510978941046124,
+          "real": 0.00111914431946365,
+          "sim": 5.472851402263271e-05
+        },
+        "p95": {
+          "pct_error": 0.9488460148774227,
+          "real": 0.00126509618238087,
+          "sim": 6.471471129214036e-05
+        }
+      },
+      "verdict": "fail"
+    },
+    {
+      "metric": "decode_time_execution_plus_preemption_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.15696789289587312,
+          "real": 0.0169223017525343,
+          "sim": 0.01426604370349085
+        },
+        "p95": {
+          "pct_error": 0.04829888881062257,
+          "real": 0.018010261818846164,
+          "sim": 0.017140386185807512
+        }
+      },
+      "verdict": "fail"
+    }
+  ],
+  "paper_reference": {
+    "criteria": {
+      "metric": "request_e2e_time_normalized",
+      "model": "LLaMA2-7B (TP1)",
+      "p50_json": "/data1/huangzhe/code/gpu-simulate-test/context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_85_p50.json",
+      "p95_json": "/data1/huangzhe/code/gpu-simulate-test/context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_85_p95.json",
+      "series": "predicted",
+      "trace": "Arxiv-4K"
+    },
+    "error": "scenario.paper_reference.enabled=false",
+    "load_frac_of_capacity": 0.85,
+    "matched": false,
+    "requested": true,
+    "rows": [],
+    "schema_version": "v1",
+    "workload_mode": "dynamic"
+  },
+  "scenario_name": "llama2_7b_arxiv_sim_vs_real_2026-01-08_03-43-35-976644797_dynamic_small",
+  "schema_version": "v1"
+}
