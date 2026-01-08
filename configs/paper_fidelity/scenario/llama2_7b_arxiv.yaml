@@ -19,6 +19,16 @@ vidur:
   num_pipeline_stages: 1
   seed: 42
   skip_cpu_overhead_modeling: true
+  # Parity-critical scheduler knobs: do not rely on Vidur defaults.
+  # Align these with the real runner's scheduler settings unless intentionally studying drift.
+  scheduler:
+    type: sarathi
+    # Match Sarathi-Serve paper-fidelity runner settings.
+    chunk_size: ${scenario.real.scheduler.chunk_size}
+    batch_size_cap: ${scenario.real.scheduler.max_num_seqs}
+    # KV-cache page/block size (Vidur uses this for memory planning and per-iteration modeling).
+    block_size: 16
+    watermark_blocks_fraction: 0.01
 
 real:
   backend: sarathi

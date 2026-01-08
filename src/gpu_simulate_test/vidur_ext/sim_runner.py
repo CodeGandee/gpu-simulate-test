@@ -183,6 +183,7 @@ def run_vidur_sim(inputs: VidurSimInputs, *, out_dir: Path, run_meta: dict) -> N
         MetricsConfig,
         RandomForrestExecutionTimePredictorConfig,
         ReplicaConfig,
+        SarathiSchedulerConfig,
         SimulationConfig,
         TraceRequestGeneratorConfig,
     )
@@ -386,6 +387,13 @@ class VidurPaperFidelitySimInputs:
     seed: int = 42
     max_tokens: int = 4096
     skip_cpu_overhead_modeling: bool = True
+    # Parity-critical scheduler knobs. Vidur has its own defaults; for sim-vs-real
+    # experiments these should be set explicitly to match the real runner.
+    scheduler_type: str = "sarathi"
+    scheduler_chunk_size: int | None = None
+    scheduler_batch_size_cap: int | None = None
+    scheduler_block_size: int | None = None
+    scheduler_watermark_blocks_fraction: float | None = None
 
 
 def run_vidur_paper_fidelity_sim(
@@ -444,7 +452,28 @@ def run_vidur_paper_fidelity_sim(
         device=str(inputs.device),
         network_device=str(inputs.network_device),
     )
-    cluster_config = ClusterConfig(num_replicas=1, replica_config=replica_config)
+    scheduler_type = str(inputs.scheduler_type or "sarathi").lower()
+    if scheduler_type != "sarathi":
+        raise ValueError(
+            f"Unsupported Vidur replica scheduler type for paper-fidelity sim: {scheduler_type!r}. "
+            "Set scenario.vidur.scheduler.type=sarathi (or extend sim_runner.py to support more)."
+        )
+
+    replica_scheduler_config = SarathiSchedulerConfig()
+    if inputs.scheduler_chunk_size is not None:
+        replica_scheduler_config.chunk_size = int(inputs.scheduler_chunk_size)
+    if inputs.scheduler_batch_size_cap is not None:
+        replica_scheduler_config.batch_size_cap = int(inputs.scheduler_batch_size_cap)
+    if inputs.scheduler_block_size is not None:
+        replica_scheduler_config.block_size = int(inputs.scheduler_block_size)
+    if inputs.scheduler_watermark_blocks_fraction is not None:
+        replica_scheduler_config.watermark_blocks_fraction = float(inputs.scheduler_watermark_blocks_fraction)
+
+    cluster_config = ClusterConfig(
+        num_replicas=1,
+        replica_config=replica_config,
+        replica_scheduler_config=replica_scheduler_config,
+    )
     request_generator_config = TraceRequestGeneratorConfig(
         trace_file=str(inputs.trace_csv),
         max_tokens=int(inputs.max_tokens),

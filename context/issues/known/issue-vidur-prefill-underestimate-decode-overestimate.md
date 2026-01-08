@@ -109,6 +109,9 @@ Concretely, in our integration this likely means:
 - Extend `src/gpu_simulate_test/vidur_ext/sim_runner.py` (`run_vidur_paper_fidelity_sim`) to construct `ClusterConfig(..., replica_scheduler_config=SarathiSchedulerConfig(...))` from the scenario config, instead of relying on Vidur defaults.
 - Record the chosen Vidur scheduler config into `tmp/paper_fidelity/.../sim/run_meta.json` so reports can sanity-check sim/real parity.
 
+Status:
+- The paper-fidelity pipeline now supports explicit Vidur scheduler knobs via `scenario.vidur.scheduler.*` and passes them into Vidur’s `replica_scheduler_config`.
+
 Expected outcome:
 - Prefill normalized time should increase toward real (more chunk boundaries).
 - Decode normalized time should decrease toward real (less “decode blocked by giant prefill chunks / oversized batches”).
@@ -127,4 +130,3 @@ Next diagnostic steps:
 - Re-run with `skip_cpu_overhead_modeling=false` using a host-profiled `cpu_overheads.csv` (Vidur supports this; see `extern/tracked/vidur/docs/profiling.md`).
 - Enable richer Vidur metric outputs (token completion / batch metrics) to confirm whether the skew is driven by long decode-iteration gaps vs kernel-time prediction error.
 - Validate Sarathi-Serve’s metric definitions for `prefill_completed_at` vs Vidur’s (`prefill_completed_at` is a common boundary but can differ subtly across implementations).
-

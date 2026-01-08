@@ -563,6 +563,11 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
     }
     skip_val = OmegaConf.select(cfg, "scenario.vidur.skip_cpu_overhead_modeling")
     skip_cpu_overhead_modeling = bool(skip_val) if skip_val is not None else True
+    scheduler_type = str(OmegaConf.select(cfg, "scenario.vidur.scheduler.type") or "sarathi")
+    scheduler_chunk_size = OmegaConf.select(cfg, "scenario.vidur.scheduler.chunk_size")
+    scheduler_batch_size_cap = OmegaConf.select(cfg, "scenario.vidur.scheduler.batch_size_cap")
+    scheduler_block_size = OmegaConf.select(cfg, "scenario.vidur.scheduler.block_size")
+    scheduler_watermark = OmegaConf.select(cfg, "scenario.vidur.scheduler.watermark_blocks_fraction")
     run_vidur_paper_fidelity_sim(
         VidurPaperFidelitySimInputs(
             scenario_name=scenario_name,
@@ -576,6 +581,13 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
             seed=int(cfg.scenario.vidur.seed),
             max_tokens=int(cfg.scenario.trace_source.max_tokens),
             skip_cpu_overhead_modeling=skip_cpu_overhead_modeling,
+            scheduler_type=scheduler_type,
+            scheduler_chunk_size=None if scheduler_chunk_size is None else int(scheduler_chunk_size),
+            scheduler_batch_size_cap=None if scheduler_batch_size_cap is None else int(scheduler_batch_size_cap),
+            scheduler_block_size=None if scheduler_block_size is None else int(scheduler_block_size),
+            scheduler_watermark_blocks_fraction=None
+            if scheduler_watermark is None
+            else float(scheduler_watermark),
         ),
         out_dir=sim_dir,
         run_meta=sim_run_meta,

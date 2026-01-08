@@ -194,8 +194,8 @@ At minimum, explicitly align and record the following:
   - Sim: `scenario.vidur.skip_cpu_overhead_modeling` must be set explicitly.
   - Profiling: if CPU overhead modeling is enabled, the profiling root must include CPU-overhead measurements consistent with the real stack; otherwise comparisons are not meaningful.
 
-Implementation note (current repo state):
-- Our Vidur runner currently constructs a `ClusterConfig` without explicitly setting Vidur’s `replica_scheduler_config` knobs, so Vidur may silently use its internal defaults. Treat this as a correctness risk for sim-vs-real studies and always force explicit scheduler settings once the integration supports it.
+Implementation note (this repo’s paper-fidelity pipeline):
+- The paper-fidelity Vidur runner reads `scenario.vidur.scheduler.*` and constructs Vidur’s `replica_scheduler_config` explicitly; keep these keys set in scenario configs and do not rely on Vidur’s internal defaults.
 
 ### D2. Make arrivals identical
 
