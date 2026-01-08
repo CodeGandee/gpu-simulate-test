@@ -4,17 +4,6 @@
 - sim: `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv_sim_vs_real_2026-01-08_03-43-35-976644797_dynamic_small/sim/request_metrics.csv`
 - real: `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv_sim_vs_real_2026-01-08_03-43-35-976644797_dynamic_small/real/request_metrics.csv`
 
-## Paper Reference
-- workload_mode: `dynamic`
-- matched: `False`
-- model: `LLaMA2-7B (TP1)`
-- trace: `Arxiv-4K`
-- series: `predicted`
-- metric: `request_e2e_time_normalized`
-- load_frac_of_capacity: `0.85`
-- error: `scenario.paper_reference.enabled=false`
-- rows: `0`
-
 ## Scores
 | Metric | Percentile | Sim | Real | Percent error | Verdict |
 |--------|------------|-----|------|---------------|---------|

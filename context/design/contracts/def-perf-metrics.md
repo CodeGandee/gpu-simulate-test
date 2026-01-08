@@ -56,7 +56,8 @@ This is designed for **static-workload fidelity** where queueing/scheduling dela
 When the paper (and this repo) reports `p50`/`p95`, it means:
 
 - `p50`: the median request value for that metric (50th percentile).
-- `p95`: the 95th-percentile request value (tail latency); 95% of requests are at or below this value.
+- `p95`: the 95th-percentile request value (**tail latency**); 95% of requests are at or below this value, and the slowest (most time-consuming) ~5% of requests are above it.
+  - Equivalently: `p95` characterizes the **slow tail**, not the fastest/bottom 5%.
 
 Percentiles are computed on the per-request metric values *within the scenario being evaluated* (same trace/workload, model, scheduler/config, and load point).
 

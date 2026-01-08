@@ -9,19 +9,17 @@
 - mode: `host`
 - interpretation: gap reproduction (host profiling bundle under results/raw/vidur-profiling)
 
-## Paper Reference
-- model: `LLaMA2-7B (TP1)`
-- trace: `Arxiv-4K`
-- series: `predicted`
-- sources: `/data1/huangzhe/code/gpu-simulate-test/context/summaries/vidur-kb/paper-results/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p50.json`, `/data1/huangzhe/code/gpu-simulate-test/context/summaries/vidur-kb/paper-results/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p95.json`
-
 ## Scores
-| Metric | Percentile | Paper | Sim | Real | Sim vs Paper | Sim vs Real | Verdict |
-|--------|------------|-------|-----|------|--------------|-------------|---------|
-| request_execution_plus_preemption_time_normalized | p50 | 0.0747704 | 0.0553512 | 0.0358409 | 25.97% | 54.44% | fail |
-| request_execution_plus_preemption_time_normalized | p95 | 0.0812659 | 0.0598889 | 0.0731682 | 26.31% | 18.15% | fail |
-| request_e2e_time_normalized | p50 | N/A | 0.401243 | 3.92011 | N/A | 89.76% | fail |
-| request_e2e_time_normalized | p95 | N/A | 1.53367 | 15.6166 | N/A | 90.18% | fail |
+| Metric | Percentile | Sim | Real | Percent error | Verdict |
+|--------|------------|-----|------|---------------|---------|
+| request_execution_plus_preemption_time_normalized | p50 | 0.0553512 | 0.0358409 | 54.44% | fail |
+| request_execution_plus_preemption_time_normalized | p95 | 0.0598889 | 0.0731682 | 18.15% | fail |
+| request_e2e_time_normalized | p50 | 0.401243 | 3.92011 | 89.76% | fail |
+| request_e2e_time_normalized | p95 | 1.53367 | 15.6166 | 90.18% | fail |
+| prefill_time_execution_plus_preemption_normalized | p50 | 0.000133803 | 0.00119103 | 88.77% | fail |
+| prefill_time_execution_plus_preemption_normalized | p95 | 0.000186472 | 0.0014562 | 87.19% | fail |
+| decode_time_execution_plus_preemption_normalized | p50 | 0.0532178 | 0.0170813 | 211.56% | fail |
+| decode_time_execution_plus_preemption_normalized | p95 | 0.0550443 | 0.0187855 | 193.01% | fail |
 
 ## Figures
 ### Static normalized latency

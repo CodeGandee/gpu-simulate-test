@@ -9,20 +9,13 @@
 - mode: `host`
 - interpretation: gap reproduction (host profiling bundle under results/raw/vidur-profiling)
 
-## Paper Reference
-- model: `LLaMA2-7B (TP1)`
-- trace: `Arxiv-4K`
-- series: `predicted`
-- load_frac_of_capacity: `0.85`
-- sources: `/data1/huangzhe/code/gpu-simulate-test/context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_85_p50.json`, `/data1/huangzhe/code/gpu-simulate-test/context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_85_p95.json`
-
 ## Scores
-| Metric | Percentile | Paper | Sim | Real | Sim vs Paper | Sim vs Real | Verdict |
-|--------|------------|-------|-----|------|--------------|-------------|---------|
-| request_execution_plus_preemption_time_normalized | p50 | N/A | 0.0154402 | 0.0353458 | N/A | 56.32% | fail |
-| request_execution_plus_preemption_time_normalized | p95 | N/A | 0.0184007 | 0.0708718 | N/A | 74.04% | fail |
-| request_e2e_time_normalized | p50 | 0.0359902 | 0.0154474 | 0.280828 | 57.08% | 94.50% | fail |
-| request_e2e_time_normalized | p95 | 0.0412453 | 0.0184246 | 0.772279 | 55.33% | 97.61% | fail |
+| Metric | Percentile | Sim | Real | Percent error | Verdict |
+|--------|------------|-----|------|---------------|---------|
+| request_execution_plus_preemption_time_normalized | p50 | 0.0154402 | 0.0353458 | 56.32% | fail |
+| request_execution_plus_preemption_time_normalized | p95 | 0.0184007 | 0.0708718 | 74.04% | fail |
+| request_e2e_time_normalized | p50 | 0.0154474 | 0.280828 | 94.50% | fail |
+| request_e2e_time_normalized | p95 | 0.0184246 | 0.772279 | 97.61% | fail |
 
 ## Figures
 ### Static normalized latency

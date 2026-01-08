@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-01-08T03:47:49.518341+00:00",
+  "generated_at": "2026-01-08T10:07:26.971324+00:00",
   "inputs": {
     "real_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv_sim_vs_real_2026-01-08_03-43-35-976644797_static_small/real/request_metrics.csv",
     "sim_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv_sim_vs_real_2026-01-08_03-43-35-976644797_static_small/sim/request_metrics.csv"
@@ -37,6 +37,38 @@
           "pct_error": 0.8981552888552584,
           "real": 1.1436527210284317,
           "sim": 0.1164749810230383
+        }
+      },
+      "verdict": "fail"
+    },
+    {
+      "metric": "prefill_time_execution_plus_preemption_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.9103364567559068,
+          "real": 0.0011141068241576498,
+          "sim": 9.989476540639883e-05
+        },
+        "p95": {
+          "pct_error": 0.8979169420977775,
+          "real": 0.0012701025773530648,
+          "sim": 0.00012965595494569498
+        }
+      },
+      "verdict": "fail"
+    },
+    {
+      "metric": "decode_time_execution_plus_preemption_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 1.2644543384340814,
+          "real": 0.0169019856598307,
+          "sim": 0.038273774755554255
+        },
+        "p95": {
+          "pct_error": 1.4486630345062506,
+          "real": 0.018019835568622116,
+          "sim": 0.044124505244765896
         }
       },
       "verdict": "fail"
