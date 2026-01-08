@@ -8,7 +8,6 @@ Writes a human-readable `summary.md` under:
 
 from __future__ import annotations
 
-import shutil
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,15 +25,6 @@ class ReportInputs:
     sim_csv: Path
     real_csv: Path
     out_dir: Path
-
-
-def _copy_request_metrics_csv(*, src: Path, dst: Path) -> None:
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    src_resolved = src.expanduser().resolve()
-    dst_resolved = dst.expanduser().resolve()
-    if src_resolved == dst_resolved:
-        return
-    shutil.copy2(src_resolved, dst_resolved)
 
 
 def diagnose_gap(*, sim_csv: Path, real_csv: Path, sim_meta: dict | None) -> list[str]:
@@ -245,7 +235,6 @@ def write_summary_md(
     write_run_meta: bool = True,
     write_scores_json: bool = True,
     write_figures: bool = True,
-    copy_request_metrics: bool = True,
 ) -> Path:
     """Write `summary.md` (and optional side artifacts) for a paper-fidelity run.
 
@@ -278,15 +267,6 @@ def write_summary_md(
 
     if write_run_meta:
         write_json(inputs.out_dir / "run_meta.json", meta)
-
-    if copy_request_metrics:
-        inputs_dir = inputs.out_dir / "inputs"
-        sim_src = inputs.sim_csv.expanduser()
-        real_src = inputs.real_csv.expanduser()
-        if sim_src.exists():
-            _copy_request_metrics_csv(src=sim_src, dst=inputs_dir / "sim_request_metrics.csv")
-        if real_src.exists():
-            _copy_request_metrics_csv(src=real_src, dst=inputs_dir / "real_request_metrics.csv")
 
     lines: list[str] = []
     lines.append(f"# Paper Fidelity Report: {inputs.scenario_name}")
@@ -535,7 +515,6 @@ def regenerate_summary_md_from_report_dir(
     report_dir: Path,
     *,
     include_paper_reference: bool = True,
-    copy_request_metrics: bool = True,
 ) -> Path:
     """Regenerate `summary.md` for an existing report directory.
 
@@ -550,9 +529,6 @@ def regenerate_summary_md_from_report_dir(
     include_paper_reference
         Whether to include paper reference stats in the regenerated report, if
         present in `run_meta.json` and/or `scores.json`.
-    copy_request_metrics
-        Whether to copy `request_metrics.csv` inputs into `report_dir/inputs/`
-        for easier recomputation.
 
     Returns
     -------
@@ -605,5 +581,4 @@ def regenerate_summary_md_from_report_dir(
         write_run_meta=False,
         write_scores_json=False,
         write_figures=False,
-        copy_request_metrics=copy_request_metrics,
     )
