@@ -2,6 +2,7 @@ defaults:
   - scenario: llama2_7b_arxiv
   - workload: static
   - _self_
+  - scale: full
 
 trace_subset:
   # Subset selection is by row index in the canonical trace representation.

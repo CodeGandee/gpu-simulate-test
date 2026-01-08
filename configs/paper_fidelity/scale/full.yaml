@@ -1,0 +1,11 @@
+# @package _global_
+
+# Full-scale run: use the entire trace.
+scale: full
+
+trace_subset:
+  kind: all
+  begin: 0
+  end: null
+  indices: null
+

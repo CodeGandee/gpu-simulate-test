@@ -13,9 +13,9 @@ from __future__ import annotations
 
 __all__ = [
     "capacity",
+    "manifest",
     "paths",
     "report",
     "scoring",
     "traces",
 ]
-

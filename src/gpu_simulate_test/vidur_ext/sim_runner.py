@@ -13,6 +13,7 @@ from pathlib import Path
 import pandas as pd
 
 from gpu_simulate_test.io import read_csv, utcnow_iso, write_csv, write_json
+from gpu_simulate_test.paper_fidelity.traces import TraceSpec, read_trace_csv
 from gpu_simulate_test.vidur_ext.profiling_root import ProfilingRootLayout, validate_profiling_root
 
 
@@ -276,6 +277,62 @@ PAPER_FIDELITY_REQUIRED_VIDUR_COLUMNS = [
 ]
 
 
+def _validate_vidur_decode_token_counts(*, trace_csv: Path, request_df: pd.DataFrame, max_tokens: int) -> None:
+    trace = read_trace_csv(trace_csv, spec=TraceSpec(max_tokens=int(max_tokens)))
+    if "request_id" in trace.columns:
+        trace_request_ids = pd.to_numeric(trace["request_id"], errors="raise").astype(int)
+    else:
+        trace_request_ids = pd.Series(range(len(trace)), dtype=int)
+
+    expected = pd.DataFrame(
+        {
+            "request_id": trace_request_ids,
+            "expected_num_decode_tokens": pd.to_numeric(trace["num_decode_tokens"], errors="raise").astype(int),
+        }
+    )
+    if expected["request_id"].duplicated().any():
+        dup = expected.loc[expected["request_id"].duplicated(), "request_id"].unique()[:5].tolist()
+        raise ValueError(f"trace.csv has duplicate request_id values (e.g. {dup}); request_id must be unique.")
+
+    actual = request_df[["request_id", "request_num_decode_tokens"]].copy()
+    actual["request_id"] = pd.to_numeric(actual["request_id"], errors="raise").astype(int)
+    actual["actual_num_decode_tokens"] = pd.to_numeric(actual["request_num_decode_tokens"], errors="raise").astype(int)
+    actual = actual[["request_id", "actual_num_decode_tokens"]]
+
+    if actual["request_id"].duplicated().any():
+        dup = actual.loc[actual["request_id"].duplicated(), "request_id"].unique()[:5].tolist()
+        raise ValueError(f"Vidur produced duplicate request ids (e.g. {dup}); request_id must be unique.")
+
+    expected_ids = set(expected["request_id"].tolist())
+    actual_ids = set(actual["request_id"].tolist())
+    missing = sorted(expected_ids - actual_ids)[:5]
+    extra = sorted(actual_ids - expected_ids)[:5]
+    if missing or extra:
+        raise ValueError(
+            "Vidur request ids do not match trace request ids (runs are not comparable). "
+            f"missing_in_vidur={missing}, extra_in_vidur={extra}"
+        )
+
+    merged = actual.merge(expected, on="request_id", how="inner")
+    mismatches = merged.loc[merged["actual_num_decode_tokens"] != merged["expected_num_decode_tokens"]]
+    if len(mismatches) == 0:
+        return
+
+    sample = mismatches.head(10)
+    details = "; ".join(
+        f"id={int(rid)} expected={int(exp)} got={int(got)}"
+        for rid, exp, got in zip(
+            sample["request_id"].tolist(),
+            sample["expected_num_decode_tokens"].tolist(),
+            sample["actual_num_decode_tokens"].tolist(),
+        )
+    )
+    raise ValueError(
+        "Vidur request_num_decode_tokens does not match trace num_decode_tokens (runs are not comparable). "
+        f"First mismatches: {details}"
+    )
+
+
 def convert_vidur_request_metrics_to_paper_fidelity(raw_request_metrics_csv: Path) -> pd.DataFrame:
     """Convert Vidur's raw `request_metrics.csv` to the paper-fidelity schema.
 
@@ -433,6 +490,11 @@ def run_vidur_paper_fidelity_sim(
         raise FileNotFoundError(f"Vidur did not produce request_metrics.csv under {raw_dir}")
 
     request_df = convert_vidur_request_metrics_to_paper_fidelity(raw_request_metrics)
+    _validate_vidur_decode_token_counts(
+        trace_csv=inputs.trace_csv,
+        request_df=request_df,
+        max_tokens=int(inputs.max_tokens),
+    )
     write_csv(
         out_dir / "request_metrics.csv",
         request_df,

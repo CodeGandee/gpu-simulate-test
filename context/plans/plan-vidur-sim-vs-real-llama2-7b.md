@@ -2,10 +2,11 @@
 
 ## HEADER
 - **Purpose**: Implement the requirements in `context/tasks/working/req-vidur-sim-vs-real.md` so we can run paper-fidelity sim-vs-real experiments for LLaMA2-7B that are comparable by construction (same trace, same decode token counts, aligned metric boundaries), and produce both machine-readable JSON and paper-style Markdown + SVG outputs.
-- **Status**: Draft
+- **Status**: Implemented (initial)
 - **Date**: 2026-01-07
 - **Dependencies**:
   - `context/tasks/working/req-vidur-sim-vs-real.md` (requirements; authoritative for this plan)
+  - `context/instructions/prep-dev-env.md` (Pixi-managed dev environment; required for reproducible runs)
   - `specs/002-reproduce-vidur-paper-fidelity/spec.md` (paper-fidelity scope + methodology)
   - `specs/002-reproduce-vidur-paper-fidelity/tasks.md` (implementation checklist)
   - `specs/002-reproduce-vidur-paper-fidelity/qa-002-sim-vs-real-llama2-7b.md` (host-specific runbook notes)
@@ -18,6 +19,8 @@
   - `src/gpu_simulate_test/real_bench/backends/sarathi_paper_fidelity_backend.py` (Sarathi-Serve real replay + token-count validation)
   - `src/gpu_simulate_test/paper_fidelity/scoring.py` (percentiles + percent error)
   - `src/gpu_simulate_test/paper_fidelity/report.py` (report: `scores.json`, `summary.md`, SVGs)
+  - `src/gpu_simulate_test/paper_fidelity/manifest.py` (batch manifest writer)
+  - `scripts/run_pf_llama2_7b_sim_vs_real.sh` (batch runner across scales/workloads)
 - **Target**: Developers iterating on paper-fidelity on multi-A100 hosts who need repeatable, comparable sim-vs-real runs for LLaMA2-7B (TP=1/PP=1).
 
 ---
@@ -136,12 +139,13 @@ sequenceDiagram
 ## 3. Files to Modify or Add
 
 - **`context/tasks/working/req-vidur-sim-vs-real.md`** Keep requirements updated as implementation details stabilize.
-- **`configs/paper_fidelity/`** Add a `scale/` group (or equivalent) that maps `small|medium|full` to `trace_subset`.
-- **`src/gpu_simulate_test/cli/paper_fidelity.py`** Thread `scale` (or `trace_subset`) through `trace`, `repro`, and capacity search paths; ensure metadata includes the chosen scale/subset.
-- **`src/gpu_simulate_test/vidur_ext/sim_runner.py`** Add/verify a strict validation that Vidur output token counts match the trace schema expectations for paper-fidelity.
-- **`src/gpu_simulate_test/paper_fidelity/scoring.py`** Add a sim-vs-real compatibility validator (request ids + token counts) and call it before scoring.
-- **`src/gpu_simulate_test/paper_fidelity/report.py`** Ensure report writes `scores.json` and SVG plots and embeds them into `summary.md` (and add any paper-style plot refinements needed).
-- **`scripts/run_pf_llama2_7b_sim_vs_real.sh`** (new) Convenience script to run static+dynamic across scales and write a manifest JSON of outputs.
+- **`configs/paper_fidelity/scale/`** Map `small|medium|full` to `trace_subset` defaults.
+- **`src/gpu_simulate_test/cli/paper_fidelity.py`** Expose `--scale` for `repro` and `trace`, and validate sim-vs-real compatibility before scoring.
+- **`src/gpu_simulate_test/vidur_ext/sim_runner.py`** Validate Vidur’s `request_num_decode_tokens` against the canonical `trace.csv` (hard failure on mismatch).
+- **`src/gpu_simulate_test/paper_fidelity/scoring.py`** Validate sim-vs-real compatibility (request ids + token counts) before scoring.
+- **`src/gpu_simulate_test/paper_fidelity/report.py`** Ensure report writes `scores.json` and SVG plots and embeds them into `summary.md` (and refine plot styling as needed).
+- **`src/gpu_simulate_test/paper_fidelity/manifest.py`** (new) Write `manifest.json` for batch runs.
+- **`scripts/run_pf_llama2_7b_sim_vs_real.sh`** (new) Run static+dynamic across `small|medium|full` and write a manifest.
 - **`tests/unit/test_paper_fidelity_*`** Add unit tests for:
   - scale→subset mapping
   - sim/real compatibility validation (token counts + request ids)
@@ -151,17 +155,17 @@ sequenceDiagram
 
 ## 4. TODOs (Implementation Steps)
 
-- [ ] **Add `scale` config group** Create `configs/paper_fidelity/scale/{small,medium,full}.yaml` that sets `trace_subset` appropriately, and update `repro.yaml` / `trace.yaml` defaults to include `scale: full`.
-- [ ] **Expose scale in CLI** Update `paper-fidelity` CLI to accept `scale=<...>` as a top-level override and record it in `trace_meta.json` / `run_meta.json`.
-- [ ] **Validate Vidur token counts** Add a check that Vidur’s `request_num_decode_tokens` matches the trace’s `num_decode_tokens` semantics for paper-fidelity, failing fast with an actionable error.
-- [ ] **Validate sim vs real compatibility** Add a shared validator (called before scoring) that checks:
+- [X] **Add `scale` config group** Create `configs/paper_fidelity/scale/{small,medium,full}.yaml` that sets `trace_subset` appropriately, and update `repro.yaml` / `trace.yaml` defaults to include `scale: full`.
+- [X] **Expose scale in CLI** Update `paper-fidelity` CLI to accept `--scale {small,medium,full}` (and `scale=<...>` Hydra overrides) and propagate the choice through trace/repro.
+- [X] **Validate Vidur token counts** Add a check that Vidur’s `request_num_decode_tokens` matches the trace’s `num_decode_tokens` semantics for paper-fidelity, failing fast with an actionable error.
+- [X] **Validate sim vs real compatibility** Add a shared validator (called before scoring) that checks:
   - same request id set (or a documented mapping)
   - no duplicates
   - `request_num_decode_tokens` agree between sim and real
   - required metric columns present
-- [ ] **Add “run all scales” script** Add `scripts/run_pf_llama2_7b_sim_vs_real.sh`:
+- [X] **Add “run all scales” script** Add `scripts/run_pf_llama2_7b_sim_vs_real.sh`:
   - runs `paper-fidelity repro` for static+dynamic at `scale=small|medium|full`
-  - writes `results/reports/<date>/paper_fidelity/llama2_7b_arxiv/manifest.json` (or a separate location) containing report dirs and score paths
+  - writes `results/reports/<date>/paper_fidelity/<scenario_tag>/manifest.json` containing report dirs and score paths
 - [ ] **Refine paper-style plots** Ensure the SVG plots are paper-friendly (axis labels, titles, consistent styling) and embedded into `summary.md`; add a short note linking plots to the paper metrics.
 - [ ] **Add/extend unit tests** Add tests for `scale` mapping and sim/real compatibility validation, and extend report tests to assert both ECDF and percentile SVG outputs exist.
-- [ ] **Run validations** Run `pixi run pytest tests/unit` and a small smoke run (`scale=small`) for both static and dynamic to confirm end-to-end behavior.
+- [ ] **Run validations** Run `pixi run pytest` and a small smoke run (`--scale small`) for both static and dynamic to confirm end-to-end behavior.

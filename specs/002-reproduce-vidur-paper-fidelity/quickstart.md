@@ -48,6 +48,11 @@ Run **dynamic** fidelity (paper “online” workload at 85% capacity):
 
 To run a small, deterministic subset of the trace (useful for quick debugging):
 
+- Built-in scale presets:
+  - Small (first 50 requests): `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload dynamic --scale small`
+  - Medium (first 500 requests): `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload dynamic --scale medium`
+  - Full (default): `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload dynamic --scale full`
+
 - First 32 requests (range subset):
   - `pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload dynamic trace_subset.kind=range trace_subset.begin=0 trace_subset.end=32`
 - Discrete indices (only for untimed trace sources, e.g. `vidur_processed_lengths_csv`):

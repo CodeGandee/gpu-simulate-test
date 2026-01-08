@@ -33,7 +33,12 @@ from gpu_simulate_test.paper_fidelity.paths import PaperFidelityPaths
 from gpu_simulate_test.paper_fidelity.paper_reference import maybe_load_paper_reference_rows_from_cfg
 from gpu_simulate_test.paper_fidelity.profiling import run_paper_fidelity_profiling
 from gpu_simulate_test.paper_fidelity.report import ReportInputs, write_summary_md
-from gpu_simulate_test.paper_fidelity.scoring import ScoreThresholds, load_metrics_csv, score_metric
+from gpu_simulate_test.paper_fidelity.scoring import (
+    ScoreThresholds,
+    load_metrics_csv,
+    score_metric,
+    validate_sim_vs_real_compatibility,
+)
 from gpu_simulate_test.paper_fidelity.traces import (
     TraceSpec,
     add_poisson_arrivals,
@@ -65,10 +70,12 @@ def main(argv: list[str] | None = None) -> None:
     repro = sub.add_parser("repro")
     repro.add_argument("--scenario", required=True)
     repro.add_argument("--workload", choices=["static", "dynamic"], required=True)
+    repro.add_argument("--scale", choices=["small", "medium", "full"], default=None)
 
     trace = sub.add_parser("trace")
     trace.add_argument("--scenario", required=True)
     trace.add_argument("--workload", choices=["static", "dynamic"], required=True)
+    trace.add_argument("--scale", choices=["small", "medium", "full"], default=None)
 
     profile = sub.add_parser("profile")
     profile.add_argument("--scenario", required=True)
@@ -82,9 +89,13 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.cmd == "repro":
         sys.argv = [prog, f"scenario={args.scenario}", f"workload={args.workload}", *hydra_overrides]
+        if args.scale is not None:
+            sys.argv.append(f"scale={args.scale}")
         _repro_main()
     elif args.cmd == "trace":
         sys.argv = [prog, f"scenario={args.scenario}", f"workload={args.workload}", *hydra_overrides]
+        if args.scale is not None:
+            sys.argv.append(f"scale={args.scale}")
         _trace_main()
     elif args.cmd == "profile":
         sys.argv = [prog, f"scenario={args.scenario}", *hydra_overrides]
@@ -214,6 +225,7 @@ def _run_trace(cfg: DictConfig, *, repo_root: Path) -> Path:
         "schema_version": "v1",
         "scenario_name": scenario_name,
         "workload_mode": str(cfg.workload.mode),
+        "scale": OmegaConf.select(cfg, "scale"),
         "trace_source": {
             "kind": trace_kind,
             "path": str(trace_source_path.resolve()),
@@ -263,6 +275,7 @@ def _run_score_only(
 
     sim_df = load_metrics_csv(sim_csv)
     real_df = load_metrics_csv(real_csv)
+    validate_sim_vs_real_compatibility(sim_df=sim_df, real_df=real_df)
 
     percentiles_val = OmegaConf.select(cfg, "scoring.percentiles") or OmegaConf.select(cfg, "scenario.scoring.percentiles")
     if percentiles_val is None:
@@ -359,12 +372,16 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
 
     paper_profiling_root = (repo_root / "extern" / "tracked" / "vidur").resolve()
     host_profiling_root = (repo_root / "tmp" / "paper_fidelity" / "profiling_roots").resolve()
+    host_bundle_root = (repo_root / "results" / "raw" / "vidur-profiling").resolve()
     if profiling_root_resolved.is_relative_to(paper_profiling_root):
         profiling_mode = "paper"
         profiling_interpretation = "sanity-check reproduction (paper-provided profiling bundle)"
     elif profiling_root_resolved.is_relative_to(host_profiling_root):
         profiling_mode = "host"
         profiling_interpretation = "gap reproduction (profiled/microbenchmarked on this host)"
+    elif profiling_root_resolved.is_relative_to(host_bundle_root):
+        profiling_mode = "host"
+        profiling_interpretation = "gap reproduction (host profiling bundle under results/raw/vidur-profiling)"
     else:
         profiling_mode = "custom"
         profiling_interpretation = "custom profiling root (interpret % error accordingly)"
@@ -463,6 +480,7 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
                 "schema_version": "v1",
                 "scenario_name": scenario_name,
                 "workload_mode": workload_mode,
+                "scale": OmegaConf.select(cfg, "scale"),
                 "qps": float(capacity.qps_85),
                 "seed": int(cfg.workload.seed),
                 "trace_subset": {

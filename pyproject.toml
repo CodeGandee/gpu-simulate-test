@@ -67,3 +67,6 @@ docs-build = "mkdocs build --strict"
 
 [tool.pixi.dependencies]
 python = "3.13.*"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

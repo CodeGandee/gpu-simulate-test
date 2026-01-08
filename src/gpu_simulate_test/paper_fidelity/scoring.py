@@ -51,6 +51,82 @@ def load_metrics_csv(path: Path) -> pd.DataFrame:
     return df
 
 
+def _parse_request_id(value: object) -> int:
+    """Best-effort parsing for request ids across sim/real runners.
+
+    Sarathi may emit IDs like "0_12" (replica prefix). Vidur emits ints.
+    """
+    s = str(value)
+    if "_" in s:
+        _, s = s.split("_", 1)
+    try:
+        return int(s)
+    except ValueError as e:
+        raise ValueError(f"Unexpected request_id value: {value!r}") from e
+
+
+def validate_sim_vs_real_compatibility(*, sim_df: pd.DataFrame, real_df: pd.DataFrame) -> None:
+    """Fail fast if sim and real metrics cannot be compared request-wise.
+
+    Checks
+    ------
+    - `request_id` is unique in both datasets
+    - sim and real contain the same request ids
+    - `request_num_decode_tokens` match for every request id
+    """
+    sim_ids = sim_df["request_id"].map(_parse_request_id)
+    real_ids = real_df["request_id"].map(_parse_request_id)
+
+    if sim_ids.duplicated().any():
+        dup = sim_ids.loc[sim_ids.duplicated()].unique()[:5].tolist()
+        raise ValueError(f"sim metrics has duplicate request_id values (e.g. {dup}); request_id must be unique.")
+    if real_ids.duplicated().any():
+        dup = real_ids.loc[real_ids.duplicated()].unique()[:5].tolist()
+        raise ValueError(f"real metrics has duplicate request_id values (e.g. {dup}); request_id must be unique.")
+
+    sim_set = set(sim_ids.tolist())
+    real_set = set(real_ids.tolist())
+    missing = sorted(sim_set - real_set)[:5]
+    extra = sorted(real_set - sim_set)[:5]
+    if missing or extra:
+        raise ValueError(
+            "sim vs real request id sets differ (runs are not comparable): "
+            f"missing_in_real={missing}, extra_in_real={extra}"
+        )
+
+    sim_tokens = pd.DataFrame(
+        {
+            "request_id": sim_ids.astype(int),
+            "request_num_decode_tokens": pd.to_numeric(sim_df["request_num_decode_tokens"], errors="raise").astype(int),
+        }
+    )
+    real_tokens = pd.DataFrame(
+        {
+            "request_id": real_ids.astype(int),
+            "request_num_decode_tokens": pd.to_numeric(real_df["request_num_decode_tokens"], errors="raise").astype(int),
+        }
+    )
+
+    merged = sim_tokens.merge(real_tokens, on="request_id", how="inner", suffixes=("_sim", "_real"))
+    mismatches = merged.loc[merged["request_num_decode_tokens_sim"] != merged["request_num_decode_tokens_real"]]
+    if len(mismatches) == 0:
+        return
+
+    sample = mismatches.head(10)
+    details = "; ".join(
+        f"id={int(rid)} sim={int(sim_n)} real={int(real_n)}"
+        for rid, sim_n, real_n in zip(
+            sample["request_id"].tolist(),
+            sample["request_num_decode_tokens_sim"].tolist(),
+            sample["request_num_decode_tokens_real"].tolist(),
+        )
+    )
+    raise ValueError(
+        "sim vs real request_num_decode_tokens mismatch (runs are not comparable). "
+        f"First mismatches: {details}"
+    )
+
+
 def _percent_error(*, sim_value: float, real_value: float) -> float:
     if real_value == 0.0:
         if sim_value == 0.0:
@@ -110,4 +186,3 @@ def score_metric(
         pct_error=err,
         verdict=verdict,
     )
-

@@ -1,0 +1,11 @@
+# @package _global_
+
+# Medium-scale run: first 500 requests.
+scale: medium
+
+trace_subset:
+  kind: range
+  begin: 0
+  end: 500
+  indices: null
+
