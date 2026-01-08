@@ -440,6 +440,7 @@ def run_vidur_paper_fidelity_sim(
         MetricsConfig,
         RandomForrestExecutionTimePredictorConfig,
         ReplicaConfig,
+        SarathiSchedulerConfig,
         SimulationConfig,
         TraceRequestGeneratorConfig,
     )
