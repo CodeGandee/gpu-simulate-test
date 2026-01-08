@@ -162,6 +162,41 @@ Record and keep constant (within this simplified setting):
 
 If hardware or topology mismatches exist, treat results as *qualitative* and document the mismatch.
 
+#### D1.1 Explicitly set parity-critical knobs (do not trust defaults)
+
+For sim-vs-real fidelity work, **do not rely on default values** in Vidur, Sarathi-Serve, or the profiling bundle selection. Set them explicitly in config/CLI overrides and record them in metadata.
+
+Rationale:
+- Defaults differ across systems (and can change across versions) while producing “plausible” metrics.
+- We have observed cases where the main request metric looks moderately close while the **prefill vs decode split is badly wrong** due to knob mismatch, e.g. `chunk_size` and batch caps (see `context/issues/known/issue-vidur-prefill-underestimate-decode-overestimate.md`).
+
+At minimum, explicitly align and record the following:
+
+- **Scheduler type**
+  - Real: Sarathi-Serve scheduler used by the backend (paper-fidelity runner).
+  - Sim: Vidur `replica_scheduler_config` type (e.g. `sarathi`, `vllm`, etc.).
+  - Note: “same metric name” does not imply “same scheduler behavior”; stage-level metrics are especially sensitive.
+- **Chunking / iteration limits**
+  - Real: `scenario.real.scheduler.chunk_size`
+  - Sim (Sarathi scheduler): Vidur `sarathi_scheduler_config.chunk_size`
+  - Do not assume Vidur defaults match real. Vidur’s Sarathi `chunk_size` default is much larger (see `extern/tracked/vidur/vidur/config/config.py`).
+- **Batch caps / concurrency**
+  - Real: `scenario.real.scheduler.max_num_seqs` (and any other max-inflight controls)
+  - Sim: Vidur `replica_scheduler_config.batch_size_cap` (and any per-iteration token caps for vLLM/LightLLM schedulers)
+  - Ensure the mapping is intentional and documented (e.g. for TP1/PP1, `batch_size_cap ≈ max_num_seqs` is a reasonable starting point).
+- **Parallelism and topology**
+  - Real: `scenario.real.parallel.tensor_parallel_size`, `scenario.real.parallel.pipeline_parallel_size`
+  - Sim: `scenario.vidur.tensor_parallel_size`, `scenario.vidur.num_pipeline_stages`, `scenario.vidur.network_device`, `scenario.vidur.device`
+  - Profiling root must match these (profiling files are indexed by device/model/topology and are not universally interchangeable).
+- **Max tokens / trace bounds**
+  - Real + sim must agree on `max_tokens` and trace generation constraints, otherwise batching/eviction behavior can diverge.
+- **CPU overhead modeling**
+  - Sim: `scenario.vidur.skip_cpu_overhead_modeling` must be set explicitly.
+  - Profiling: if CPU overhead modeling is enabled, the profiling root must include CPU-overhead measurements consistent with the real stack; otherwise comparisons are not meaningful.
+
+Implementation note (current repo state):
+- Our Vidur runner currently constructs a `ClusterConfig` without explicitly setting Vidur’s `replica_scheduler_config` knobs, so Vidur may silently use its internal defaults. Treat this as a correctness risk for sim-vs-real studies and always force explicit scheduler settings once the integration supports it.
+
 ### D2. Make arrivals identical
 
 Pick one:
@@ -215,6 +250,7 @@ If you subset a trace to speed up iteration, apply it **once** at the shared tra
 - The compared metrics correspond to the same definition:
   - normalized execution/e2e metrics vs the same normalized metrics (from Vidur/Sarathi)
 - Any unavoidable boundary mismatch is explicitly documented in metadata/report.
+- Key knobs that affect metric boundaries (scheduler type, chunk size, batch caps, TP/PP) are recorded and confirmed aligned; if not aligned, the run is labeled “not comparable”.
 
 ### C) Provenance completeness
 
