@@ -10,14 +10,16 @@ client-side timestamping, to keep metric boundaries aligned with Vidur.
 
 from __future__ import annotations
 
-import os
-import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
 
+from gpu_simulate_test.env_guard import (
+    apply_cuda_visible_devices_from_gsim,
+    patch_sarathi_preserve_cuda_visible_devices,
+)
 from gpu_simulate_test.io import write_csv, write_json
 from gpu_simulate_test.paper_fidelity.traces import TraceSpec, read_trace_csv
 
@@ -43,7 +45,6 @@ class SarathiPaperFidelityInputs:
     tensor_parallel_size: int = 1
     pipeline_parallel_size: int = 1
     ignore_eos: bool = True
-    cuda_visible_devices: str | None = None
 
 
 def convert_sequence_metrics_to_request_metrics(sequence_metrics_csv: Path) -> pd.DataFrame:
@@ -146,76 +147,14 @@ def _validate_decode_token_counts(
     )
 
 
-def _default_cuda_visible_devices() -> str | None:
-    """Best-effort selection of usable GPUs for single-process workflows.
-
-    Some environments may have GPUs in MIG-enabled mode without instances (or other unusable states)
-    that can cause PyTorch CUDA initialization to fail when all devices are visible.
-
-    If multiple MIG-disabled GPUs are available, prefer the one with the least VRAM currently used
-    (to avoid colliding with other jobs by default).
-    """
-    try:
-        out = subprocess.check_output(
-            [
-                "nvidia-smi",
-                "--query-gpu=index,mig.mode.current,memory.used",
-                "--format=csv,noheader,nounits",
-            ],
-            text=True,
-        )
-        candidates: list[tuple[int, int, str]] = []
-        for line in out.splitlines():
-            if not line.strip():
-                continue
-            parts = [p.strip() for p in line.split(",")]
-            if len(parts) < 3:
-                continue
-            idx, mig_mode, mem_used = parts[0], parts[1], parts[2]
-            if mig_mode.lower() != "disabled":
-                continue
-            try:
-                mem_used_mib = int(float(mem_used))
-                idx_int = int(idx)
-            except ValueError:
-                continue
-            candidates.append((mem_used_mib, idx_int, idx))
-        if candidates:
-            candidates.sort(key=lambda x: (x[0], x[1]))
-            return candidates[0][2]
-
-        # Fallback: at least try to avoid MIG-enabled devices.
-        out = subprocess.check_output(
-            ["nvidia-smi", "--query-gpu=index,mig.mode.current", "--format=csv,noheader"],
-            text=True,
-        )
-        for line in out.splitlines():
-            if not line.strip():
-                continue
-            idx, mig_mode = [p.strip() for p in line.split(",", 1)]
-            if mig_mode.lower() == "disabled":
-                return idx
-    except Exception:
-        pass
-    return None
-
-
 def run_sarathi_paper_fidelity(
     inputs: SarathiPaperFidelityInputs,
     *,
     out_dir: Path,
 ) -> Path:
     """Replay a trace on Sarathi and return the written request_metrics.csv path."""
-    if inputs.cuda_visible_devices is not None:
-        desired_cuda_visible_devices = inputs.cuda_visible_devices
-    else:
-        existing = os.environ.get("CUDA_VISIBLE_DEVICES")
-        if existing:
-            desired_cuda_visible_devices = existing
-        else:
-            desired_cuda_visible_devices = _default_cuda_visible_devices() or "0"
-
-    os.environ["CUDA_VISIBLE_DEVICES"] = desired_cuda_visible_devices
+    apply_cuda_visible_devices_from_gsim()
+    patch_sarathi_preserve_cuda_visible_devices()
 
     try:
         import torch  # type: ignore
@@ -234,37 +173,6 @@ def run_sarathi_paper_fidelity(
         )
 
     try:
-        # Patch Sarathi's Ray worker initialization to preserve CUDA_VISIBLE_DEVICES.
-        # Sarathi unsets CUDA_VISIBLE_DEVICES by default, which can expose unusable GPUs on some hosts.
-        from sarathi.engine import base_llm_engine as _base_llm_engine  # type: ignore
-
-        def _noop() -> None:
-            return None
-
-        class _PinnedRayWorker:  # type: ignore
-            def __init__(self, init_cached_hf_modules: bool = False) -> None:
-                if init_cached_hf_modules:
-                    from transformers.dynamic_module_utils import init_hf_modules  # type: ignore
-
-                    init_hf_modules()
-                # Ray may set CUDA_VISIBLE_DEVICES to an empty value for actors without GPU requests.
-                # Sarathi intentionally unsets it; instead, set it explicitly to a safe subset.
-                os.environ["CUDA_VISIBLE_DEVICES"] = desired_cuda_visible_devices
-                self.worker = None
-
-            def init_worker(self, worker_init_fn):
-                self.worker = worker_init_fn()
-
-            def __getattr__(self, name):
-                return getattr(self.worker, name)
-
-            def execute_method(self, method, *args, **kwargs):
-                executor = getattr(self, method)
-                return executor(*args, **kwargs)
-
-        _base_llm_engine.unset_cuda_visible_devices = _noop  # type: ignore[attr-defined]
-        _base_llm_engine.RayWorker = _PinnedRayWorker  # type: ignore[attr-defined]
-
         from sarathi import LLMEngine, SamplingParams  # type: ignore
         from sarathi.config import (  # type: ignore
             MetricsConfig,

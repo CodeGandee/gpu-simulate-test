@@ -113,3 +113,6 @@ Thumbs.db
 /vidur-cache/
 /.codex/
 /.gemini/
+
+# Local env vars (never commit)
+.env

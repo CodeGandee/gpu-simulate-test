@@ -410,6 +410,14 @@ def _run_score_only(
 
 
 def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
+    from gpu_simulate_test.env_guard import (
+        apply_cuda_visible_devices_from_gsim,
+        patch_sarathi_preserve_cuda_visible_devices,
+    )
+
+    apply_cuda_visible_devices_from_gsim(repo_root=repo_root)
+    patch_sarathi_preserve_cuda_visible_devices()
+
     scenario_name = str(cfg.scenario.name)
     workload_mode = str(cfg.workload.mode)
     pf_paths = PaperFidelityPaths(repo_root=repo_root)
@@ -636,6 +644,14 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
 
 
 def _run_profile(cfg: DictConfig, *, repo_root: Path) -> Path:
+    from gpu_simulate_test.env_guard import (
+        apply_cuda_visible_devices_from_gsim,
+        patch_sarathi_preserve_cuda_visible_devices,
+    )
+
+    apply_cuda_visible_devices_from_gsim(repo_root=repo_root)
+    patch_sarathi_preserve_cuda_visible_devices()
+
     return run_paper_fidelity_profiling(cfg, repo_root=repo_root)
 
 

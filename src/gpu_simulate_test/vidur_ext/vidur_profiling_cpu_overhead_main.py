@@ -3,19 +3,8 @@ from __future__ import annotations
 import argparse
 import datetime
 import gc
-import os
 from pathlib import Path
 from typing import Any
-
-import pandas as pd
-import ray
-from tqdm import tqdm
-
-from vidur.logger import init_logger
-from vidur.profiling.cpu_overhead.benchmark_runner import BenchmarkRunner
-from vidur.profiling.utils import get_cpu_overhead_batch_sizes_to_profile, hex_to_binary
-
-logger = init_logger(__name__)
 
 
 def parse_args() -> argparse.Namespace:
@@ -75,6 +64,10 @@ def _create_runner(
     output_dir: str,
     model_path: str | None = None,
 ) -> Any:
+    import ray
+    from vidur.profiling.cpu_overhead.benchmark_runner import BenchmarkRunner
+    from vidur.profiling.utils import hex_to_binary
+
     if not ray.is_initialized():
         ray.init(include_dashboard=False, ignore_reinit_error=True)
 
@@ -99,8 +92,12 @@ def profile_model(
     tensor_parallel_degrees: list[int],
     output_dir: str,
     pbar: Any,
+    logger: Any,
     model_path: str | None = None,
 ) -> None:
+    import pandas as pd
+    import ray
+
     results: list[dict[str, Any]] = []
 
     for tensor_parallel_degree in tensor_parallel_degrees:
@@ -132,7 +129,20 @@ def profile_model(
 
 
 def main() -> None:
+    from gpu_simulate_test.env_guard import (
+        apply_cuda_visible_devices_from_gsim,
+        patch_sarathi_preserve_cuda_visible_devices,
+    )
+
+    apply_cuda_visible_devices_from_gsim()
+    patch_sarathi_preserve_cuda_visible_devices()
+
+    from tqdm import tqdm
+    from vidur.logger import init_logger
+    from vidur.profiling.utils import get_cpu_overhead_batch_sizes_to_profile
+
     args = parse_args()
+    logger = init_logger(__name__)
 
     batch_sizes_to_profile = get_cpu_overhead_batch_sizes_to_profile(args.max_batch_size)
     total = len(args.models) * len(args.num_tensor_parallel_workers) * len(batch_sizes_to_profile)
@@ -145,6 +155,7 @@ def main() -> None:
             tensor_parallel_degrees=args.num_tensor_parallel_workers,
             output_dir=args.output_dir,
             pbar=pbar,
+            logger=logger,
             model_path=args.model_path,
         )
 

@@ -35,6 +35,11 @@ class _TimingStreamer:
 
 class TransformersBackend:
     def __init__(self, *, model_ref: Path, device: str) -> None:
+        if device.startswith("cuda"):
+            from gpu_simulate_test.env_guard import apply_cuda_visible_devices_from_gsim
+
+            apply_cuda_visible_devices_from_gsim()
+
         try:
             import torch  # type: ignore
             from transformers import AutoModelForCausalLM, AutoTokenizer  # type: ignore
@@ -98,4 +103,3 @@ class TransformersBackend:
         for idx, (token_id, t_ns) in enumerate(zip(streamer.token_ids, streamer.token_times_ns)):
             events.append(TokenEvent(token_index=int(idx), token_time_ns=int(t_ns), token_id=int(token_id)))
         return events
-

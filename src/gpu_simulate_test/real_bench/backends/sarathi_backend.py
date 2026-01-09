@@ -4,10 +4,13 @@ import time
 from pathlib import Path
 
 from gpu_simulate_test.real_bench.backends.base import TokenEvent
+from gpu_simulate_test.env_guard import apply_cuda_visible_devices_from_gsim, patch_sarathi_preserve_cuda_visible_devices
 
 
 class SarathiBackend:
     def __init__(self, *, model: str, out_dir: Path) -> None:
+        apply_cuda_visible_devices_from_gsim()
+        patch_sarathi_preserve_cuda_visible_devices()
         try:
             from sarathi import LLMEngine, SamplingParams  # type: ignore
             from sarathi.config import (  # type: ignore
@@ -72,4 +75,3 @@ class SarathiBackend:
                         )
                         prev_len += 1
         return events
-

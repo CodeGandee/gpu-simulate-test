@@ -231,6 +231,14 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
         If the MLP profiling entrypoint fails. (Attention profiling failures fall back to a
         packaged template.)
     """
+    from gpu_simulate_test.env_guard import (
+        apply_cuda_visible_devices_from_gsim,
+        patch_sarathi_preserve_cuda_visible_devices,
+    )
+
+    apply_cuda_visible_devices_from_gsim(repo_root=repo_root)
+    patch_sarathi_preserve_cuda_visible_devices()
+
     try:
         import torch  # type: ignore
     except Exception as e:  # pragma: no cover

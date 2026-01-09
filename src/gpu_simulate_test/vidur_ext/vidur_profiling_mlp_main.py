@@ -7,6 +7,14 @@ from gpu_simulate_test.vidur_ext.qwen3_model_config import Qwen3ModelRef, regist
 
 def main() -> None:
     repo_root = Path.cwd()
+    from gpu_simulate_test.env_guard import (
+        apply_cuda_visible_devices_from_gsim,
+        patch_sarathi_preserve_cuda_visible_devices,
+    )
+
+    apply_cuda_visible_devices_from_gsim(repo_root=repo_root)
+    patch_sarathi_preserve_cuda_visible_devices()
+
     register_qwen3_0_6b(
         model_ref=Qwen3ModelRef(
             config_json=repo_root / "models" / "qwen3-0.6b" / "source-data" / "config.json"
@@ -20,4 +28,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
