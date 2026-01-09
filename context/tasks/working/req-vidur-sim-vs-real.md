@@ -191,7 +191,7 @@ At minimum, explicitly align and record the following:
 - **Max tokens / trace bounds**
   - Real + sim must agree on `max_tokens` and trace generation constraints, otherwise batching/eviction behavior can diverge.
 - **CPU overhead modeling**
-  - Sim: `scenario.vidur.skip_cpu_overhead_modeling` must be set explicitly.
+  - Sim: `scenario.vidur.enable_cpu_overhead_modeling` must be set explicitly.
   - Profiling: if CPU overhead modeling is enabled, the profiling root must include CPU-overhead measurements consistent with the real stack; otherwise comparisons are not meaningful.
 
 Implementation note (this repo’s paper-fidelity pipeline):

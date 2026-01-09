@@ -35,7 +35,7 @@ def test_validate_profiling_root_tp1_pp1(tmp_path: Path) -> None:
         network_device=network_device,
         tensor_parallel_size=1,
         num_pipeline_stages=1,
-        skip_cpu_overhead_modeling=True,
+        enable_cpu_overhead_modeling=False,
     )
     validate_profiling_root(layout)
 
@@ -55,7 +55,7 @@ def test_validate_profiling_root_requires_network_for_tp_gt_1(tmp_path: Path) ->
         network_device=network_device,
         tensor_parallel_size=2,
         num_pipeline_stages=1,
-        skip_cpu_overhead_modeling=True,
+        enable_cpu_overhead_modeling=False,
     )
     with pytest.raises(FileNotFoundError) as excinfo:
         validate_profiling_root(layout)
@@ -77,7 +77,7 @@ def test_validate_profiling_root_requires_cpu_overheads_when_enabled(tmp_path: P
         network_device=network_device,
         tensor_parallel_size=1,
         num_pipeline_stages=1,
-        skip_cpu_overhead_modeling=False,
+        enable_cpu_overhead_modeling=True,
     )
     with pytest.raises(FileNotFoundError) as excinfo:
         validate_profiling_root(layout)

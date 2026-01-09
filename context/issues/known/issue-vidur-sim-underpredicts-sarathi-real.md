@@ -12,7 +12,7 @@ This pattern can show up in:
 ## Why this happens (common causes)
 
 1. **CPU/runtime overhead is excluded**
-   - If `skip_cpu_overhead_modeling=true`, the sim omits host-side overhead (scheduler, sampling, framework glue, synchronization, etc.).
+   - If `scenario.vidur.enable_cpu_overhead_modeling=false` (Vidur internal `skip_cpu_overhead_modeling=true`), the sim omits host-side overhead (scheduler, sampling, framework glue, synchronization, etc.).
    - In many regimes (including low batch sizes), this overhead can dominate real latency.
 
 2. **Profiling bundle is not host-matched**
@@ -28,7 +28,7 @@ This pattern can show up in:
 - For a meaningful sim-vs-real comparison on this machine:
   - Generate a host profiling root via `paper-fidelity profile` and override `scenario.vidur.profiling_root`.
 - If you want the sim to account for host overhead:
-  - Ensure the profiling root includes `cpu_overheads.csv` and set `skip_cpu_overhead_modeling=false`.
+  - Ensure the profiling root includes `cpu_overheads.csv` and set `scenario.vidur.enable_cpu_overhead_modeling=true` (Vidur internal `skip_cpu_overhead_modeling=false`).
 - If results look implausible:
   - Verify profiling subprocesses succeeded (no template fallbacks) and that sim/real configs match on key knobs.
 
@@ -39,4 +39,3 @@ One concrete example of this underprediction pattern is documented here:
 - `context/issues/known/issue-vidur-sim-underpredicts-sarathi-real-qwen3-0.6b.md`
 
 That experiment is model-specific, but the underlying causes above generalize.
-

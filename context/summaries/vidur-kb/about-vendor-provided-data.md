@@ -145,7 +145,7 @@ Vidur has optional CPU/runtime overhead modeling (scheduler overheads, sampling 
 path under `data/profiling/cpu_overhead/...`.
 
 This submodule snapshot does not necessarily ship `cpu_overhead` CSVs, and Vidur defaults to skipping CPU overhead
-modeling (`skip_cpu_overhead_modeling=true` in the execution-time predictor config).
+modeling (Vidur internal `skip_cpu_overhead_modeling=true` in the execution-time predictor config; in this repo the user-facing knob is `scenario.vidur.enable_cpu_overhead_modeling=false`).
 
 See:
 
@@ -335,7 +335,7 @@ Copy outputs:
 ### 7.5. (Optional) CPU overhead profiling
 
 The paper notes it evaluates on an optimized vLLM fork that eliminates unnecessary CPU overheads, and Vidur defaults to
-`skip_cpu_overhead_modeling=true`. If you need CPU overhead fidelity for a specific framework/runtime, use:
+Vidur internal `skip_cpu_overhead_modeling=true` (repo knob: `scenario.vidur.enable_cpu_overhead_modeling=false`). If you need CPU overhead fidelity for a specific framework/runtime, use:
 
 ```bash
 python extern/tracked/vidur/vidur/profiling/cpu_overhead/main.py --models <hf_model_id>

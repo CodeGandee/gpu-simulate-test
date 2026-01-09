@@ -56,7 +56,7 @@ This Q&A is for developers (including future maintainers) comparing Vidur simula
   - `run_meta.json` and `vidur_raw/` (Vidur’s native outputs + `config.json`).
 - Constraints for this particular profiling bundle:
   - It is compute-only and TP=1/PP=1 calibrated, so keep `scenario.vidur.tensor_parallel_size=1` and `scenario.vidur.num_pipeline_stages=1` unless you also provide the required network profiling CSVs.
-  - CPU overhead modeling is skipped by default (`scenario.vidur.skip_cpu_overhead_modeling=true`); if you enable CPU overhead modeling, you must also provide `data/profiling/cpu_overhead/<network_device>/<model>/cpu_overheads.csv`.
+  - CPU overhead modeling is disabled by default (`scenario.vidur.enable_cpu_overhead_modeling=false`); if you enable it, you must also provide `data/profiling/cpu_overhead/<network_device>/<model>/cpu_overheads.csv`.
 
 ## When running `paper-fidelity repro --workload dynamic`, who determines request arrival gaps (inter-arrival times), and how?
 > Last revised at: `2026-01-07T14:01:28Z` | Last revised base commit: `369ec6bafbd5d8e1b47fd959a46cafc59fb20efd`

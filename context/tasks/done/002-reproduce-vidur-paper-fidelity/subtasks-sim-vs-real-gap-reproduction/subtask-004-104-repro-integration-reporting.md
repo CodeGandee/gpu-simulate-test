@@ -18,7 +18,7 @@ Out of scope:
 ## Planned outputs
 
 - Updated report content in `src/gpu_simulate_test/paper_fidelity/report.py` (and/or metadata emitted by `src/gpu_simulate_test/cli/paper_fidelity.py`) to include the effective profiling root and interpretation mode.
-- Optional: new config field such as `scenario.vidur.skip_cpu_overhead_modeling` plumbed into `src/gpu_simulate_test/vidur_ext/sim_runner.py` (default remains `True`).
+- Optional: config field `scenario.vidur.enable_cpu_overhead_modeling` plumbed into `src/gpu_simulate_test/vidur_ext/sim_runner.py` (default remains `false`).
 
 ## TODOs
 

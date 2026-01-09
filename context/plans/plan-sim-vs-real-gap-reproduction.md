@@ -64,7 +64,7 @@ Non-goals (initially):
 
 5. **(Optional) CPU overhead modeling toggle**
    - Add a config knob so contributors can opt into CPU-overhead modeling if they have `cpu_overheads.csv` available.
-   - Default remains current behavior (`skip_cpu_overhead_modeling=True`) to keep profiling requirements minimal.
+   - Default remains current behavior (`enable_cpu_overhead_modeling=false`) to keep profiling requirements minimal.
 
 ### 2.2 Sequence diagram (steady-state usage)
 

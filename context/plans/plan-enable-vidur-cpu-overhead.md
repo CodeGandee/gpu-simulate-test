@@ -18,7 +18,7 @@
 Success looks like:
 
 - **Profiling**: The `paper-fidelity profile` command can optionally run Vidur's CPU overhead profiler (`vidur_profiling_cpu_overhead_main`) and include the resulting `cpu_overhead.csv` in the generated profiling bundle.
-- **Simulation**: The `paper-fidelity repro` (and `vidur-sim`) command can optionally set `skip_cpu_overhead_modeling=False`, allowing Vidur to use the profiled CPU overhead data.
+- **Simulation**: The `paper-fidelity repro` (and `vidur-sim`) command can optionally set `enable_cpu_overhead_modeling=true` (mapped to Vidur’s internal `skip_cpu_overhead_modeling=false`), allowing Vidur to use the profiled CPU overhead data.
 - **Outcome**: A "gap reproduction" run for LLaMA2-7B using this new capability should show a reduced error rate (closer to the ~12% reported in the paper, down from ~25%), as CPU overheads are no longer zeroed out.
 
 Non-goals:
@@ -60,8 +60,8 @@ sequenceDiagram
     Vidur-->>Prof: cpu_overhead.csv
     Prof-->>CLI: Bundle with cpu_overhead.csv
 
-    Dev->>CLI: repro (enable_cpu_overhead=True)
-    CLI->>Sim: run_sim(skip_cpu_overhead=False)
+    Dev->>CLI: repro (enable_cpu_overhead=true)
+    CLI->>Sim: run_sim(enable_cpu_overhead=true)
     Sim->>Sim: Validate cpu_overhead.csv exists in bundle
     Sim->>Vidur: Initialize Predictor
     Vidur->>Vidur: Load cpu_overhead.csv
@@ -74,14 +74,14 @@ sequenceDiagram
 ## 3. Files to Modify or Add
 
 - **`configs/paper_fidelity/profile.yaml`**: Add `include_cpu_overhead: false` default.
-- **`configs/compare_vidur_real/vidur/a100.yaml`** (and others): Ensure `skip_cpu_overhead_modeling` can be injected via Hydra.
+- **`configs/compare_vidur_real/vidur/a100.yaml`** (and others): Ensure `enable_cpu_overhead_modeling` can be injected via Hydra (mapped to Vidur’s internal `skip_cpu_overhead_modeling`).
 - **`src/gpu_simulate_test/cli/paper_fidelity.py`**:
     - Expose `include_cpu_overhead` in `profile` command.
     - Expose `enable_cpu_overhead` in `repro` command (or derive from scenario config).
 - **`src/gpu_simulate_test/paper_fidelity/profiling.py`**: Pass the flag to `profile_runner`.
 - **`src/gpu_simulate_test/vidur_ext/profile_runner.py`**: Ensure `run_vidur_profiling` correctly triggers the CPU overhead profiler and copies the file.
 - **`src/gpu_simulate_test/vidur_ext/sim_runner.py`**:
-    - Read `skip_cpu_overhead_modeling` from config.
+    - Read `enable_cpu_overhead_modeling` from config.
     - Add validation to check for `cpu_overhead.csv` if modeling is enabled.
 
 ---
