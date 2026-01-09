@@ -1,9 +1,12 @@
 # Plan: Reproduce Vidur paper fidelity (sim vs real gap)
 
+> Archived: 2026-01-09 (completed, superseded, or no longer needed)
+
 ## HEADER
 - **Purpose**: Reproduce the core fidelity results from the Vidur MLSys’24 paper (static + dynamic workloads) using this repo’s Vidur integration and real inference engines (vLLM and optionally Sarathi-Serve), so we can verify we are “using Vidur correctly” by matching the paper’s simulator-vs-real error bands.
-- **Status**: Draft
+- **Status**: Archived (done/no longer needed)
 - **Date**: 2026-01-03
+- **Archived**: 2026-01-09
 - **Dependencies**:
   - `extern/tracked/vidur/paper/tex/5-eval.tex` (fidelity methodology and target error bands)
   - `extern/tracked/vidur/paper/tex/figures-tex/fig-fidelity-static-trace.tex` (static metric: `request_execution_plus_preemption_time_normalized`)

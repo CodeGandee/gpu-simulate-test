@@ -3,7 +3,7 @@
 **Feature Branch**: `002-reproduce-vidur-paper-fidelity`  
 **Created**: 2026-01-03  
 **Status**: Draft  
-**Input**: User description: "check what we are going to implement in context/plans/plan-reproduce-vidur-paper-fidelity.md , create at least 6 user stories, and the new branch should be named 002-<what>"
+**Input**: User description: "check what we are going to implement in context/plans/done/plan-reproduce-vidur-paper-fidelity.md , create at least 6 user stories, and the new branch should be named 002-<what>"
 
 ## Reproducibility & Artifacts *(mandatory)*
 

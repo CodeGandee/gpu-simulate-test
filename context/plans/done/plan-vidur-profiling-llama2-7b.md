@@ -1,15 +1,18 @@
 # Plan: Vidur host profiling for LLaMA2-7B
 
+> Archived: 2026-01-09 (completed, superseded, or no longer needed)
+
 ## HEADER
 
 - **Purpose**: Produce Vidur-compatible *compute* profiling CSVs (MLP + attention) for `meta-llama/Llama-2-7b-hf` on the current machine’s GPU, using Sarathi-Serve–aligned settings, and store the curated bundle under `results/raw/vidur-profiling/` for reuse in simulations and sim-vs-real comparisons. Optionally support CPU overhead profiling, but keep it disabled by default to match the Vidur paper’s evaluation practice.
-- **Status**: Done
+- **Status**: Archived (done/no longer needed)
 - **Date**: 2026-01-07
+- **Archived**: 2026-01-09
 - **Dependencies**:
   - `context/instructions/prep-dev-env.md`
   - `context/summaries/vidur-kb/about-vidur-gpu-simulator.md`
   - `context/summaries/vidur-kb/about-vendor-provided-data.md`
-  - `context/plans/qa-plan-vidur-profiling-llama2-7b.md`
+  - `context/plans/done/qa-plan-vidur-profiling-llama2-7b.md`
   - `extern/tracked/vidur/docs/profiling.md`
   - `extern/tracked/vidur/vidur/profiling/mlp/main.py`
   - `extern/tracked/vidur/vidur/profiling/attention/main.py`

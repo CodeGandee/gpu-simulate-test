@@ -1,11 +1,13 @@
 # Q&A: plan-vidur-sim-vs-real-llama2-7b
 
+> Archived: 2026-01-09 (completed, superseded, or no longer needed)
+
 ## Introduction
 
 This Q&A captures implementation questions for the paper-fidelity “Vidur sim vs Sarathi real” workflow for LLaMA2-7B, intended for developers (including future maintainers) running or extending the comparable-by-construction pipeline.
 
 **Related docs**
-- `context/plans/plan-vidur-sim-vs-real-llama2-7b.md`
+- `context/plans/done/plan-vidur-sim-vs-real-llama2-7b.md`
 - `context/tasks/working/req-vidur-sim-vs-real.md`
 - `context/instructions/prep-dev-env.md`
 - `specs/002-reproduce-vidur-paper-fidelity/quickstart.md`

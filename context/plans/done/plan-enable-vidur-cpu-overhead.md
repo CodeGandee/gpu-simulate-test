@@ -1,9 +1,12 @@
 # Plan: Enable Vidur CPU Overhead Modeling
 
+> Archived: 2026-01-09 (completed, superseded, or no longer needed)
+
 ## HEADER
 - **Purpose**: Enable CPU overhead profiling and modeling in the paper-fidelity workflow to reduce the simulation-vs-real fidelity gap for small models (e.g., LLaMA2-7B).
-- **Status**: Draft
+- **Status**: Archived (done/no longer needed)
 - **Date**: 2026-01-09
+- **Archived**: 2026-01-09
 - **Dependencies**:
   - `context/issues/issue-vidur-sim-underpredicts-sarathi-real.md` (Problem statement and root cause)
   - `src/gpu_simulate_test/vidur_ext/profile_runner.py` (Existing profiling logic)

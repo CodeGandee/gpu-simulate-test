@@ -8,8 +8,8 @@ This Q&A is for developers (including future maintainers) comparing Vidur simula
 - `specs/002-reproduce-vidur-paper-fidelity/tasks.md`
 - `specs/002-reproduce-vidur-paper-fidelity/quickstart.md`
 - `specs/002-reproduce-vidur-paper-fidelity/qa-002-reproduce-vidur-paper-fidelity.md`
-- `context/plans/plan-vidur-profiling-llama2-7b.md`
-- `context/plans/qa-plan-vidur-profiling-llama2-7b.md`
+- `context/plans/done/plan-vidur-profiling-llama2-7b.md`
+- `context/plans/done/qa-plan-vidur-profiling-llama2-7b.md`
 - `results/raw/README.md`
 
 **Key entrypoints and modules**

@@ -1,11 +1,13 @@
 # Q&A: plan-vidur-profiling-llama2-7b
 
+> Archived: 2026-01-09 (completed, superseded, or no longer needed)
+
 ## Introduction
 
 This Q&A captures implementation questions for the Vidur host-profiling bundle workflow (LLaMA2-7B), intended for developers (including future maintainers) operating or extending the profiling/export pipeline.
 
 **Related docs**
-- `context/plans/plan-vidur-profiling-llama2-7b.md`
+- `context/plans/done/plan-vidur-profiling-llama2-7b.md`
 - `context/summaries/vidur-kb/about-vendor-provided-data.md`
 - `context/summaries/vidur-kb/about-vidur-gpu-simulator.md`
 

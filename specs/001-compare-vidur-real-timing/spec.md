@@ -3,7 +3,7 @@
 **Feature Branch**: `001-compare-vidur-real-timing`  
 **Created**: 2025-12-30  
 **Status**: Draft  
-**Input**: User description: "read context/plans/plan-compare-vidur-vs-real-qwen3-a100-timing.md first, that is what we want to do, create at least 6 use cases"
+**Input**: User description: "read context/plans/done/plan-compare-vidur-vs-real-qwen3-a100-timing.md first, that is what we want to do, create at least 6 use cases"
 
 ## Clarifications
 

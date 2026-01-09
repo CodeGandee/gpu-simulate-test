@@ -1,9 +1,12 @@
 # Plan: Compare Vidur vs real Qwen3 A100 timing
 
+> Archived: 2026-01-09 (completed, superseded, or no longer needed)
+
 ## HEADER
 - **Purpose**: Implement a reproducible workflow to (1) simulate Qwen3 inference timing on A100 via the Vidur Python package in the Pixi env and (2) compare Vidur’s latency distributions against real A100 timing under the same request-length + arrival process.
-- **Status**: Draft
+- **Status**: Archived (done/no longer needed)
 - **Date**: 2025-12-30
+- **Archived**: 2026-01-09
 - **Dependencies**:
   - `context/hints/howto-compare-vidur-vs-real-qwen3-a100-timing.md`
   - `context/hints/howto-run-basic-vidur-simulation.md`

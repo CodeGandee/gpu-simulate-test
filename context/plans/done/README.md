@@ -1,8 +1,5 @@
-# plans/
+# plans/done/
 
-Implementation roadmaps and strategies.
+Archived plans (completed, superseded, or no longer needed).
 
-- Feature breakdowns and phased plans
-- Tradeoffs and decision points
-- Milestones and sequencing notes
-
+Archived: 2026-01-09

@@ -1,9 +1,12 @@
 # Plan: Comparable Vidur sim vs Sarathi real (LLaMA2-7B)
 
+> Archived: 2026-01-09 (completed, superseded, or no longer needed)
+
 ## HEADER
 - **Purpose**: Implement the requirements in `context/tasks/working/req-vidur-sim-vs-real.md` so we can run paper-fidelity sim-vs-real experiments for LLaMA2-7B that are comparable by construction (same trace, same decode token counts, aligned metric boundaries), and produce both machine-readable JSON and paper-style Markdown + SVG outputs.
-- **Status**: Implemented (initial)
+- **Status**: Archived (done/no longer needed)
 - **Date**: 2026-01-07
+- **Archived**: 2026-01-09
 - **Dependencies**:
   - `context/tasks/working/req-vidur-sim-vs-real.md` (requirements; authoritative for this plan)
   - `context/instructions/prep-dev-env.md` (Pixi-managed dev environment; required for reproducible runs)

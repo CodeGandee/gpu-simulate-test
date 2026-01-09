@@ -1,9 +1,12 @@
 # Plan: Paper-fidelity sim-vs-real gap reproduction (host profiling)
 
+> Archived: 2026-01-09 (completed, superseded, or no longer needed)
+
 ## HEADER
 - **Purpose**: Add a first-class “host-calibrated” reproduction path that profiles/microbenchmarks on the current machine, runs Vidur using the resulting profiling bundle, and compares against Sarathi-Serve “real” metrics so the sim-vs-real gap is meaningful on this host.
-- **Status**: Draft
+- **Status**: Archived (done/no longer needed)
 - **Date**: 2026-01-05
+- **Archived**: 2026-01-09
 - **Dependencies**:
   - `specs/002-reproduce-vidur-paper-fidelity/spec.md` (success criteria and terminology)
   - `specs/002-reproduce-vidur-paper-fidelity/tasks.md` (current authoritative checklist; needs extension)

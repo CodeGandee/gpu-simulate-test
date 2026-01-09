@@ -1,9 +1,12 @@
 # Plan: Trace subset selection for paper-fidelity runs
 
+> Archived: 2026-01-09 (completed, superseded, or no longer needed)
+
 ## HEADER
 - **Purpose**: Add a trace subset feature so paper-fidelity workflows can process only a selected subset of requests (by index range `[begin,end)` or discrete indices) for both Vidur simulation and real inference.
-- **Status**: Draft
+- **Status**: Archived (done/no longer needed)
 - **Date**: 2026-01-07
+- **Archived**: 2026-01-09
 - **Dependencies**:
   - `specs/002-reproduce-vidur-paper-fidelity/tasks.md` (paper-fidelity workflow scope and acceptance criteria)
   - `src/gpu_simulate_test/paper_fidelity/traces.py` (canonical trace schema + validation)
