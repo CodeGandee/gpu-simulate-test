@@ -36,7 +36,7 @@ Workload snapshot:
 ## Suspected reasons (most likely contributors)
 
 1. **CPU/runtime overhead is excluded in the sim configuration**
-   - The Vidur sim wrapper disables CPU overhead modeling by default (`enable_cpu_overhead_modeling=false` in our configs, mapping to Vidur internal `skip_cpu_overhead_modeling=True` in `src/gpu_simulate_test/vidur_ext/sim_runner.py`), and the profiling-root validation only requires `cpu_overheads.csv` when CPU overhead modeling is enabled (`src/gpu_simulate_test/vidur_ext/profiling_root.py`).
+   - The Vidur sim wrapper disables CPU overhead modeling by default (`scenario.vidur.skip_cpu_overhead_modeling=true`), and the profiling-root validation only requires `cpu_overheads.csv` when CPU overhead modeling is enabled (`src/gpu_simulate_test/vidur_ext/profiling_root.py`).
    - In batch=1 regimes, real latency is often dominated by host-side scheduling, sampler, input prep, output processing, synchronization points, and framework overhead that a “GPU-kernel-time” model won’t capture.
 
 2. **Attention profiling likely fell back to a template, producing unrealistic attention timings**
@@ -55,7 +55,7 @@ Workload snapshot:
 
 ## Mitigations / next steps
 
-- Enable and validate CPU overhead modeling in the Vidur sim path (requires producing and staging `cpu_overheads.csv`, and setting `scenario.vidur.enable_cpu_overhead_modeling=true`) to see how much of the gap is explained by host/runtime overhead.
+- Enable and validate CPU overhead modeling in the Vidur sim path (requires producing and staging `cpu_overheads.csv`, and setting `scenario.vidur.skip_cpu_overhead_modeling=false`) to see how much of the gap is explained by host/runtime overhead.
 - Ensure attention profiling succeeds for Qwen3-0.6B (avoid template fallback) and that the profiled attention backend matches the real backend used by Sarathi.
 - Align “real” and “sim” scheduler knobs where possible (chunk size, block size, TP/PP) and rerun to quantify sensitivity.
 - If the gap remains for batch=1, consider a calibrated constant per-step/per-token overhead term for “wall-clock” predictions in this regime (documented as a limitation).

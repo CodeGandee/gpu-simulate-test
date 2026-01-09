@@ -19,13 +19,13 @@ The error is consistent across percentiles (P50/P95) and metrics.
 
 ## Root Cause Analysis
 
-The primary cause is that **CPU overhead modeling is disabled in the Vidur sim path** (`scenario.vidur.enable_cpu_overhead_modeling=false`, which maps to Vidur’s internal `skip_cpu_overhead_modeling=true`), while the real execution (Sarathi-Serve) incurs non-negligible CPU overheads (Python runtime, scheduler, input/output processing). This effect is magnified for small models like LLaMA2-7B where GPU compute times are short.
+The primary cause is that **CPU overhead modeling is disabled in the Vidur sim path** (`scenario.vidur.skip_cpu_overhead_modeling=true`), while the real execution (Sarathi-Serve) incurs non-negligible CPU overheads (Python runtime, scheduler, input/output processing). This effect is magnified for small models like LLaMA2-7B where GPU compute times are short.
 
 ### 1. Vidur Configuration
 The Vidur simulation was run with CPU overhead modeling disabled (default).
-- Repo config: `scenario.vidur.enable_cpu_overhead_modeling=false`.
+- Repo config: `scenario.vidur.skip_cpu_overhead_modeling=true`.
 - Vidur internal config: `skip_cpu_overhead_modeling=true` (see `extern/tracked/vidur/vidur/config/config.py`).
-- Run Metadata: `run_meta.json` confirms CPU overhead modeling is disabled (older runs may record `skip_cpu_overhead_modeling: true`; newer runs record `enable_cpu_overhead_modeling: false` in the resolved scenario config).
+- Run Metadata: `run_meta.json` confirms CPU overhead modeling is disabled (older runs may record `skip_cpu_overhead_modeling: true`; some intermediate runs recorded an alias `enable_cpu_overhead_modeling: false` in the resolved scenario config).
 
 ### 2. Vidur Implementation
 When Vidur internal `skip_cpu_overhead_modeling` is `True`, the `SklearnExecutionTimePredictor` explicitly zeroes out:
@@ -57,7 +57,7 @@ To reduce the Sim-vs-Real gap and achieve higher fidelity for LLaMA2-7B:
     - Generate a new profiling bundle that includes `cpu_overhead.csv`.
 
 2.  **Enable CPU Overhead Modeling in Sim**:
-    - Update `paper-fidelity repro` / `vidur-sim` to set `scenario.vidur.enable_cpu_overhead_modeling=true` when CPU overhead data is available (maps to Vidur internal `skip_cpu_overhead_modeling=false`).
+    - Update `paper-fidelity repro` / `vidur-sim` to set `scenario.vidur.skip_cpu_overhead_modeling=false` when CPU overhead data is available.
 
 3.  **Investigate Sarathi Overheads**:
     - If the gap persists >15% after modeling CPU overhead, profile the Sarathi execution itself to identify unexpected bottlenecks (e.g., inefficient tokenization, excessive logging, or unoptimized scheduler loops).

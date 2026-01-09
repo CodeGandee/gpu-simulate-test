@@ -125,7 +125,7 @@ A: `vidur-sim` runs on **CPU**. It uses a GPU-generated profiling bundle (e.g. A
 A: Yes — you should interpret the comparison as **simulated GPU latency prediction vs measured GPU latency**. It is meaningful, but it is not “two measurements of the same runtime”, so expect gaps:
 
 - The simulator’s accuracy depends on how well the profiling/model matches your real inference stack (kernels, precision, scheduler/batching, KV-cache behavior, etc.).
-- In this repo’s current Vidur wrappers, CPU overhead modeling is disabled by default (paper-fidelity: `scenario.vidur.enable_cpu_overhead_modeling=false`; legacy `vidur-sim` path always disables it), so CPU-side costs in a real server stack won’t be reflected.
+- In this repo’s current Vidur wrappers, CPU overhead modeling is disabled by default (paper-fidelity: `scenario.vidur.skip_cpu_overhead_modeling=true`; legacy `vidur-sim` path always disables it), so CPU-side costs in a real server stack won’t be reflected.
 - Token-level latencies from `vidur-sim` are derived from request-level metrics (not measured token-by-token); see `src/gpu_simulate_test/vidur_ext/sim_runner.py`.
 - `real-bench` replays requests sequentially; if your workload has `arrival_time_ns=0` for many requests, later requests’ `ttft_ns` will include queueing behind earlier ones, which can distort direct TTFT comparisons.
 - For a “no queueing” baseline with `real-bench`, set `workload.arrival.inter_arrival_ns` large enough that each request completes before the next arrives (check `completion_time_ns[i] <= arrival_time_ns[i+1]` in the real run’s `request_metrics.csv`).

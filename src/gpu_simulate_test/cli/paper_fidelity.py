@@ -564,14 +564,14 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
         "env": build_env_snapshot(),
         "params": OmegaConf.to_container(cfg, resolve=True),
     }
-    enable_val = OmegaConf.select(cfg, "scenario.vidur.enable_cpu_overhead_modeling")
     skip_val = OmegaConf.select(cfg, "scenario.vidur.skip_cpu_overhead_modeling")  # back-compat
-    if enable_val is not None:
-        enable_cpu_overhead_modeling = bool(enable_val)
-    elif skip_val is not None:
-        enable_cpu_overhead_modeling = not bool(skip_val)
+    enable_val = OmegaConf.select(cfg, "scenario.vidur.enable_cpu_overhead_modeling")  # back-compat alias
+    if skip_val is not None:
+        skip_cpu_overhead_modeling = bool(skip_val)
+    elif enable_val is not None:
+        skip_cpu_overhead_modeling = not bool(enable_val)
     else:
-        enable_cpu_overhead_modeling = False
+        skip_cpu_overhead_modeling = True
 
     scheduler_type = str(OmegaConf.select(cfg, "scenario.vidur.scheduler.type") or "sarathi")
     scheduler_chunk_size = OmegaConf.select(cfg, "scenario.vidur.scheduler.chunk_size")
@@ -590,7 +590,7 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
             num_pipeline_stages=int(cfg.scenario.vidur.num_pipeline_stages),
             seed=int(cfg.scenario.vidur.seed),
             max_tokens=int(cfg.scenario.trace_source.max_tokens),
-            enable_cpu_overhead_modeling=enable_cpu_overhead_modeling,
+            skip_cpu_overhead_modeling=skip_cpu_overhead_modeling,
             scheduler_type=scheduler_type,
             scheduler_chunk_size=None if scheduler_chunk_size is None else int(scheduler_chunk_size),
             scheduler_batch_size_cap=None if scheduler_batch_size_cap is None else int(scheduler_batch_size_cap),

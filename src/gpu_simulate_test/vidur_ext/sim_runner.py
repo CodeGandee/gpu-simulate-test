@@ -169,7 +169,7 @@ def run_vidur_sim(inputs: VidurSimInputs, *, out_dir: Path, run_meta: dict) -> N
         network_device=inputs.network_device,
         tensor_parallel_size=inputs.tensor_parallel_size,
         num_pipeline_stages=inputs.num_pipeline_stages,
-        enable_cpu_overhead_modeling=False,
+        skip_cpu_overhead_modeling=True,
     )
     validate_profiling_root(layout)
 
@@ -386,7 +386,8 @@ class VidurPaperFidelitySimInputs:
     num_pipeline_stages: int = 1
     seed: int = 42
     max_tokens: int = 4096
-    enable_cpu_overhead_modeling: bool = False
+    # Vidur's interface uses the negative form.
+    skip_cpu_overhead_modeling: bool = True
     # Parity-critical scheduler knobs. Vidur has its own defaults; for sim-vs-real
     # experiments these should be set explicitly to match the real runner.
     scheduler_type: str = "sarathi"
@@ -426,7 +427,7 @@ def run_vidur_paper_fidelity_sim(
         network_device=inputs.network_device,
         tensor_parallel_size=inputs.tensor_parallel_size,
         num_pipeline_stages=inputs.num_pipeline_stages,
-        enable_cpu_overhead_modeling=bool(inputs.enable_cpu_overhead_modeling),
+        skip_cpu_overhead_modeling=bool(inputs.skip_cpu_overhead_modeling),
     )
     validate_profiling_root(layout)
 
@@ -486,7 +487,7 @@ def run_vidur_paper_fidelity_sim(
         all_reduce_input_file=str(profiling_base / "network/{NETWORK_DEVICE}/all_reduce.csv"),
         send_recv_input_file=str(profiling_base / "network/{NETWORK_DEVICE}/send_recv.csv"),
         cpu_overhead_input_file=str(profiling_base / "cpu_overhead/{NETWORK_DEVICE}/{MODEL}/cpu_overheads.csv"),
-        skip_cpu_overhead_modeling=not bool(inputs.enable_cpu_overhead_modeling),
+        skip_cpu_overhead_modeling=bool(inputs.skip_cpu_overhead_modeling),
     )
 
     metrics_cfg = MetricsConfig(

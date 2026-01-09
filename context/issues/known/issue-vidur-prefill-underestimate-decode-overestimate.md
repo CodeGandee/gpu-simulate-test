@@ -84,7 +84,7 @@ If Vidur’s Sarathi model differs from Sarathi-Serve’s exact batching behavio
 
 ### 3) CPU/runtime overhead is excluded in the sim (prefill-heavy bias)
 
-Our runs commonly keep CPU overhead modeling disabled on the Vidur side (`scenario.vidur.enable_cpu_overhead_modeling=false`; older run metas may record this as Vidur internal `skip_cpu_overhead_modeling=true`).
+Our runs commonly keep CPU overhead modeling disabled on the Vidur side (`scenario.vidur.skip_cpu_overhead_modeling=true`).
 
 Vidur’s docs explicitly call out CPU overhead profiling as a separate component (`extern/tracked/vidur/docs/profiling.md`). If real prefill has non-trivial host overhead (scheduler bookkeeping, sampling setup, synchronization, etc.), the sim can underpredict prefill more than decode.
 
@@ -127,6 +127,6 @@ If they don’t match, annotate the report as “not stage-comparable”.
 ### C) If skew remains after knob parity: investigate model/overhead fidelity
 
 Next diagnostic steps:
-- Re-run with `scenario.vidur.enable_cpu_overhead_modeling=true` using a host-profiled `cpu_overheads.csv` (Vidur supports this; see `extern/tracked/vidur/docs/profiling.md`).
+- Re-run with `scenario.vidur.skip_cpu_overhead_modeling=false` using a host-profiled `cpu_overheads.csv` (Vidur supports this; see `extern/tracked/vidur/docs/profiling.md`).
 - Enable richer Vidur metric outputs (token completion / batch metrics) to confirm whether the skew is driven by long decode-iteration gaps vs kernel-time prediction error.
 - Validate Sarathi-Serve’s metric definitions for `prefill_completed_at` vs Vidur’s (`prefill_completed_at` is a common boundary but can differ subtly across implementations).

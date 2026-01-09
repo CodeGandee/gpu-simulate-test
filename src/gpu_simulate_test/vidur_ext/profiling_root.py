@@ -12,7 +12,8 @@ class ProfilingRootLayout:
     network_device: str = "a100_pairwise_nvlink"
     tensor_parallel_size: int = 1
     num_pipeline_stages: int = 1
-    enable_cpu_overhead_modeling: bool = False
+    # Vidur's config uses the negative form: `skip_cpu_overhead_modeling`.
+    skip_cpu_overhead_modeling: bool = True
 
 
 def _compute_dir(layout: ProfilingRootLayout) -> Path:
@@ -47,7 +48,7 @@ def validate_profiling_root(layout: ProfilingRootLayout) -> None:
         required.append(_network_dir(layout) / "send_recv.csv")
     if layout.tensor_parallel_size > 1:
         required.append(_network_dir(layout) / "all_reduce.csv")
-    if layout.enable_cpu_overhead_modeling:
+    if not layout.skip_cpu_overhead_modeling:
         required.append(_cpu_overhead_dir(layout) / "cpu_overheads.csv")
 
     missing = [p for p in required if not p.exists()]

@@ -19,7 +19,7 @@ vidur:
   num_pipeline_stages: 1
   seed: 42
   # CPU overhead modeling should be explicitly enabled/disabled for sim-vs-real parity.
-  enable_cpu_overhead_modeling: false
+  skip_cpu_overhead_modeling: true
   # Parity-critical scheduler knobs: do not rely on Vidur defaults.
   # Align these with the real runner's scheduler settings unless intentionally studying drift.
   scheduler:
