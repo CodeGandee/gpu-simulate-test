@@ -91,6 +91,11 @@ Outputs:
 
 This workflow is implemented as a single CLI with subcommands.
 
+Notes:
+
+- Treat `scenario.name` as the artifact namespace. Override it to keep multiple runs side-by-side (e.g. stamped run ids).
+- For long runs, use `tmux` and write a log alongside the run outputs (e.g. `... 2>&1 | tee run.log`). See `context/instructions/run-lengthy-experiment.md`.
+
 ### 1) Generate a canonical trace (optional)
 
 `paper-fidelity repro` generates a trace automatically, but `paper-fidelity trace` is useful for debugging trace generation/validation.
@@ -117,10 +122,10 @@ pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload dynamic
 
 Outputs:
 
-- Trace: `tmp/paper_fidelity/traces/<scenario>/trace.csv`
-- Sim metrics: `tmp/paper_fidelity/runs/<scenario>/sim/request_metrics.csv`
-- Real metrics: `tmp/paper_fidelity/runs/<scenario>/real/request_metrics.csv`
-- Report: `results/reports/<date>/paper_fidelity/<scenario>/summary.md`
+- Trace: `tmp/paper_fidelity/traces/<scenario.name>/trace.csv`
+- Sim metrics: `tmp/paper_fidelity/runs/<scenario.name>/sim/request_metrics.csv`
+- Real metrics: `tmp/paper_fidelity/runs/<scenario.name>/real/request_metrics.csv`
+- Report: `results/reports/<date>/paper_fidelity/<scenario.name>/summary.md`
 
 ### 3) Host-calibrated profiling (optional)
 
@@ -128,9 +133,12 @@ By default, scenarios point Vidur at the paper-provided profiling bundle under `
 
 ```bash
 pixi run paper-fidelity profile --scenario llama2_7b_arxiv
+pixi run paper-fidelity profile --scenario llama2_7b_arxiv --include-cpu-overhead
 pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static \
   scenario.vidur.profiling_root=/abs/path/to/tmp/paper_fidelity/profiling_roots/...
 ```
+
+Sim-vs-real parity note: do not rely on Vidur defaults. Set parity-critical knobs explicitly (scheduler type, chunk size, batch caps, CPU overhead modeling) and keep profiling, sim, and real runs aligned.
 
 ### 4) Score-only report (optional)
 

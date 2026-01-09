@@ -66,7 +66,21 @@ Paper fidelity overrides:
 pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload dynamic \
   trace_subset.kind=range trace_subset.begin=0 trace_subset.end=32
 
+# Namespace runs explicitly (keep multiple runs side-by-side)
+pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static \
+  scenario.name=llama2_7b_arxiv_sim_vs_real_2026-01-09_00-00-00_static_small
+
 # Override profiling root (host-calibrated sim)
 pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static \
   scenario.vidur.profiling_root=/abs/path/to/tmp/paper_fidelity/profiling_roots/...
+
+# Parity-critical knobs: do not rely on Vidur defaults (align with real runner unless studying drift)
+pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static \
+  scenario.vidur.scheduler.type=sarathi \
+  scenario.vidur.scheduler.chunk_size=16 \
+  scenario.vidur.scheduler.batch_size_cap=16 \
+  scenario.vidur.enable_cpu_overhead_modeling=false
+
+# Include CPU-overhead profiling when generating a host profiling root
+pixi run paper-fidelity profile --scenario llama2_7b_arxiv --include-cpu-overhead
 ```

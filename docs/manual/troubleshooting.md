@@ -29,6 +29,12 @@
 - Initialize submodules: `git submodule update --init --recursive`
 - Ensure Sarathi is available in the Pixi env (this repo expects the editable `extern/tracked/sarathi-serve` integration).
 
+### `paper-fidelity profile --include-cpu-overhead` fails or is unexpectedly slow
+
+- Ensure the model weights are available locally (this repo typically uses `models/*/source-data` via `bash models/<model>/bootstrap.sh`).
+- Run long profiling jobs in `tmux` and log progress: `pixi run paper-fidelity profile ... 2>&1 | tee run.log` (Hydra `chdir` puts `run.log` next to the other run outputs).
+- If you are doing sim-vs-real parity work, explicitly set `scenario.vidur.enable_cpu_overhead_modeling=true|false` and keep profiling, simulation, and real runs consistent.
+
 ### Trace subset errors (`trace_subset.*`)
 
 Common causes:

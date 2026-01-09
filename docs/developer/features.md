@@ -97,6 +97,7 @@ Two task checklists exist:
   - `src/gpu_simulate_test/paper_fidelity/paths.py`
 - Vidur simulation (paper metric columns):
   - `src/gpu_simulate_test/vidur_ext/sim_runner.py` (`run_vidur_paper_fidelity_sim`)
+  - Scheduler config is taken from `scenario.vidur.scheduler.*` (plumbed into Vidur’s `SarathiSchedulerConfig`) to avoid relying on Vidur defaults.
 - Sarathi real replay (paper metric columns):
   - `src/gpu_simulate_test/real_bench/backends/sarathi_paper_fidelity_backend.py`
 - Dynamic capacity search (85% operating point):

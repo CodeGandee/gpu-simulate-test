@@ -111,3 +111,8 @@ Paper-fidelity request metric columns (required on both sim and real sides):
 
 - `summary.md`: score tables + optional “gap diagnosis”
 - `run_meta.json`: resolved config, provenance, and (when enabled) paper reference metadata
+
+Notes:
+
+- The `<scenario>` component is the resolved `scenario.name` (often the scenario key like `llama2_7b_arxiv`, but you can override it to a stamped run id to keep runs separate).
+- Canonical sim/real CSVs live under `tmp/paper_fidelity/runs/<scenario.name>/{sim,real}/request_metrics.csv`. Some reports may also include copies of these CSVs in the report directory for portability.
