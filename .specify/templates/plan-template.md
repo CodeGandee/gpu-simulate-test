@@ -3,7 +3,7 @@
 **Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
 **Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
 
-**Note**: This file is created from this template by `.specify/scripts/bash/setup-plan.sh`.
+**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
 
 ## Summary
 
@@ -31,11 +31,7 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- [ ] Reproducibility: commands documented; configs committed; outputs go to `tmp/`; nondeterminism noted.
-- [ ] Pixi env: all commands use `pixi run ...`; dependency changes include `pixi.lock` updates.
-- [ ] Simulator boundaries: changes in `extern/` are justified; adapters live in `src/gpu_simulate_test/`.
-- [ ] External assets: no large models/datasets/results committed; use `models/`, `datasets/`, `tmp/` patterns.
-- [ ] Validation: at least one of manual/unit/integration coverage is planned under `tests/`.
+[Gates determined based on constitution file]
 
 ## Project Structure
 
@@ -43,12 +39,12 @@
 
 ```text
 specs/[###-feature]/
-├── plan.md              # This file
-├── research.md          # Optional: research notes
-├── data-model.md        # Optional: data model notes
-├── quickstart.md        # Optional: quickstart for the feature
-├── contracts/           # Optional: IO/API contracts
-└── tasks.md             # Task breakdown
+├── plan.md              # This file (/speckit.plan command output)
+├── research.md          # Phase 0 output (/speckit.plan command)
+├── data-model.md        # Phase 1 output (/speckit.plan command)
+├── quickstart.md        # Phase 1 output (/speckit.plan command)
+├── contracts/           # Phase 1 output (/speckit.plan command)
+└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
 ### Source Code (repository root)
@@ -60,20 +56,39 @@ specs/[###-feature]/
 -->
 
 ```text
+# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
 src/
-└── gpu_simulate_test/
+├── models/
+├── services/
+├── cli/
+└── lib/
 
 tests/
+├── contract/
 ├── integration/
-├── manual/
 └── unit/
 
-context/
-scripts/
-models/
-datasets/
-extern/
-tmp/
+# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
+backend/
+├── src/
+│   ├── models/
+│   ├── services/
+│   └── api/
+└── tests/
+
+frontend/
+├── src/
+│   ├── components/
+│   ├── pages/
+│   └── services/
+└── tests/
+
+# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
+api/
+└── [same as backend above]
+
+ios/ or android/
+└── [platform-specific structure: feature modules, UI flows, platform tests]
 ```
 
 **Structure Decision**: [Document the selected structure and reference the real

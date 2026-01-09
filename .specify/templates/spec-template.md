@@ -5,14 +5,6 @@
 **Status**: Draft  
 **Input**: User description: "$ARGUMENTS"
 
-## Reproducibility & Artifacts *(mandatory)*
-
-- **Run command(s)**: [Exact `pixi run ...` commands to reproduce]
-- **Configs**: [Paths to configs/scripts that control behavior]
-- **Outputs**: [What is produced; large artifacts MUST go to `tmp/` or external storage]
-- **Validation**: [Manual/unit/integration coverage + file paths under `tests/`]
-- **External assets** (if any): [models/datasets references + bootstrap steps]
-
 ## User Scenarios & Testing *(mandatory)*
 
 <!--
@@ -26,9 +18,6 @@
   - Tested independently
   - Deployed independently
   - Demonstrated to users independently
-
-  Per the constitution: every change MUST include at least one of manual, unit, or
-  integration validation under `tests/`. Prefer manual scripts for experiment-heavy flows.
 -->
 
 ### User Story 1 - [Brief Title] (Priority: P1)
