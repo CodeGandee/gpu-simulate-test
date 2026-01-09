@@ -52,6 +52,12 @@ def parse_args() -> argparse.Namespace:
         default=128,
         help="Maximum batch size to profile",
     )
+    parser.add_argument(
+        "--model_path",
+        type=str,
+        default=None,
+        help="Local path to the model (optional)",
+    )
     args = parser.parse_args()
 
     output_root = Path(args.output_dir).expanduser()
@@ -67,6 +73,7 @@ def _create_runner(
     batch_size: int,
     tensor_parallel_degree: int,
     output_dir: str,
+    model_path: str | None = None,
 ) -> Any:
     if not ray.is_initialized():
         ray.init(include_dashboard=False, ignore_reinit_error=True)
@@ -83,7 +90,7 @@ def _create_runner(
         .remote
     )
 
-    return runner_class(model_name, batch_size, tensor_parallel_degree, output_dir)
+    return runner_class(model_name, batch_size, tensor_parallel_degree, output_dir, model_path)
 
 
 def profile_model(
@@ -92,6 +99,7 @@ def profile_model(
     tensor_parallel_degrees: list[int],
     output_dir: str,
     pbar: Any,
+    model_path: str | None = None,
 ) -> None:
     results: list[dict[str, Any]] = []
 
@@ -99,7 +107,7 @@ def profile_model(
         for batch_index, batch_size in enumerate(batch_sizes_to_profile):
             try:
                 runner = _create_runner(
-                    model_name, batch_size, tensor_parallel_degree, output_dir
+                    model_name, batch_size, tensor_parallel_degree, output_dir, model_path
                 )
                 results.append(ray.get(runner.run.remote()))
                 del runner
@@ -137,6 +145,7 @@ def main() -> None:
             tensor_parallel_degrees=args.num_tensor_parallel_workers,
             output_dir=args.output_dir,
             pbar=pbar,
+            model_path=args.model_path,
         )
 
 

@@ -12,6 +12,7 @@ profiling:
   num_gpus: 1
   max_tokens: ${scenario.trace_source.max_tokens}
   tensor_parallel_size: ${scenario.vidur.tensor_parallel_size}
+  include_cpu_overhead: false
 
 hydra:
   run:

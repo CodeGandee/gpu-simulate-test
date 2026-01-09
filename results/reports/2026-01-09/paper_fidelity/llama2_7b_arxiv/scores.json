@@ -1,0 +1,75 @@
+{
+  "generated_at": "2026-01-09T06:34:45.752151+00:00",
+  "inputs": {
+    "real_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv/real/request_metrics.csv",
+    "sim_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv/sim/request_metrics.csv"
+  },
+  "metrics": [
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.18935191559296555,
+          "real": 0.035372013307790995,
+          "sim": 0.0286742548295809
+        },
+        "p95": {
+          "pct_error": 0.15838892575302446,
+          "real": 0.07013052807351937,
+          "sim": 0.05902262906946231
+        }
+      },
+      "verdict": "fail"
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.17120585595020152,
+          "real": 0.4517225424686606,
+          "sim": 0.3743849979333123
+        },
+        "p95": {
+          "pct_error": 0.17396475794164964,
+          "real": 1.1456824775199248,
+          "sim": 0.9463741026401816
+        }
+      },
+      "verdict": "fail"
+    },
+    {
+      "metric": "prefill_time_execution_plus_preemption_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.17528582213284952,
+          "real": 0.001111891365993,
+          "sim": 0.0009169925737825
+        },
+        "p95": {
+          "pct_error": 0.1867142276744868,
+          "real": 0.0012551006177818,
+          "sim": 0.0010207554752789
+        }
+      },
+      "verdict": "fail"
+    },
+    {
+      "metric": "decode_time_execution_plus_preemption_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.18909624527144397,
+          "real": 0.01691713995345965,
+          "sim": 0.013718172307528899
+        },
+        "p95": {
+          "pct_error": 0.2038178043604567,
+          "real": 0.018021450325385834,
+          "sim": 0.014348357888674656
+        }
+      },
+      "verdict": "fail"
+    }
+  ],
+  "scenario_name": "llama2_7b_arxiv",
+  "schema_version": "v1"
+}

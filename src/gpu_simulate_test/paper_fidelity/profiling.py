@@ -79,6 +79,9 @@ def run_paper_fidelity_profiling(cfg: DictConfig, *, repo_root: Path) -> Path:
     )
     tensor_parallel_size = int(tp_val) if tp_val is not None else 1
 
+    include_cpu_val = OmegaConf.select(cfg, "profiling.include_cpu_overhead")
+    include_cpu_overhead = bool(include_cpu_val) if include_cpu_val is not None else False
+
     vidur_result = run_vidur_profiling(
         VidurProfileInputs(
             model_id=model_id,
@@ -89,6 +92,8 @@ def run_paper_fidelity_profiling(cfg: DictConfig, *, repo_root: Path) -> Path:
             tensor_parallel_size=tensor_parallel_size,
             max_tokens=max_tokens,
             staging_root=profiling_outputs_dir,
+            include_cpu_overhead=include_cpu_overhead,
+            model_ref=Path(cfg.scenario.model.model_ref).expanduser(),
         ),
         repo_root=repo_root,
     )
@@ -102,6 +107,7 @@ def run_paper_fidelity_profiling(cfg: DictConfig, *, repo_root: Path) -> Path:
             "num_gpus": num_gpus,
             "tensor_parallel_size": tensor_parallel_size,
             "max_tokens": max_tokens,
+            "include_cpu_overhead": include_cpu_overhead,
         },
         "profiling_commands": {"mlp": vidur_result.mlp_cmd, "attention": vidur_result.attention_cmd},
         "profiling_outputs": {

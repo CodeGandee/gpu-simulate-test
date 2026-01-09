@@ -80,6 +80,7 @@ class VidurProfileInputs:
     attention_max_batch_size: int = 1
     attention_profile_mode: str = "decode"
     allow_attention_fallback: bool = True
+    model_ref: Path | None = None
 
 
 @dataclass(frozen=True)
@@ -416,6 +417,9 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
                 "--output_dir",
                 str(staging),
             ]
+            if inputs.model_ref is not None and inputs.model_ref.exists():
+                cpu_overhead_cmd.extend(["--model_path", str(inputs.model_ref.resolve())])
+
             subprocess.check_call(cpu_overhead_cmd, cwd=repo_root)
             cpu_latest = _latest_dir(staging / "cpu_overhead")
             cpu_src = cpu_latest / inputs.model_id / "cpu_overhead.csv"

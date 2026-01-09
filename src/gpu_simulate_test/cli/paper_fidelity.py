@@ -81,6 +81,7 @@ def main(argv: list[str] | None = None) -> None:
 
     profile = sub.add_parser("profile")
     profile.add_argument("--scenario", required=True)
+    profile.add_argument("--include-cpu-overhead", action="store_true")
 
     score = sub.add_parser("score")
     score.add_argument("--sim", required=True)
@@ -105,6 +106,8 @@ def main(argv: list[str] | None = None) -> None:
         _trace_main()
     elif args.cmd == "profile":
         sys.argv = [prog, f"scenario={args.scenario}", *hydra_overrides]
+        if args.include_cpu_overhead:
+            sys.argv.append("profiling.include_cpu_overhead=true")
         _profile_main()
     elif args.cmd == "score":
         sim_csv = str(Path(args.sim).expanduser())
@@ -562,7 +565,14 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
         "params": OmegaConf.to_container(cfg, resolve=True),
     }
     skip_val = OmegaConf.select(cfg, "scenario.vidur.skip_cpu_overhead_modeling")
-    skip_cpu_overhead_modeling = bool(skip_val) if skip_val is not None else True
+    enable_val = OmegaConf.select(cfg, "scenario.vidur.enable_cpu_overhead_modeling")
+    if enable_val is not None:
+        skip_cpu_overhead_modeling = not bool(enable_val)
+    elif skip_val is not None:
+        skip_cpu_overhead_modeling = bool(skip_val)
+    else:
+        skip_cpu_overhead_modeling = True
+
     scheduler_type = str(OmegaConf.select(cfg, "scenario.vidur.scheduler.type") or "sarathi")
     scheduler_chunk_size = OmegaConf.select(cfg, "scenario.vidur.scheduler.chunk_size")
     scheduler_batch_size_cap = OmegaConf.select(cfg, "scenario.vidur.scheduler.batch_size_cap")
