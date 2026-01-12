@@ -1,5 +1,8 @@
 # LLaMA2-70B (TP4) static-fidelity mismatch vs paper (Arxiv-4K)
 
+**Status**: Resolved (tracked as a documented limitation, not a blocking bug)
+**Resolved date**: 2026-01-12
+
 ## Summary
 
 For the Vidur paper’s static fidelity figure (`request_execution_plus_preemption_time_normalized`, P50/P95), the **LLaMA2-70B (TP4) + Arxiv-4K** case is currently **not perfectly reproducible** with our “vendor artifacts → Vidur sim” pipeline:
@@ -57,3 +60,10 @@ Based on `context/tasks/done/002-reproduce-vidur-paper-fidelity/qa-impl-phase-3-
   - Identify any **additional fidelity-critical knobs** beyond `tp_dim` and `batch_size` (e.g., other vLLM/Vidur limits that impact decode fairness and therefore `request_preemption_time`).
   - Remove the controlled `A100`/`PP=1` overrides and re-run with the **paper-matched hardware/topology** implied by the “optimal config” row (the paper-configs extract indicates `H100` for `Llama-70b + Arxiv`).
   - Re-run static-fidelity and confirm `request_preemption_time` and the normalized metric land in the paper’s regime.
+
+## Resolution
+
+This issue is considered resolved for this repo’s current goals because:
+
+- The mismatch is understood as a scheduler/knob/hardware-parity sensitivity for this specific case, and it is explicitly documented with evidence and mitigation ideas.
+- Current paper-fidelity work is focused on host-calibrated sim-vs-real parity (e.g., CPU overhead modeling) rather than exact reproduction of every paper static point under paper hardware.
