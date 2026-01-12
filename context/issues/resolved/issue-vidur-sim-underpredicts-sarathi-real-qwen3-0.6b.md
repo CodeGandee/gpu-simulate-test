@@ -1,5 +1,8 @@
 # Vidur sim underpredicts Sarathi real latency (Qwen3-0.6B, A100, batch=1)
 
+**Status**: Irrelevant (not a current paper-fidelity target)
+**Moved date**: 2026-01-12
+
 ## Summary
 
 In `tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/`, Vidur simulation predicts **much lower** TTFT and decode per-token latency than a real Sarathi-Serve run on the same workload and GPU.
@@ -65,3 +68,10 @@ Workload snapshot:
 - Experiment: `tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/summary.md`
 - Compare report: `tmp/compare_experiments/20260102-134805Z-qwen3-0.6b-vidur-vs-sarathi-spaced-arrivals-2s/compare/summary.md`
 - Related design notes: `context/tasks/done/001-compare-vidur-real-timing/qa-001-compare-vidur-real-timing.md`
+
+## Why marked irrelevant
+
+This issue documents a real gap, but it is not actionable/representative for the current paper-fidelity scope:
+
+- It is a one-off local experiment for Qwen3-0.6B with batch=1, very short prompts, and a profiling root that likely used attention template fallback.
+- Current fidelity work is focused on the Vidur paper scenario(s) and the LLaMA2-* stack (including CPU overhead profiling/modeling), not absolute wall-clock accuracy for this Qwen3 micro-workload.

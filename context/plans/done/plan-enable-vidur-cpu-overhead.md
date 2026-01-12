@@ -8,7 +8,7 @@
 - **Date**: 2026-01-09
 - **Archived**: 2026-01-09
 - **Dependencies**:
-  - `context/issues/issue-vidur-sim-underpredicts-sarathi-real.md` (Problem statement and root cause)
+  - `context/issues/known/issue-vidur-sim-underpredicts-sarathi-real.md` (Problem statement and root cause)
   - `src/gpu_simulate_test/vidur_ext/profile_runner.py` (Existing profiling logic)
   - `src/gpu_simulate_test/vidur_ext/sim_runner.py` (Existing simulation logic)
   - `extern/tracked/vidur/vidur/config/config.py` (Vidur configuration reference)

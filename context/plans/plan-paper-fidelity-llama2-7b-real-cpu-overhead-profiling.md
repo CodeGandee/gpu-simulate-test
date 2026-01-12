@@ -5,8 +5,7 @@
 - **Status**: Draft
 - **Date**: 2026-01-09
 - **Dependencies**:
-  - `context/issues/issue-paper-fidelity-llama2-7b-gap-persists-with-dummy-cpu-overheads.md`
-  - `context/issues/issue-vidur-sim-underpredicts-sarathi-real.md`
+  - `context/issues/known/issue-vidur-sim-underpredicts-sarathi-real.md`
   - `context/instructions/prep-dev-env.md`
   - `docs/manual/troubleshooting.md`
   - `specs/002-reproduce-vidur-paper-fidelity/qa-002-sim-vs-real-llama2-7b.md`
@@ -132,4 +131,3 @@ Define a lightweight validator used both during profiling and simulation:
 - [ ] **Update developer docs** Add `.env`/GPU pinning guidance to `context/instructions/prep-dev-env.md` and expand `docs/manual/troubleshooting.md` for CPU overhead profiling failures.
 - [ ] **Add a bounded manual smoke test** Extend `tests/manual/test_paper_fidelity_profile_smoke.py` (or add a new test) to validate CPU overhead profiling writes a non-empty, parseable CSV.
 - [ ] **Host verification run** Re-run `paper-fidelity profile --include-cpu-overhead` and then `paper-fidelity repro` with `scenario.vidur.skip_cpu_overhead_modeling=false`, and record whether the sim-vs-real gap decreases materially; if not, open a follow-up issue with residual gap evidence and provenance.
-

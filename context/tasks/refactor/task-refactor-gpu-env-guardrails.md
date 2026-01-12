@@ -96,7 +96,7 @@ import torch
 ## References
 
 - `magic-context/instructions/planning/make-refactor-plan.md`
-- `context/issues/issue-paper-fidelity-llama2-7b-gap-persists-with-dummy-cpu-overheads.md`
+- `context/issues/known/issue-vidur-sim-underpredicts-sarathi-real.md`
 - `src/gpu_simulate_test/real_bench/backends/sarathi_paper_fidelity_backend.py`
 - `src/gpu_simulate_test/real_bench/backends/sarathi_backend.py`
 - `src/gpu_simulate_test/real_bench/backends/transformers_backend.py`

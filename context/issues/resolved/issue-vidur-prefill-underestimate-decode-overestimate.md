@@ -1,5 +1,8 @@
 # Vidur stage breakdown skew: prefill too fast, decode too slow (static workloads)
 
+**Status**: Resolved
+**Resolved date**: 2026-01-12
+
 ## Summary
 
 In our **static** paper-fidelity sim-vs-real runs (Vidur sim vs Sarathi-Serve real), Vidur can produce a **misleadingly “okay” total service-time metric** while the **prefill vs decode breakdown is badly skewed**:
@@ -130,3 +133,7 @@ Next diagnostic steps:
 - Re-run with `scenario.vidur.skip_cpu_overhead_modeling=false` using a host-profiled `cpu_overheads.csv` (Vidur supports this; see `extern/tracked/vidur/docs/profiling.md`).
 - Enable richer Vidur metric outputs (token completion / batch metrics) to confirm whether the skew is driven by long decode-iteration gaps vs kernel-time prediction error.
 - Validate Sarathi-Serve’s metric definitions for `prefill_completed_at` vs Vidur’s (`prefill_completed_at` is a common boundary but can differ subtly across implementations).
+
+## Resolution
+
+This is resolved as an implementation issue: the paper-fidelity simulation path now supports (and the baseline scenario config sets) explicit Vidur scheduler knobs via `scenario.vidur.scheduler.*`, avoiding Vidur’s default `chunk_size=512` / `batch_size_cap=128` drift when comparing stage-level prefill vs decode metrics to Sarathi-Serve.
