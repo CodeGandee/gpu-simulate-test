@@ -1,5 +1,8 @@
 # Refactor Plan: GPU env guardrails (GSIM_CUDA_VISIBLE_DEVICES)
 
+**Status**: Done
+**Done date**: 2026-01-12
+
 ## What to Refactor
 
 - Add a single, reusable guard that:

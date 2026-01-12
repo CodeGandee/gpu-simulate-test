@@ -77,13 +77,11 @@ def _create_runner(
             ray.PlacementGroupID(hex_to_binary(placement_group_id))
         )
 
-    runner_class = (
-        ray.remote(num_gpus=0)(BenchmarkRunner)
-        .options(runtime_env={"env_vars": {"KINETO_LOG_LEVEL": "5"}})
-        .remote
-    )
-
-    return runner_class(model_name, batch_size, tensor_parallel_degree, output_dir, model_path)
+    # Avoid wrapping BenchmarkRunner itself in a Ray actor. On some hosts, Ray worker env handling
+    # can expose unusable GPUs and cause PyTorch CUDA init to fail before Sarathi starts its own
+    # GPU workers. Running BenchmarkRunner in-process keeps our `CUDA_VISIBLE_DEVICES` pinning
+    # behavior deterministic.
+    return BenchmarkRunner(model_name, batch_size, tensor_parallel_degree, output_dir, model_path)
 
 
 def profile_model(
@@ -96,7 +94,6 @@ def profile_model(
     model_path: str | None = None,
 ) -> None:
     import pandas as pd
-    import ray
 
     results: list[dict[str, Any]] = []
     last_error: str | None = None
@@ -107,7 +104,7 @@ def profile_model(
                 runner = _create_runner(
                     model_name, batch_size, tensor_parallel_degree, output_dir, model_path
                 )
-                results.append(ray.get(runner.run.remote()))
+                results.append(runner.run())
                 del runner
                 gc.collect()
             except Exception as e:

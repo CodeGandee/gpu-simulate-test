@@ -2,8 +2,9 @@
 
 ## HEADER
 - **Purpose**: Eliminate the persistent sim-vs-real underprediction for LLaMA2-7B caused by running Vidur CPU overhead modeling against placeholder inputs, by making CPU overhead profiling produce real data on this host and adding guardrails to prevent “CPU overhead enabled with dummy/untrusted CSVs”.
-- **Status**: Draft
+- **Status**: Done (implementation + host verification)
 - **Date**: 2026-01-09
+- **Last updated**: 2026-01-12
 - **Dependencies**:
   - `context/issues/known/issue-vidur-sim-underpredicts-sarathi-real.md`
   - `context/instructions/prep-dev-env.md`
@@ -122,12 +123,20 @@ Define a lightweight validator used both during profiling and simulation:
 
 ## 4. TODOs (Implementation Steps)
 
-- [ ] **Implement shared CPU overhead validator** Add `cpu_overhead_validation.py` with strict/warn modes and clear error messages.
-- [ ] **Fail fast on empty profiling output** Update `vidur_profiling_cpu_overhead_main.py` to raise/exit non-zero when it would otherwise write an empty/no-header CSV.
-- [ ] **Add staging-boundary validation** In `profile_runner.py`, validate `cpu_overhead.csv` before writing `cpu_overheads.csv`; catch pandas empty/schema errors and re-raise with actionable guidance.
-- [ ] **Add consumption-boundary validation** In `profiling_root.py`, validate `cpu_overheads.csv` when `skip_cpu_overhead_modeling=false`, with a config knob to downgrade to warning when intentionally using dummy data.
-- [ ] **Plumb CPU overhead profiling knobs** Extend `configs/paper_fidelity/profile.yaml` and `paper_fidelity/profiling.py` to support `profiling.cpu_overhead.max_batch_size` and `profiling.cpu_overhead.validation={strict,warn,off}`.
-- [ ] **Annotate paper-fidelity reports** Update `paper_fidelity/report.py` so `summary.md` calls out whether CPU overhead inputs are trusted, missing, or placeholder-like.
-- [ ] **Update developer docs** Add `.env`/GPU pinning guidance to `context/instructions/prep-dev-env.md` and expand `docs/manual/troubleshooting.md` for CPU overhead profiling failures.
-- [ ] **Add a bounded manual smoke test** Extend `tests/manual/test_paper_fidelity_profile_smoke.py` (or add a new test) to validate CPU overhead profiling writes a non-empty, parseable CSV.
-- [ ] **Host verification run** Re-run `paper-fidelity profile --include-cpu-overhead` and then `paper-fidelity repro` with `scenario.vidur.skip_cpu_overhead_modeling=false`, and record whether the sim-vs-real gap decreases materially; if not, open a follow-up issue with residual gap evidence and provenance.
+- [x] **Implement shared CPU overhead validator** Add `cpu_overhead_validation.py` with strict/warn modes and clear error messages.
+- [x] **Fail fast on empty profiling output** Update `vidur_profiling_cpu_overhead_main.py` to raise/exit non-zero when it would otherwise write an empty/no-header CSV.
+- [x] **Add staging-boundary validation** In `profile_runner.py`, validate `cpu_overhead.csv` before writing `cpu_overheads.csv`; catch pandas empty/schema errors and re-raise with actionable guidance.
+- [x] **Add consumption-boundary validation** In `profiling_root.py`, validate `cpu_overheads.csv` when `skip_cpu_overhead_modeling=false`, with a config knob to downgrade to warning when intentionally using dummy data.
+- [x] **Plumb CPU overhead profiling knobs** Extend `configs/paper_fidelity/profile.yaml` and `paper_fidelity/profiling.py` to support `profiling.cpu_overhead.max_batch_size` and `profiling.cpu_overhead.validation={strict,warn,off}`.
+- [x] **Annotate paper-fidelity reports** Update `paper_fidelity/report.py` so `summary.md` calls out whether CPU overhead inputs are trusted, missing, or placeholder-like.
+- [x] **Update developer docs** Add `.env`/GPU pinning guidance to `context/instructions/prep-dev-env.md` and expand `docs/manual/troubleshooting.md` for CPU overhead profiling failures.
+- [x] **Add a bounded manual smoke test** Extend `tests/manual/test_paper_fidelity_profile_smoke.py` (or add a new test) to validate CPU overhead profiling writes a non-empty, parseable CSV.
+- [x] **Host verification run** Re-run `paper-fidelity profile --include-cpu-overhead` and then `paper-fidelity repro` with `scenario.vidur.skip_cpu_overhead_modeling=false`, and record whether the sim-vs-real gap decreases materially; if not, open a follow-up issue with residual gap evidence and provenance.
+
+## 5. Host verification run (2026-01-12)
+
+- Artifacts directory: `tmp/pf_llama2_7b_cpu_overhead_20260112_040049`
+- Profiling root: `tmp/paper_fidelity/profiling_roots/llama2_7b_arxiv/2026-01-12_04-06-24-491602`
+- Report dir: `results/reports/2026-01-12/paper_fidelity/llama2_7b_arxiv`
+- CPU overhead status: `ok` (profiled `True`, strict validation)
+- Outcome: sim-vs-real gap no longer shows the ~16–20% underprediction; core metrics are within ~0–4% on this run (see `tmp/pf_llama2_7b_cpu_overhead_20260112_040049/summary.md`).

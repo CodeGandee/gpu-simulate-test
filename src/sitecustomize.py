@@ -92,3 +92,15 @@ if _enabled():
             "Failed to apply Vidur/Sarathi attention profiling compatibility patch. "
             "Unset GPU_SIMULATE_TEST_ENABLE_VIDUR_ATTENTION_COMPAT to disable, or fix the underlying error."
         ) from e
+
+# Always apply safe runtime guardrails when possible.
+#
+# In particular, Sarathi clears CUDA_VISIBLE_DEVICES in Ray workers by default, which can expose
+# unusable GPUs on some hosts (e.g., MIG / broken devices) and crash PyTorch CUDA initialization.
+# Applying the patch via sitecustomize ensures it runs in Ray worker processes as well.
+try:  # pragma: no cover
+    from gpu_simulate_test.env_guard import patch_sarathi_preserve_cuda_visible_devices
+
+    patch_sarathi_preserve_cuda_visible_devices()
+except Exception:
+    pass

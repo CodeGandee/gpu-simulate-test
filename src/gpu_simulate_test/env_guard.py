@@ -5,6 +5,7 @@ from pathlib import Path
 
 
 GSIM_CUDA_VISIBLE_DEVICES_ENV = "GSIM_CUDA_VISIBLE_DEVICES"
+RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO_ENV = "RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO"
 
 
 def find_repo_root(start: Path | None = None) -> Path | None:
@@ -93,6 +94,10 @@ def apply_cuda_visible_devices_from_gsim(*, repo_root: Path | None = None) -> st
             "expected a non-empty CUDA_VISIBLE_DEVICES-style value (e.g. `0` or `0,1`)."
         )
     os.environ["CUDA_VISIBLE_DEVICES"] = desired
+    # Ray currently overrides `CUDA_VISIBLE_DEVICES` to an empty string for actors with `num_gpus=0`
+    # (which Sarathi uses), which can make GPU work fail inside Ray workers. This knob tells Ray to
+    # preserve the existing env var instead. The warning emitted by Ray suggests this exact setting.
+    os.environ.setdefault(RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO_ENV, "0")
     return desired
 
 
@@ -103,12 +108,31 @@ def patch_sarathi_preserve_cuda_visible_devices() -> None:
     which can expose unusable GPUs on some hosts and defeat explicit pinning. This patch keeps
     CUDA_VISIBLE_DEVICES intact so that Ray's per-actor assignment (or our global pin) remains active.
     """
-    try:
-        from sarathi.engine import base_llm_engine as _base_llm_engine  # type: ignore
-    except Exception:
-        return
-
     def _noop() -> None:
         return None
 
-    _base_llm_engine.unset_cuda_visible_devices = _noop  # type: ignore[attr-defined]
+    # Patch all call-sites we know about:
+    # - sarathi.utils.unset_cuda_visible_devices (source of truth)
+    # - copies imported into sarathi.engine.base_llm_engine and sarathi.engine.ray_utils
+    #
+    # Each import can fail if sarathi (or torch) is unavailable; treat as best-effort.
+    try:
+        from sarathi import utils as _sarathi_utils  # type: ignore
+
+        _sarathi_utils.unset_cuda_visible_devices = _noop  # type: ignore[attr-defined]
+    except Exception:
+        pass
+
+    try:
+        from sarathi.engine import base_llm_engine as _base_llm_engine  # type: ignore
+
+        _base_llm_engine.unset_cuda_visible_devices = _noop  # type: ignore[attr-defined]
+    except Exception:
+        pass
+
+    try:
+        from sarathi.engine import ray_utils as _ray_utils  # type: ignore
+
+        _ray_utils.unset_cuda_visible_devices = _noop  # type: ignore[attr-defined]
+    except Exception:
+        pass
