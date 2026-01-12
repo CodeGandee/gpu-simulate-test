@@ -77,6 +77,13 @@ def run_vidur_profiling_bundle(cfg: DictConfig, *, repo_root: Path) -> Path:
     attention_backend_val = OmegaConf.select(cfg, "profiling.attention.backend")
     attention_backend = str(attention_backend_val) if attention_backend_val is not None else None
 
+    cpu_overhead_validation_val = OmegaConf.select(cfg, "profiling.cpu_overhead.validation")
+    cpu_overhead_validation = (
+        str(cpu_overhead_validation_val).lower().strip()
+        if cpu_overhead_validation_val is not None
+        else "strict"
+    )
+
     vidur_result = run_vidur_profiling(
         VidurProfileInputs(
             model_id=model_id,
@@ -90,6 +97,7 @@ def run_vidur_profiling_bundle(cfg: DictConfig, *, repo_root: Path) -> Path:
             include_network=bool(cfg.profiling.include_network),
             include_cpu_overhead=bool(cfg.profiling.cpu_overhead.enabled),
             cpu_overhead_max_batch_size=int(cfg.profiling.cpu_overhead.max_batch_size),
+            cpu_overhead_validation=cpu_overhead_validation,
             attention_backend=attention_backend,
             attention_block_size=int(cfg.profiling.attention.block_size),
             attention_min_batch_size=int(cfg.profiling.attention.min_batch_size),

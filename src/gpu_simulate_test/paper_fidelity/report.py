@@ -281,6 +281,7 @@ def write_summary_md(
         root = profiling.get("root")
         mode = profiling.get("mode")
         interpretation = profiling.get("interpretation")
+        cpu_overhead = profiling.get("cpu_overhead")
 
         lines.append("## Profiling")
         if root:
@@ -289,6 +290,33 @@ def write_summary_md(
             lines.append(f"- mode: `{mode}`")
         if interpretation:
             lines.append(f"- interpretation: {interpretation}")
+        if isinstance(cpu_overhead, dict):
+            skip = cpu_overhead.get("skip_cpu_overhead_modeling")
+            validation_mode = cpu_overhead.get("validation_mode")
+            csv_path = cpu_overhead.get("cpu_overheads_csv")
+            status = cpu_overhead.get("status")
+            profiled = cpu_overhead.get("profiling_meta_cpu_overhead_profiled")
+            error = cpu_overhead.get("error")
+            warnings_list = cpu_overhead.get("warnings")
+
+            lines.append("- cpu_overhead:")
+            if skip is not None:
+                lines.append(f"  - modeling: `{'disabled' if bool(skip) else 'enabled'}`")
+            if validation_mode is not None:
+                lines.append(f"  - validation: `{validation_mode}`")
+            if csv_path is not None:
+                lines.append(f"  - csv: `{csv_path}`")
+            if status is not None:
+                lines.append(f"  - status: `{status}`")
+            if profiled is not None:
+                lines.append(f"  - profiled: `{profiled}`")
+            if error:
+                lines.append(f"  - error: {error}")
+            if isinstance(warnings_list, list) and warnings_list:
+                lines.append("  - warnings:")
+                for warning in warnings_list:
+                    if isinstance(warning, str) and warning.strip():
+                        lines.append(f"    - {warning}")
         lines.append("")
 
     paper_reference = meta.get("paper_reference")

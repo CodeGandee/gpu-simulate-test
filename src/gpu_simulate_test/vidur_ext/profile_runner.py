@@ -48,6 +48,10 @@ class VidurProfileInputs:
     cpu_overhead_max_batch_size
         Maximum batch size to profile in the CPU overhead profiler. Vidur profiles a fixed grid of
         batch sizes up to this value.
+    cpu_overhead_validation
+        Validation mode for staged `cpu_overheads.csv`: `strict` rejects placeholder-like dummy
+        inputs; `warn` allows them but emits warnings; `off` disables placeholder checks (but still
+        requires a parseable, non-empty CSV).
     attention_backend
         Optional attention backend passed to Vidur's attention profiler (Sarathi backend name).
         When unset, Vidur's default is used.
@@ -74,6 +78,7 @@ class VidurProfileInputs:
     include_network: bool = True
     include_cpu_overhead: bool = False
     cpu_overhead_max_batch_size: int = 128
+    cpu_overhead_validation: str = "strict"
     attention_backend: str | None = None
     attention_block_size: int = 16
     attention_min_batch_size: int = 1
@@ -293,6 +298,17 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
         cpu_overheads_dst is not None and cpu_overheads_dst.exists()
     )
     if compute_ready and cpu_ready:
+        extra: dict[str, Any] = {"skipped": True}
+        if inputs.include_cpu_overhead and cpu_overheads_dst is not None and cpu_overheads_dst.exists():
+            from gpu_simulate_test.vidur_ext.cpu_overhead_validation import validate_cpu_overheads_csv
+
+            result = validate_cpu_overheads_csv(
+                cpu_overheads_dst,
+                mode=str(inputs.cpu_overhead_validation).lower().strip() or "strict",  # type: ignore[arg-type]
+                expected_model_id=str(inputs.model_id),
+                expected_tensor_parallel_degree=int(inputs.tensor_parallel_size),
+            )
+            extra["cpu_overhead_validation"] = result.as_jsonable()
         return VidurProfileResult(
             profiling_root=inputs.profiling_root,
             staging_root=staging,
@@ -304,7 +320,7 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
             mlp_cmd=[],
             attention_cmd=[],
             cpu_overhead_cmd=[],
-            extra={"skipped": True},
+            extra=extra,
         )
 
     mlp_cmd: list[str] = []
@@ -432,6 +448,15 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
             cpu_latest = _latest_dir(staging / "cpu_overhead")
             cpu_src = cpu_latest / inputs.model_id / "cpu_overhead.csv"
             cpu_overheads_dst.parent.mkdir(parents=True, exist_ok=True)
+            from gpu_simulate_test.vidur_ext.cpu_overhead_validation import validate_cpu_overheads_csv
+
+            validation = validate_cpu_overheads_csv(
+                cpu_src,
+                mode=str(inputs.cpu_overhead_validation).lower().strip() or "strict",  # type: ignore[arg-type]
+                expected_model_id=str(inputs.model_id),
+                expected_tensor_parallel_degree=int(inputs.tensor_parallel_size),
+            )
+            extra["cpu_overhead_validation"] = validation.as_jsonable()
             cpu_df = pd.read_csv(cpu_src).drop_duplicates()
             cpu_df.to_csv(cpu_overheads_dst, index=False)
             cpu_overhead_profiled = True

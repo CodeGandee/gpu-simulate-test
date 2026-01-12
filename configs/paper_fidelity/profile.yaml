@@ -13,6 +13,11 @@ profiling:
   max_tokens: ${scenario.trace_source.max_tokens}
   tensor_parallel_size: ${scenario.vidur.tensor_parallel_size}
   include_cpu_overhead: false
+  cpu_overhead:
+    # Bound CPU overhead profiling work for fast iteration.
+    max_batch_size: 128
+    # Guardrails: `strict` rejects placeholder-like dummy CSVs.
+    validation: strict
 
 hydra:
   run:

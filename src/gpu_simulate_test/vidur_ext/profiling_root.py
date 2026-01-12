@@ -14,6 +14,8 @@ class ProfilingRootLayout:
     num_pipeline_stages: int = 1
     # Vidur's config uses the negative form: `skip_cpu_overhead_modeling`.
     skip_cpu_overhead_modeling: bool = True
+    # Guardrails for fidelity runs. `strict` rejects placeholder-like CPU overhead CSVs.
+    cpu_overhead_validation: str = "strict"
 
 
 def _compute_dir(layout: ProfilingRootLayout) -> Path:
@@ -55,3 +57,21 @@ def validate_profiling_root(layout: ProfilingRootLayout) -> None:
     if missing:
         msg = "Missing profiling inputs:\n" + "\n".join([f"- {p}" for p in missing])
         raise FileNotFoundError(msg)
+
+    if not layout.skip_cpu_overhead_modeling:
+        from gpu_simulate_test.vidur_ext.cpu_overhead_validation import validate_cpu_overheads_csv
+
+        csv_path = _cpu_overhead_dir(layout) / "cpu_overheads.csv"
+        # This will raise in strict mode for empty/invalid/placeholder-like CSVs. In warn/off modes
+        # it still raises for empty/invalid CSVs, but may allow placeholder-like inputs.
+        result = validate_cpu_overheads_csv(
+            csv_path,
+            mode=str(layout.cpu_overhead_validation).lower().strip() or "strict",  # type: ignore[arg-type]
+            expected_model_id=str(layout.model_id),
+            expected_tensor_parallel_degree=int(layout.tensor_parallel_size),
+        )
+        if result.warnings:
+            import warnings
+
+            for warning in result.warnings:
+                warnings.warn(warning)

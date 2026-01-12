@@ -99,6 +99,7 @@ def profile_model(
     import ray
 
     results: list[dict[str, Any]] = []
+    last_error: str | None = None
 
     for tensor_parallel_degree in tensor_parallel_degrees:
         for batch_index, batch_size in enumerate(batch_sizes_to_profile):
@@ -110,6 +111,7 @@ def profile_model(
                 del runner
                 gc.collect()
             except Exception as e:
+                last_error = str(e)
                 logger.error(
                     "Failed to run %s_%s_%s due to %s",
                     model_name,
@@ -121,6 +123,17 @@ def profile_model(
                 break
 
             pbar.update(1)
+
+    if not results:
+        raise RuntimeError(
+            "CPU overhead profiling produced 0 rows. This usually means the Sarathi/Ray workers failed to start "
+            "or CUDA initialization failed on at least one visible GPU.\n"
+            "\n"
+            "Recommended next steps:\n"
+            "- Pin to a known-good subset via `GSIM_CUDA_VISIBLE_DEVICES` (e.g. `0`) and rerun.\n"
+            "- Inspect Ray logs under `/tmp/ray/session_latest/logs/` (or the newest `/tmp/ray/session_*/logs/`).\n"
+            f"\nLast error: {last_error!r}\n"
+        )
 
     df = pd.DataFrame(results)
     model_out_dir = Path(output_dir) / model_name
@@ -149,15 +162,19 @@ def main() -> None:
     pbar = tqdm(total=total)
 
     for model_name in args.models:
-        profile_model(
-            model_name=model_name,
-            batch_sizes_to_profile=batch_sizes_to_profile,
-            tensor_parallel_degrees=args.num_tensor_parallel_workers,
-            output_dir=args.output_dir,
-            pbar=pbar,
-            logger=logger,
-            model_path=args.model_path,
-        )
+        try:
+            profile_model(
+                model_name=model_name,
+                batch_sizes_to_profile=batch_sizes_to_profile,
+                tensor_parallel_degrees=args.num_tensor_parallel_workers,
+                output_dir=args.output_dir,
+                pbar=pbar,
+                logger=logger,
+                model_path=args.model_path,
+            )
+        except Exception as e:
+            logger.error("CPU overhead profiling failed for %s: %s", model_name, e)
+            raise SystemExit(1) from e
 
 
 if __name__ == "__main__":

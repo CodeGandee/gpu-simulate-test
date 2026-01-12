@@ -151,6 +151,90 @@ def _infer_scenario_name(*, sim_csv: Path, real_csv: Path) -> str:
     return sim or real or stable_id([str(sim_csv), str(real_csv)], prefix="adhoc", length=12)
 
 
+def _inspect_cpu_overhead_inputs(
+    *,
+    profiling_root: Path,
+    model_id: str,
+    network_device: str,
+    skip_cpu_overhead_modeling: bool,
+    validation_mode: str,
+    expected_tensor_parallel_size: int,
+) -> dict[str, object]:
+    cpu_overheads_csv = (
+        profiling_root
+        / "data"
+        / "profiling"
+        / "cpu_overhead"
+        / str(network_device)
+        / str(model_id)
+        / "cpu_overheads.csv"
+    )
+
+    info: dict[str, object] = {
+        "skip_cpu_overhead_modeling": bool(skip_cpu_overhead_modeling),
+        "validation_mode": str(validation_mode),
+        "cpu_overheads_csv": str(cpu_overheads_csv),
+        "cpu_overheads_exists": bool(cpu_overheads_csv.exists()),
+        "status": "disabled" if skip_cpu_overhead_modeling else "unknown",
+        "profiling_meta_cpu_overhead_profiled": None,
+        "warnings": [],
+        "error": None,
+    }
+
+    meta_path = profiling_root / "profiling_meta.json"
+    if meta_path.exists():
+        try:
+            import json
+
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        except Exception:
+            meta = None
+        if isinstance(meta, dict):
+            profiled = None
+            profiling_outputs = meta.get("profiling_outputs")
+            vidur_profile_result = meta.get("vidur_profile_result")
+            if isinstance(profiling_outputs, dict) and "cpu_overhead_profiled" in profiling_outputs:
+                profiled = profiling_outputs.get("cpu_overhead_profiled")
+            elif isinstance(vidur_profile_result, dict) and "cpu_overhead_profiled" in vidur_profile_result:
+                profiled = vidur_profile_result.get("cpu_overhead_profiled")
+            if isinstance(profiled, bool):
+                info["profiling_meta_cpu_overhead_profiled"] = profiled
+
+    if skip_cpu_overhead_modeling:
+        return info
+
+    if not cpu_overheads_csv.exists():
+        info["status"] = "missing"
+        info["error"] = f"Missing cpu_overheads.csv at {cpu_overheads_csv}"
+        return info
+
+    from gpu_simulate_test.vidur_ext.cpu_overhead_validation import validate_cpu_overheads_csv
+
+    try:
+        result = validate_cpu_overheads_csv(
+            cpu_overheads_csv,
+            mode=str(validation_mode).lower().strip() or "strict",  # type: ignore[arg-type]
+            expected_model_id=str(model_id),
+            expected_tensor_parallel_degree=int(expected_tensor_parallel_size),
+        )
+        info["validation_result"] = result.as_jsonable()
+        info["status"] = "placeholder" if result.placeholder_like else "ok"
+        if result.warnings:
+            info["warnings"] = list(result.warnings)
+        profiled = info.get("profiling_meta_cpu_overhead_profiled")
+        if profiled is False:
+            warnings_list = list(info.get("warnings") or [])
+            warnings_list.append(
+                "profiling_meta.json reports cpu_overhead_profiled=false; CPU overhead inputs may be unprofiled."
+            )
+            info["warnings"] = warnings_list
+    except Exception as e:
+        info["status"] = "error"
+        info["error"] = str(e)
+
+    return info
+
+
 def _trace_subset_from_cfg(cfg: DictConfig) -> tuple[str, object, object, list[object] | None]:
     kind = str(OmegaConf.select(cfg, "trace_subset.kind") or "all")
     begin = OmegaConf.select(cfg, "trace_subset.begin")
@@ -581,6 +665,13 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
     else:
         skip_cpu_overhead_modeling = True
 
+    cpu_validation_val = OmegaConf.select(cfg, "scenario.vidur.cpu_overhead.validation")
+    if cpu_validation_val is None:
+        cpu_validation_val = OmegaConf.select(cfg, "scenario.vidur.cpu_overhead_validation")  # back-compat
+    cpu_overhead_validation = (
+        str(cpu_validation_val).lower().strip() if cpu_validation_val is not None else "strict"
+    )
+
     scheduler_type = str(OmegaConf.select(cfg, "scenario.vidur.scheduler.type") or "sarathi")
     scheduler_chunk_size = OmegaConf.select(cfg, "scenario.vidur.scheduler.chunk_size")
     scheduler_batch_size_cap = OmegaConf.select(cfg, "scenario.vidur.scheduler.batch_size_cap")
@@ -599,6 +690,7 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
             seed=int(cfg.scenario.vidur.seed),
             max_tokens=int(cfg.scenario.trace_source.max_tokens),
             skip_cpu_overhead_modeling=skip_cpu_overhead_modeling,
+            cpu_overhead_validation=cpu_overhead_validation,
             scheduler_type=scheduler_type,
             scheduler_chunk_size=None if scheduler_chunk_size is None else int(scheduler_chunk_size),
             scheduler_batch_size_cap=None if scheduler_batch_size_cap is None else int(scheduler_batch_size_cap),
@@ -638,6 +730,14 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
             "root": str(profiling_root_resolved),
             "mode": profiling_mode,
             "interpretation": profiling_interpretation,
+            "cpu_overhead": _inspect_cpu_overhead_inputs(
+                profiling_root=profiling_root_resolved,
+                model_id=str(cfg.scenario.model.model_id),
+                network_device=str(cfg.scenario.vidur.network_device),
+                skip_cpu_overhead_modeling=bool(skip_cpu_overhead_modeling),
+                validation_mode=cpu_overhead_validation,
+                expected_tensor_parallel_size=int(cfg.scenario.vidur.tensor_parallel_size),
+            ),
         },
     )
     return report_dir

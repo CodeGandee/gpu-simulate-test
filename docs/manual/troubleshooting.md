@@ -34,6 +34,10 @@
 - Ensure the model weights are available locally (this repo typically uses `models/*/source-data` via `bash models/<model>/bootstrap.sh`).
 - Run long profiling jobs in `tmux` and log progress: `pixi run paper-fidelity profile ... 2>&1 | tee run.log` (Hydra `chdir` puts `run.log` next to the other run outputs).
 - If you are doing sim-vs-real parity work, explicitly set `scenario.vidur.skip_cpu_overhead_modeling=true|false` and keep profiling, simulation, and real runs consistent.
+- If CPU overhead profiling reports **“0 rows”** or Ray logs show **invalid device index** / CUDA init errors, pin to a known-good GPU subset via `.env`:
+  - `export GSIM_CUDA_VISIBLE_DEVICES=0`
+  - (Or another healthy GPU; avoid including broken/MIG GPUs)
+- Inspect Ray worker logs under `/tmp/ray/session_latest/logs/` (or the newest `/tmp/ray/session_*/logs/`).
 
 ### Trace subset errors (`trace_subset.*`)
 

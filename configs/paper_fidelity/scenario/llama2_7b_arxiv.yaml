@@ -20,6 +20,9 @@ vidur:
   seed: 42
   # CPU overhead modeling should be explicitly enabled/disabled for sim-vs-real parity.
   skip_cpu_overhead_modeling: true
+  cpu_overhead:
+    # Guardrails when `skip_cpu_overhead_modeling=false`. Use `warn`/`off` only for debugging.
+    validation: strict
   # Parity-critical scheduler knobs: do not rely on Vidur defaults.
   # Align these with the real runner's scheduler settings unless intentionally studying drift.
   scheduler:

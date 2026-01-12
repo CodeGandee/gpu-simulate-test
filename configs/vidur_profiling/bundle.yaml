@@ -37,6 +37,8 @@ profiling:
     # (optimized serving stack with CUDA graphs to eliminate unnecessary CPU overheads).
     enabled: false
     max_batch_size: 128
+    # Guardrails: `strict` rejects placeholder-like dummy CSVs.
+    validation: strict
 
   attention:
     profile_mode: both

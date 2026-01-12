@@ -388,6 +388,8 @@ class VidurPaperFidelitySimInputs:
     max_tokens: int = 4096
     # Vidur's interface uses the negative form.
     skip_cpu_overhead_modeling: bool = True
+    # Guardrails: `strict` rejects placeholder-like dummy CPU overhead CSVs.
+    cpu_overhead_validation: str = "strict"
     # Parity-critical scheduler knobs. Vidur has its own defaults; for sim-vs-real
     # experiments these should be set explicitly to match the real runner.
     scheduler_type: str = "sarathi"
@@ -428,6 +430,7 @@ def run_vidur_paper_fidelity_sim(
         tensor_parallel_size=inputs.tensor_parallel_size,
         num_pipeline_stages=inputs.num_pipeline_stages,
         skip_cpu_overhead_modeling=bool(inputs.skip_cpu_overhead_modeling),
+        cpu_overhead_validation=str(inputs.cpu_overhead_validation),
     )
     validate_profiling_root(layout)
 

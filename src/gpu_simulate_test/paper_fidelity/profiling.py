@@ -82,6 +82,12 @@ def run_paper_fidelity_profiling(cfg: DictConfig, *, repo_root: Path) -> Path:
     include_cpu_val = OmegaConf.select(cfg, "profiling.include_cpu_overhead")
     include_cpu_overhead = bool(include_cpu_val) if include_cpu_val is not None else False
 
+    cpu_max_bs_val = OmegaConf.select(cfg, "profiling.cpu_overhead.max_batch_size")
+    cpu_overhead_max_batch_size = int(cpu_max_bs_val) if cpu_max_bs_val is not None else 128
+
+    cpu_validation_val = OmegaConf.select(cfg, "profiling.cpu_overhead.validation")
+    cpu_overhead_validation = str(cpu_validation_val).lower().strip() if cpu_validation_val is not None else "strict"
+
     vidur_result = run_vidur_profiling(
         VidurProfileInputs(
             model_id=model_id,
@@ -93,6 +99,8 @@ def run_paper_fidelity_profiling(cfg: DictConfig, *, repo_root: Path) -> Path:
             max_tokens=max_tokens,
             staging_root=profiling_outputs_dir,
             include_cpu_overhead=include_cpu_overhead,
+            cpu_overhead_max_batch_size=cpu_overhead_max_batch_size,
+            cpu_overhead_validation=cpu_overhead_validation,
             model_ref=Path(cfg.scenario.model.model_ref).expanduser(),
         ),
         repo_root=repo_root,
@@ -108,12 +116,19 @@ def run_paper_fidelity_profiling(cfg: DictConfig, *, repo_root: Path) -> Path:
             "tensor_parallel_size": tensor_parallel_size,
             "max_tokens": max_tokens,
             "include_cpu_overhead": include_cpu_overhead,
+            "cpu_overhead_max_batch_size": cpu_overhead_max_batch_size,
+            "cpu_overhead_validation": cpu_overhead_validation,
         },
         "profiling_commands": {"mlp": vidur_result.mlp_cmd, "attention": vidur_result.attention_cmd},
         "profiling_outputs": {
             "mlp_csv": str(vidur_result.mlp_csv.resolve()),
             "attention_csv": str(vidur_result.attention_csv.resolve()),
             "attention_profiled": bool(vidur_result.attention_profiled),
+            "cpu_overheads_csv": str(vidur_result.cpu_overheads_csv.resolve())
+            if vidur_result.cpu_overheads_csv is not None
+            else None,
+            "cpu_overhead_profiled": bool(vidur_result.cpu_overhead_profiled),
+            "cpu_overhead_validation": vidur_result.extra.get("cpu_overhead_validation"),
         },
         "vidur_profile_result": _vidur_profile_result_jsonable(vidur_result),
     }

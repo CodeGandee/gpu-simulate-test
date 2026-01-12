@@ -15,6 +15,18 @@ machine-local (not committed to git).
 
 Avoid running `python`, `pip`, or `pytest` from your system environment; use `pixi run ...` instead.
 
+## 1.5) Pin a healthy GPU (required for most workflows)
+
+This repo intentionally requires explicit GPU pinning to avoid “bad GPU” / MIG visibility issues that can break Torch CUDA initialization inside Ray workers.
+
+- Create a repo-local `.env` file (not committed) with a known-good subset:
+  - `export GSIM_CUDA_VISIBLE_DEVICES=0`
+  - (Or multiple GPUs: `export GSIM_CUDA_VISIBLE_DEVICES=0,1`)
+- Sanity check inside Pixi:
+  - `pixi run python -c "import torch; print(torch.cuda.is_available(), torch.cuda.device_count())"`
+
+Most CLI entrypoints (`paper-fidelity`, Vidur profiling runners) load `.env` and set `CUDA_VISIBLE_DEVICES` from `GSIM_CUDA_VISIBLE_DEVICES` before doing GPU work.
+
 ## 2) External source repos under `extern/`
 
 This repo vendors or tracks third-party source trees under `extern/` so you can inspect upstream
