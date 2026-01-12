@@ -1,0 +1,75 @@
+{
+  "generated_at": "2026-01-12T04:20:34.985814+00:00",
+  "inputs": {
+    "real_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv/real/request_metrics.csv",
+    "sim_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_7b_arxiv/sim/request_metrics.csv"
+  },
+  "metrics": [
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.0338216042691743,
+          "real": 0.03593283061476195,
+          "sim": 0.0347175246374382
+        },
+        "p95": {
+          "pct_error": 0.036414640883799504,
+          "real": 0.07071487697559845,
+          "sim": 0.07328993382580692
+        }
+      },
+      "verdict": "pass"
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.009092166959780035,
+          "real": 0.4551124200844662,
+          "sim": 0.4592503781933437
+        },
+        "p95": {
+          "pct_error": 0.0025495274854715135,
+          "real": 1.156668690260297,
+          "sim": 1.153719731642894
+        }
+      },
+      "verdict": "pass"
+    },
+    {
+      "metric": "prefill_time_execution_plus_preemption_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.019642691097657247,
+          "real": 0.0011304947199418502,
+          "sim": 0.0011082887613704999
+        },
+        "p95": {
+          "pct_error": 0.06120728907274354,
+          "real": 0.001276257389220925,
+          "sim": 0.001198141134267655
+        }
+      },
+      "verdict": "warn"
+    },
+    {
+      "metric": "decode_time_execution_plus_preemption_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.03748380058497938,
+          "real": 0.017123238582583952,
+          "sim": 0.01648139452218535
+        },
+        "p95": {
+          "pct_error": 0.07976988938132255,
+          "real": 0.01825219480836663,
+          "sim": 0.016796219247536874
+        }
+      },
+      "verdict": "warn"
+    }
+  ],
+  "scenario_name": "llama2_7b_arxiv",
+  "schema_version": "v1"
+}
