@@ -99,7 +99,12 @@ def main(argv: list[str] | None = None) -> None:
 
     profile = sub.add_parser("profile")
     profile.add_argument("--scenario", required=True)
-    profile.add_argument("--include-cpu-overhead", action="store_true")
+    profile.add_argument(
+        "--include-cpu-overhead",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Whether host profiling should include CPU overhead microbenchmarks (default: true).",
+    )
 
     score = sub.add_parser("score")
     score.add_argument("--sim", required=True)
@@ -124,8 +129,7 @@ def main(argv: list[str] | None = None) -> None:
         _trace_main()
     elif args.cmd == "profile":
         sys.argv = [prog, f"scenario={args.scenario}", *hydra_overrides]
-        if args.include_cpu_overhead:
-            sys.argv.append("profiling.include_cpu_overhead=true")
+        sys.argv.append(f"profiling.include_cpu_overhead={'true' if bool(args.include_cpu_overhead) else 'false'}")
         _profile_main()
     elif args.cmd == "score":
         sim_csv = str(Path(args.sim).expanduser())

@@ -19,7 +19,8 @@ vidur:
   num_pipeline_stages: 1
   seed: 42
   # CPU overhead modeling should be explicitly enabled/disabled for sim-vs-real parity.
-  skip_cpu_overhead_modeling: true
+  # Default: enabled for sim-vs-real parity. Disable only when intentionally excluding CPU overhead.
+  skip_cpu_overhead_modeling: false
   cpu_overhead:
     # Guardrails when `skip_cpu_overhead_modeling=false`. Use `warn`/`off` only for debugging.
     validation: strict
@@ -82,4 +83,3 @@ paper_reference:
 #     trace_subset.kind=range trace_subset.begin=0 trace_subset.end=32
 # - Discrete indices (only for untimed trace sources like `vidur_processed_lengths_csv`):
 #     trace_subset.kind=indices trace_subset.indices=[0,3,10,42]
-

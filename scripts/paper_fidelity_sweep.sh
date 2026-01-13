@@ -196,6 +196,8 @@ for scenario_key in "${scenarios[@]}"; do
   profile_cmd=(pixi run paper-fidelity profile --scenario "${scenario_key}")
   if [[ "${include_cpu_overhead}" -eq 1 ]]; then
     profile_cmd+=(--include-cpu-overhead)
+  else
+    profile_cmd+=(--no-include-cpu-overhead)
   fi
   profile_cmd+=(
     "scenario.name=${scenario_tag}"

@@ -19,7 +19,8 @@ vidur:
   num_pipeline_stages: 1
   seed: 42
   # CPU overhead modeling should be explicitly enabled/disabled for sim-vs-real parity.
-  skip_cpu_overhead_modeling: true
+  # Default: enabled for sim-vs-real parity. Disable only when intentionally excluding CPU overhead.
+  skip_cpu_overhead_modeling: false
   cpu_overhead:
     # Guardrails when `skip_cpu_overhead_modeling=false`. Use `warn`/`off` only for debugging.
     validation: strict

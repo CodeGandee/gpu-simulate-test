@@ -398,11 +398,21 @@ def write_summary_md(
                 lines.append(f"  - profiled: `{profiled}`")
             if error:
                 lines.append(f"  - error: {error}")
-            if isinstance(warnings_list, list) and warnings_list:
-                lines.append("  - warnings:")
+            warnings: list[str] = []
+            if isinstance(warnings_list, list):
                 for warning in warnings_list:
                     if isinstance(warning, str) and warning.strip():
-                        lines.append(f"    - {warning}")
+                        warnings.append(warning.strip())
+            if bool(skip):
+                warnings.append(
+                    "CPU overhead modeling is disabled (`scenario.vidur.skip_cpu_overhead_modeling=true`). "
+                    "For sim-vs-real runs, CPU overhead is counted by default; disable only if you intend to "
+                    "exclude CPU overhead and interpret the gap accordingly."
+                )
+            if warnings:
+                lines.append("  - warnings:")
+                for warning in sorted(set(warnings)):
+                    lines.append(f"    - {warning}")
         lines.append("")
 
     paper_reference = meta.get("paper_reference")

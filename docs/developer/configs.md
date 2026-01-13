@@ -132,8 +132,10 @@ pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static \
   scenario.vidur.scheduler.type=sarathi \
   scenario.vidur.scheduler.chunk_size=16 \
   scenario.vidur.scheduler.batch_size_cap=16 \
-  scenario.vidur.skip_cpu_overhead_modeling=true
+  scenario.vidur.skip_cpu_overhead_modeling=false
 
-# Include CPU-overhead profiling when generating a host profiling root
-pixi run paper-fidelity profile --scenario llama2_7b_arxiv --include-cpu-overhead
+# Host profiling includes CPU overhead microbenchmarks by default.
+# Disable only for debugging:
+#   pixi run paper-fidelity profile --scenario llama2_7b_arxiv --no-include-cpu-overhead
+pixi run paper-fidelity profile --scenario llama2_7b_arxiv
 ```

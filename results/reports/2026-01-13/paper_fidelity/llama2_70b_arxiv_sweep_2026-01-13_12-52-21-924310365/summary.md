@@ -19,6 +19,8 @@
   - csv: `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_roots/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104/data/profiling/cpu_overhead/a100_pairwise_nvlink/meta-llama/Llama-2-70b-hf/cpu_overheads.csv`
   - status: `disabled`
   - profiled: `True`
+  - warnings:
+    - CPU overhead modeling is disabled (`scenario.vidur.skip_cpu_overhead_modeling=true`). For sim-vs-real runs, CPU overhead is counted by default; disable only if you intend to exclude CPU overhead and interpret the gap accordingly.
 
 ## Scores
 | Metric | Percentile | Sim | Real | Percent error | Verdict |

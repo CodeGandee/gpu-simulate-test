@@ -55,8 +55,9 @@ For sim-vs-real **% error reproduction**, you want a **host-matched** profiling 
 # Creates a profiling root under `tmp/paper_fidelity/profiling_roots/<scenario>/<timestamp>/`.
 pixi run paper-fidelity profile --scenario llama2_7b_arxiv
 
-# Recommended: include CPU overhead microbenchmarks (required for the paper-model sweep workflow).
-pixi run paper-fidelity profile --scenario llama2_7b_arxiv --include-cpu-overhead
+# CPU overhead microbenchmarks are included by default.
+# Disable only for debugging:
+#   pixi run paper-fidelity profile --scenario llama2_7b_arxiv --no-include-cpu-overhead
 ```
 
 Capture the printed directory path; you’ll pass it back as `scenario.vidur.profiling_root=...` in Step 3/4.
@@ -106,8 +107,8 @@ Scenarios added by this repo for the Vidur paper models:
 Static repro (small scale) for each:
 
 ```bash
-# Run `paper-fidelity profile --scenario <scenario> --include-cpu-overhead` first and
-# set PROFILING_ROOT to the printed path for that scenario.
+# Run `paper-fidelity profile --scenario <scenario>` first (CPU overhead microbenchmarks are included by default),
+# then set PROFILING_ROOT to the printed path for that scenario.
 PROFILING_ROOT="/abs/path/to/tmp/paper_fidelity/profiling_roots/<scenario>/<timestamp-dir>"
 
 pixi run paper-fidelity repro --scenario internlm_20b_arxiv --workload static --scale small \
@@ -202,7 +203,7 @@ arrived_at,num_prefill_tokens,num_decode_tokens,request_id
 }
 ```
 
-### Step 5: (Optional) Enable CPU overhead modeling (host profiling root required)
+### Step 5: (Optional) Disable CPU overhead modeling (debugging only)
 
 ```bash
 PROFILING_ROOT="tmp/paper_fidelity/profiling_roots/llama2_7b_arxiv/<timestamp-dir>"
@@ -212,8 +213,7 @@ pixi run paper-fidelity repro \
   --workload dynamic \
   --scale medium \
   "scenario.vidur.profiling_root=${PROFILING_ROOT}" \
-  "scenario.vidur.skip_cpu_overhead_modeling=false" \
-  "scenario.vidur.cpu_overhead.validation=strict"
+  "scenario.vidur.skip_cpu_overhead_modeling=true"
 ```
 
 Note: when you re-run on the same day with the same `scenario.name`, the report directory path can collide.
