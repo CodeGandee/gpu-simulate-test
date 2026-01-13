@@ -1,4 +1,4 @@
-# Quickstart: Paper-fidelity matrix for additional paper models
+# Quickstart: Paper-fidelity sweep for additional paper models
 
 Spec: `/data1/huangzhe/code/gpu-simulate-test/specs/003-paper-fidelity-more-models/spec.md`
 
@@ -55,35 +55,28 @@ Expected outputs (mutable, overwritten on reruns):
 - Traces: `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/traces/<scenario.name>/trace.csv`
 - Trace meta: `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/traces/<scenario.name>/trace_meta.json`
 
-## 3) Run the required matrix (profile + static repro + dynamic repro at scale=small)
+## 3) Run the sweep (profile + static repro + dynamic repro at scale=small)
 
-The matrix procedure must:
-- run `paper-fidelity profile --include-cpu-overhead` for each model scenario,
-- run `paper-fidelity repro` for `static` and `dynamic` at `--scale small` (50 requests),
-- record failures with blocker categorization (including `insufficient GPUs`),
-- write one per-matrix manifest summarizing all attempted runs (successes + failures).
+Use the sweep script to run profiling + repro for each case. It also supports global TP/PP overrides.
 
-Recommended interface for this feature:
+Example:
 
 ```bash
 cd /data1/huangzhe/code/gpu-simulate-test
 
-# Example:
-# - runs all three paper models
-# - static + dynamic
-# - small scale only
-pixi run paper-fidelity matrix \
+bash scripts/paper_fidelity_sweep.sh \
   --scale small \
   --workloads static,dynamic \
-  --include-cpu-overhead \
+  --tp 1 \
+  --pp 1 \
   --run-id my_run_001
 ```
 
 Notes:
-- `--scenarios` is optional; if omitted, the command defaults to the paper-model set:
-  `internlm_20b_arxiv,llama2_70b_arxiv,qwen_72b_arxiv` (Qwen3-0.6B is explicitly excluded).
-- `--include-cpu-overhead` defaults to `true` for `matrix` (you can also pass `--no-include-cpu-overhead`).
-- `--stop-on-failure` stops after the first failed action but still writes `manifest.json`.
+- `--scenarios` is optional; if omitted, the script defaults to the paper-model set:
+  `internlm_20b_arxiv,llama2_70b_arxiv,qwen_72b_arxiv` (Qwen3-0.6B is excluded from the default set).
+- Profiling includes CPU overhead microbenchmarks by default (pass `--no-include-cpu-overhead` to disable).
+- `--stop-on-failure` stops after the first failed action.
 
 ## 4) Find outputs
 
@@ -91,9 +84,9 @@ Notes:
 
 - `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_roots/<scenario.name>/<timestamp-dir>/`
 
-In `paper-fidelity matrix`, the runner overrides `scenario.name` to include the matrix run id:
+The sweep script overrides `scenario.name` to include the run id:
 
-- `tmp/paper_fidelity/profiling_roots/<scenario_key>_matrix_<run_id>/<timestamp-dir>/`
+- `tmp/paper_fidelity/profiling_roots/<scenario_key>_sweep_<run_id>/<timestamp-dir>/`
 
 ### Reports (self-contained, stable)
 
@@ -107,13 +100,11 @@ Each report directory includes:
 - `scores.json`
 - `inputs/` snapshots (so reports are portable and not dependent on `tmp/`)
 
-### Per-matrix manifest + failure records
+### Sweep log
 
-The matrix procedure should write a dedicated output directory (example):
+The sweep script writes an append-only log:
 
-- `/data1/huangzhe/code/gpu-simulate-test/results/reports/<UTC-YYYY-MM-DD>/paper_fidelity/paper_models_matrix_<run_id>/`
-  - `manifest.json` (all attempted runs, including failures)
-  - `failures/*.json` (structured failure records, one per failed action)
+- `/data1/huangzhe/code/gpu-simulate-test/results/reports/<UTC-YYYY-MM-DD>/paper_fidelity/sweep_<run_id>/cases.jsonl`
 
 ### Failure records (schema + blocker categories)
 
@@ -125,14 +116,12 @@ Failure records are always written as JSON with schema version `v1`.
   - `results/reports/<UTC-YYYY-MM-DD>/paper_fidelity/<scenario_name_or_tag>/failure_record.json`
 - Profiling failure (single-scenario `paper-fidelity profile`):
   - `tmp/paper_fidelity/profiling_roots/<scenario.name>/<timestamp-dir>/failure_record.json`
-- Matrix failures:
-  - `results/reports/<UTC-YYYY-MM-DD>/paper_fidelity/paper_models_matrix_<run_id>/failures/*.json`
 
 **Key fields**
 
-- `action`: `trace|profile|repro|matrix`
+- `action`: `trace|profile|repro`
 - `scenario_key`: the scenario key under `configs/paper_fidelity/scenario/`
-- `scenario_name`: the artifact/report namespace (may include `_matrix_<run_id>`)
+- `scenario_name`: the artifact/report namespace (may include `_sweep_<run_id>`)
 - `workload`: `static|dynamic` (nullable for profiling)
 - `scale`: `small|medium|full` (nullable for profiling)
 - `attempted_command`: exact argv list (when available)

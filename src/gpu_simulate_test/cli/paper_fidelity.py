@@ -30,7 +30,6 @@ from omegaconf import DictConfig
 from omegaconf import OmegaConf
 
 from gpu_simulate_test.config import register_omegaconf_resolvers
-from gpu_simulate_test.env_guard import find_repo_root
 from gpu_simulate_test.io import build_env_snapshot, get_git_info, stable_id, utcnow_iso, write_json
 from gpu_simulate_test.paper_fidelity.capacity import CapacityCriterion, discover_capacity, write_capacity_json
 from gpu_simulate_test.paper_fidelity.failure_record import (
@@ -38,8 +37,6 @@ from gpu_simulate_test.paper_fidelity.failure_record import (
     categorize_blocker,
     write_failure_record,
 )
-from gpu_simulate_test.paper_fidelity.matrix import MatrixArgs, default_matrix_run_id, run_matrix
-from gpu_simulate_test.paper_fidelity.paper_models import PAPER_MODEL_SCENARIOS, validate_paper_model_scenarios
 from gpu_simulate_test.paper_fidelity.paper_reference import maybe_load_paper_reference_rows_from_cfg
 from gpu_simulate_test.paper_fidelity.paths import PaperFidelityPaths
 from gpu_simulate_test.paper_fidelity.profiling import PaperFidelityProfilingError, run_paper_fidelity_profiling
@@ -112,23 +109,6 @@ def main(argv: list[str] | None = None) -> None:
     report.add_argument("--dir", required=True)
     report.add_argument("--paper-reference", choices=["include", "omit"], default="include")
 
-    matrix = sub.add_parser("matrix")
-    matrix.add_argument("--scale", choices=["small", "medium", "full"], default="small")
-    matrix.add_argument(
-        "--scenarios",
-        default=None,
-        help="Comma-separated scenario keys (default: paper models set).",
-    )
-    matrix.add_argument("--workloads", default="static,dynamic", help="Comma-separated workloads (static,dynamic).")
-    matrix.add_argument(
-        "--include-cpu-overhead",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Whether profiling should include CPU overhead microbenchmarks (default: true).",
-    )
-    matrix.add_argument("--run-id", default=None, help="Optional identifier for the matrix run.")
-    matrix.add_argument("--stop-on-failure", action="store_true", help="Stop after the first failure (still write manifest).")
-
     args, hydra_overrides = parser.parse_known_args(argv)
     prog = sys.argv[0]
 
@@ -147,42 +127,6 @@ def main(argv: list[str] | None = None) -> None:
         if args.include_cpu_overhead:
             sys.argv.append("profiling.include_cpu_overhead=true")
         _profile_main()
-    elif args.cmd == "matrix":
-        if hydra_overrides:
-            raise ValueError(f"`paper-fidelity matrix` does not accept Hydra overrides (got {hydra_overrides})")
-        repo_root = find_repo_root()
-        if repo_root is None:
-            raise RuntimeError("Could not locate repo root (expected to find pyproject.toml); run from inside the repo.")
-
-        if args.scenarios is None:
-            scenarios = list(PAPER_MODEL_SCENARIOS)
-        else:
-            scenarios = [s.strip() for s in str(args.scenarios).split(",") if s.strip()]
-        if not scenarios:
-            raise ValueError("--scenarios resolved to an empty list")
-        validate_paper_model_scenarios(scenarios)
-
-        workloads = [w.strip() for w in str(args.workloads).split(",") if w.strip()]
-        bad_workloads = sorted(set(workloads) - {"static", "dynamic"})
-        if bad_workloads:
-            raise ValueError(f"Invalid workloads: {bad_workloads} (expected static,dynamic)")
-        if not workloads:
-            raise ValueError("--workloads resolved to an empty list")
-
-        run_id = str(args.run_id) if args.run_id is not None else default_matrix_run_id()
-
-        manifest = run_matrix(
-            repo_root=repo_root,
-            args=MatrixArgs(
-                run_id=run_id,
-                scenarios=scenarios,
-                workloads=workloads,  # type: ignore[arg-type]
-                scale=str(args.scale),  # type: ignore[arg-type]
-                include_cpu_overhead=bool(args.include_cpu_overhead),
-                stop_on_failure=bool(args.stop_on_failure),
-            ),
-        )
-        print(str(manifest))
     elif args.cmd == "score":
         sim_csv = str(Path(args.sim).expanduser())
         real_csv = str(Path(args.real).expanduser())

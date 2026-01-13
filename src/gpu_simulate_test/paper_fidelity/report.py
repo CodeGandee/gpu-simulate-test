@@ -27,23 +27,58 @@ class ReportInputs:
     out_dir: Path
 
 
-def diagnose_gap(*, sim_csv: Path, real_csv: Path, sim_meta: dict | None) -> list[str]:
-    """Return a short list of hypotheses with evidence pointers."""
-    hypotheses: list[str] = []
+def _workload_context_from_meta(meta: dict[str, Any]) -> tuple[str | None, dict[str, Any]]:
+    """Extract workload context from run metadata.
 
-    hypotheses.append(
-        "Vidur sim may underpredict wall-clock latency when CPU/runtime overhead is excluded and/or "
-        "the profiling bundle is not host-matched; see `context/issues/known/issue-vidur-sim-underpredicts-sarathi-real.md`."
-    )
+    Parameters
+    ----------
+    meta
+        Run metadata dictionary (typically `run_meta.json` contents).
 
-    if sim_meta and sim_meta.get("vidur_raw_dir"):
-        hypotheses.append(
-            "Inspect raw simulator outputs under the recorded `vidur_raw_dir` to verify the presence and "
-            "distribution of normalized metric columns."
-        )
+    Returns
+    -------
+    tuple[str | None, dict[str, Any]]
+        `(mode, workload_dict)` where `mode` is `static|dynamic|None` and `workload_dict`
+        contains any additional workload parameters (e.g., `qps`, `seed` for dynamic runs).
+    """
+    params = meta.get("params")
+    if not isinstance(params, dict):
+        return None, {}
 
-    hypotheses.append(f"Sim metrics: `{sim_csv}`; Real metrics: `{real_csv}`.")
-    return hypotheses
+    workload = params.get("workload")
+    if not isinstance(workload, dict):
+        return None, {}
+
+    mode = workload.get("mode")
+    return (str(mode) if isinstance(mode, str) else None), dict(workload)
+
+
+def _load_json_dict(path: object) -> dict[str, Any] | None:
+    """Load a JSON file as a dict when possible.
+
+    Parameters
+    ----------
+    path
+        Value expected to be a filesystem path (usually a string) pointing at a JSON file.
+
+    Returns
+    -------
+    dict[str, Any] | None
+        Parsed JSON dict when the path exists and parses as an object; otherwise `None`.
+    """
+    if not isinstance(path, str) or not path:
+        return None
+
+    candidate = Path(path).expanduser()
+    if not candidate.exists():
+        return None
+
+    try:
+        data = read_json(candidate)
+    except Exception:
+        return None
+
+    return data if isinstance(data, dict) else None
 
 
 def _fmt_pct(x: float) -> str:
@@ -276,6 +311,57 @@ def write_summary_md(
     lines.append(f"- real: `{inputs.real_csv}`")
     lines.append("")
 
+    meta_dict: dict[str, Any] = meta if isinstance(meta, dict) else {}
+    workload_mode, workload_ctx = _workload_context_from_meta(meta_dict)
+    artifacts = meta_dict.get("artifacts") if isinstance(meta_dict, dict) else None
+    trace_meta_json = artifacts.get("trace_meta_json") if isinstance(artifacts, dict) else None
+    capacity_json = artifacts.get("capacity_json") if isinstance(artifacts, dict) else None
+
+    lines.append("## Workload")
+    if workload_mode is not None:
+        lines.append(f"- this run: `{workload_mode}`")
+    else:
+        lines.append("- this run: `unknown`")
+
+    if workload_mode == "dynamic":
+        seed = workload_ctx.get("seed")
+        if seed is not None:
+            lines.append(f"- seed: `{seed}`")
+
+        capacity_data = _load_json_dict(capacity_json)
+        if capacity_data is not None:
+            capacity_qps = capacity_data.get("capacity_qps")
+            operating_qps = capacity_data.get("qps_85")
+            if operating_qps is not None:
+                try:
+                    lines.append(f"- operating_qps (qps_85): `{float(operating_qps)}`")
+                except (TypeError, ValueError):
+                    lines.append(f"- operating_qps (qps_85): `{operating_qps}`")
+            if capacity_qps is not None:
+                try:
+                    lines.append(f"- capacity_qps: `{float(capacity_qps)}`")
+                except (TypeError, ValueError):
+                    lines.append(f"- capacity_qps: `{capacity_qps}`")
+        else:
+            trace_meta = _load_json_dict(trace_meta_json)
+            if trace_meta is not None and "qps" in trace_meta:
+                qps = trace_meta.get("qps")
+                try:
+                    lines.append(f"- operating_qps: `{float(qps)}`")
+                except (TypeError, ValueError):
+                    lines.append(f"- operating_qps: `{qps}`")
+
+        if isinstance(capacity_json, str) and capacity_json:
+            lines.append(f"- capacity_json: `{capacity_json}`")
+
+    lines.append("- static: all requests arrive at time 0 (`arrived_at=0`); no capacity search / QPS target.")
+    lines.append(
+        "- dynamic: requests arrive over time (non-zero `arrived_at`), generated via a Poisson process; "
+        "the workflow performs capacity search and runs at an operating QPS "
+        "(see `inputs/capacity.json` in dynamic reports)."
+    )
+    lines.append("")
+
     profiling = meta.get("profiling")
     if isinstance(profiling, dict):
         root = profiling.get("root")
@@ -466,8 +552,8 @@ def write_summary_md(
     # Figures: sim vs real ECDFs for the two paper-facing normalized metrics.
     lines.append("## Figures")
     figure_specs = [
-        ("Static normalized latency", "request_execution_plus_preemption_time_normalized"),
-        ("Dynamic normalized latency", "request_e2e_time_normalized"),
+        ("Metric: request_execution_plus_preemption_time_normalized", "request_execution_plus_preemption_time_normalized"),
+        ("Metric: request_e2e_time_normalized", "request_e2e_time_normalized"),
     ]
     if write_figures:
         try:
@@ -528,12 +614,6 @@ def write_summary_md(
         if not found:
             lines.append("- Figures not regenerated (no existing SVGs found).")
             lines.append("")
-
-    if any(r.verdict in {"warn", "fail"} for r in results):
-        lines.append("## Gap Diagnosis")
-        for item in diagnose_gap(sim_csv=inputs.sim_csv, real_csv=inputs.real_csv, sim_meta=meta):
-            lines.append(f"- {item}")
-        lines.append("")
 
     summary_md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return summary_md

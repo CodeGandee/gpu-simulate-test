@@ -55,7 +55,7 @@ For sim-vs-real **% error reproduction**, you want a **host-matched** profiling 
 # Creates a profiling root under `tmp/paper_fidelity/profiling_roots/<scenario>/<timestamp>/`.
 pixi run paper-fidelity profile --scenario llama2_7b_arxiv
 
-# Recommended: include CPU overhead microbenchmarks (required for the paper-model matrix workflow).
+# Recommended: include CPU overhead microbenchmarks (required for the paper-model sweep workflow).
 pixi run paper-fidelity profile --scenario llama2_7b_arxiv --include-cpu-overhead
 ```
 

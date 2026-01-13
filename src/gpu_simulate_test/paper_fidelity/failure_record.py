@@ -14,7 +14,7 @@ BlockerCategory = Literal[
     "unknown",
 ]
 
-FailureAction = Literal["trace", "profile", "repro", "matrix"]
+FailureAction = Literal["trace", "profile", "repro"]
 
 Workload = Literal["static", "dynamic"]
 Scale = Literal["small", "medium", "full"]

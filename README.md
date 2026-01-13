@@ -37,8 +37,9 @@ Optional: configure `CODEX_HOME` and an HTTP proxy for tooling:
 ## Paper-fidelity (Vidur sim vs Sarathi replay)
 
 - Tutorial: `docs/tutorial/howto/tut-paper-fidelity-static-and-dynamic.md`
-- Paper models matrix quickstart: `specs/003-paper-fidelity-more-models/quickstart.md`
-- Matrix manifest/failures runbook: `docs/runbooks/paper_fidelity_matrix.md`
+- Paper models sweep quickstart: `specs/003-paper-fidelity-more-models/quickstart.md`
+- Sweep runner script: `scripts/paper_fidelity_sweep.sh`
+- Sweep log runbook: `docs/runbooks/paper_fidelity_sweep.md`
 
 ## External Assets (models/datasets)
 
