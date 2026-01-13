@@ -1,0 +1,15 @@
+{
+  "generated_at": "2026-01-12T15:24:17.365438+00:00",
+  "qps": 0.85,
+  "scale": "medium",
+  "scenario_name": "llama2_7b_arxiv",
+  "schema_version": "v1",
+  "seed": 42,
+  "trace_subset": {
+    "begin": 0,
+    "end": 500,
+    "indices": null,
+    "kind": "range"
+  },
+  "workload_mode": "dynamic"
+}

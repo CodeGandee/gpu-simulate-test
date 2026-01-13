@@ -1,0 +1,9 @@
+{
+  "capacity_qps": 1.0,
+  "criterion": {
+    "metric": "request_scheduling_delay",
+    "quantile": 0.99,
+    "threshold_s": 5.0
+  },
+  "qps_85": 0.85
+}

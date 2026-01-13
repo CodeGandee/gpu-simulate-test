@@ -1,0 +1,75 @@
+{
+  "generated_at": "2026-01-12T15:52:23.583996+00:00",
+  "inputs": {
+    "real_csv": "/data1/huangzhe/code/gpu-simulate-test/results/reports/2026-01-12/paper_fidelity/llama2_7b_arxiv_dynamic_medium/inputs/real_request_metrics.csv",
+    "sim_csv": "/data1/huangzhe/code/gpu-simulate-test/results/reports/2026-01-12/paper_fidelity/llama2_7b_arxiv_dynamic_medium/inputs/sim_request_metrics.csv"
+  },
+  "metrics": [
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.06636365036595991,
+          "real": 0.03502103626911495,
+          "sim": 0.0373451600755321
+        },
+        "p95": {
+          "pct_error": 0.11021262835380087,
+          "real": 0.07052359130775876,
+          "sim": 0.07829618166673612
+        }
+      },
+      "verdict": "fail"
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.13356738134248564,
+          "real": 2.400482944897785,
+          "sim": 2.7211091658050806
+        },
+        "p95": {
+          "pct_error": 0.13785993857271234,
+          "real": 9.341177725713221,
+          "sim": 10.628951913176834
+        }
+      },
+      "verdict": "fail"
+    },
+    {
+      "metric": "prefill_time_execution_plus_preemption_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.08057385446012921,
+          "real": 0.00117165149291095,
+          "sim": 0.00126605596977875
+        },
+        "p95": {
+          "pct_error": 0.008399460672040152,
+          "real": 0.0014348105130014197,
+          "sim": 0.0014468621474772049
+        }
+      },
+      "verdict": "warn"
+    },
+    {
+      "metric": "decode_time_execution_plus_preemption_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.06285388398795248,
+          "real": 0.01686476794647135,
+          "sim": 0.0179247841144626
+        },
+        "p95": {
+          "pct_error": 0.013804128996162035,
+          "real": 0.018735865200032755,
+          "sim": 0.0184772328999568
+        }
+      },
+      "verdict": "warn"
+    }
+  ],
+  "scenario_name": "llama2_7b_arxiv_dynamic_medium",
+  "schema_version": "v1"
+}
