@@ -18,6 +18,7 @@ report
 from __future__ import annotations
 
 import argparse
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -357,6 +358,10 @@ def _run_score_only(
     real_csv: Path,
     repo_root: Path,
     profiling: dict[str, object] | None = None,
+    report_scenario_name: str | None = None,
+    trace_csv: Path | None = None,
+    trace_meta_json: Path | None = None,
+    capacity_json: Path | None = None,
 ) -> Path:
     sim_csv = sim_csv.expanduser()
     real_csv = real_csv.expanduser()
@@ -371,12 +376,47 @@ def _run_score_only(
     else:
         real_csv = real_csv.resolve()
 
-    scenario_name = _infer_scenario_name(sim_csv=sim_csv, real_csv=real_csv)
+    inferred_scenario_name = _infer_scenario_name(sim_csv=sim_csv, real_csv=real_csv)
+    report_name = report_scenario_name or inferred_scenario_name
+    if not str(report_name).strip():
+        report_name = inferred_scenario_name
     pf_paths = PaperFidelityPaths(repo_root=repo_root)
-    report_dir = pf_paths.reports_dir(date=_utc_date_str(), scenario_name=scenario_name)
+    report_dir = pf_paths.reports_dir(date=_utc_date_str(), scenario_name=str(report_name))
 
-    sim_df = load_metrics_csv(sim_csv)
-    real_df = load_metrics_csv(real_csv)
+    # Snapshot run inputs into the report directory so later runs do not overwrite the CSVs that
+    # the report points at (tmp/ paths are intentionally reused for iteration).
+    inputs_dir = report_dir / "inputs"
+    inputs_dir.mkdir(parents=True, exist_ok=True)
+
+    sim_snapshot = inputs_dir / "sim_request_metrics.csv"
+    real_snapshot = inputs_dir / "real_request_metrics.csv"
+    shutil.copy2(sim_csv, sim_snapshot)
+    shutil.copy2(real_csv, real_snapshot)
+
+    trace_snapshot: Path | None = None
+    if trace_csv is not None:
+        trace_snapshot = inputs_dir / "trace.csv"
+        shutil.copy2(trace_csv, trace_snapshot)
+
+    trace_meta_snapshot: Path | None = None
+    trace_meta_src = None
+    if trace_meta_json is not None:
+        trace_meta_src = trace_meta_json
+    elif trace_csv is not None:
+        candidate = trace_csv.parent / "trace_meta.json"
+        if candidate.exists():
+            trace_meta_src = candidate
+    if trace_meta_src is not None and trace_meta_src.exists():
+        trace_meta_snapshot = inputs_dir / "trace_meta.json"
+        shutil.copy2(trace_meta_src, trace_meta_snapshot)
+
+    capacity_snapshot: Path | None = None
+    if capacity_json is not None and capacity_json.exists():
+        capacity_snapshot = inputs_dir / "capacity.json"
+        shutil.copy2(capacity_json, capacity_snapshot)
+
+    sim_df = load_metrics_csv(sim_snapshot)
+    real_df = load_metrics_csv(real_snapshot)
     validate_sim_vs_real_compatibility(sim_df=sim_df, real_df=real_df)
 
     percentiles_val = OmegaConf.select(cfg, "scoring.percentiles") or OmegaConf.select(cfg, "scenario.scoring.percentiles")
@@ -412,7 +452,8 @@ def _run_score_only(
         "schema_version": "v1",
         "run_type": "score",
         "run_id": stable_id([str(sim_csv), str(real_csv)], prefix="pf_score", length=12),
-        "scenario_name": scenario_name,
+        "scenario_name": str(report_name),
+        "base_scenario_name": inferred_scenario_name,
         "started_at": utcnow_iso(),
         "ended_at": utcnow_iso(),
         "git_commit": git.commit or "unknown",
@@ -420,8 +461,13 @@ def _run_score_only(
         "env": build_env_snapshot(),
         "params": OmegaConf.to_container(cfg, resolve=True),
         "artifacts": {
-            "sim_csv": str(sim_csv),
-            "real_csv": str(real_csv),
+            "sim_csv_original": str(sim_csv),
+            "real_csv_original": str(real_csv),
+            "sim_csv": str(sim_snapshot),
+            "real_csv": str(real_snapshot),
+            "trace_csv": str(trace_snapshot) if trace_snapshot is not None else None,
+            "trace_meta_json": str(trace_meta_snapshot) if trace_meta_snapshot is not None else None,
+            "capacity_json": str(capacity_snapshot) if capacity_snapshot is not None else None,
             "report_dir": str(report_dir.resolve()),
         },
     }
@@ -486,7 +532,12 @@ def _run_score_only(
         meta["paper_reference"] = paper_meta
 
     write_summary_md(
-        inputs=ReportInputs(scenario_name=scenario_name, sim_csv=sim_csv, real_csv=real_csv, out_dir=report_dir),
+        inputs=ReportInputs(
+            scenario_name=str(report_name),
+            sim_csv=sim_snapshot,
+            real_csv=real_snapshot,
+            out_dir=report_dir,
+        ),
         results=results,
         meta=meta,
     )
@@ -504,6 +555,7 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
 
     scenario_name = str(cfg.scenario.name)
     workload_mode = str(cfg.workload.mode)
+    scale = str(OmegaConf.select(cfg, "scale") or "full")
     pf_paths = PaperFidelityPaths(repo_root=repo_root)
 
     ignore_eos_val = OmegaConf.select(cfg, "scenario.real.sampling.ignore_eos")
@@ -531,6 +583,9 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
     else:
         profiling_mode = "custom"
         profiling_interpretation = "custom profiling root (interpret % error accordingly)"
+
+    report_name = scenario_name if workload_mode == "static" else f"{scenario_name}_{workload_mode}_{scale}"
+    capacity_json: Path | None = None
 
     if workload_mode == "dynamic":
         capacity_cfg = cfg.scenario.capacity_search
@@ -602,6 +657,7 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
             operating_point_fraction=float(capacity_cfg.qps_operating_point_fraction),
         )
         write_capacity_json(capacity_dir / "capacity.json", result=capacity)
+        capacity_json = capacity_dir / "capacity.json"
         write_json(
             capacity_dir / "run_meta.json",
             {
@@ -641,6 +697,7 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
     else:
         trace_dir = _run_trace(cfg, repo_root=repo_root)
         trace_csv = trace_dir / "trace.csv"
+    trace_meta_json = trace_dir / "trace_meta.json"
 
     git = get_git_info(repo_root=repo_root)
 
@@ -726,6 +783,10 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
         sim_csv=sim_dir / "request_metrics.csv",
         real_csv=real_dir / "request_metrics.csv",
         repo_root=repo_root,
+        report_scenario_name=report_name,
+        trace_csv=trace_csv,
+        trace_meta_json=trace_meta_json,
+        capacity_json=capacity_json,
         profiling={
             "root": str(profiling_root_resolved),
             "mode": profiling_mode,
