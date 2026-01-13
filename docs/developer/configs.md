@@ -38,6 +38,59 @@ Each stage sets `hydra.run.dir` so the outputs land under `tmp/.../<stable_id>/`
   - `configs/paper_fidelity/scenario/` (model + trace source + Vidur/Sarathi knobs)
   - `configs/paper_fidelity/workload/` (`static` vs `dynamic` arrivals)
 
+## Adding a new paper-fidelity scenario
+
+Paper-fidelity “scenarios” are Hydra configs under `configs/paper_fidelity/scenario/`. The `--scenario <name>` flag selects one of these files by basename.
+
+### 1) Create the scenario YAML
+
+- Copy an existing scenario:
+
+```bash
+cp configs/paper_fidelity/scenario/llama2_7b_arxiv.yaml \
+  configs/paper_fidelity/scenario/<new_scenario>.yaml
+```
+
+- Edit `configs/paper_fidelity/scenario/<new_scenario>.yaml`:
+  - `name`: default artifact namespace (used in `tmp/paper_fidelity/...` and report naming).
+  - `model.model_id`: the model identifier passed to Vidur (must be supported by Vidur / our Vidur integration).
+  - `model.model_ref`: local path for Sarathi replay (typically `${paths.repo_root}/models/<model>/source-data`).
+  - `trace_source`: where token lengths (and optionally arrivals) come from.
+  - `vidur.*` and `real.*`: parity-critical knobs (scheduler + TP/PP + chunk/batch caps).
+  - `capacity_search`: required for `--workload dynamic` (capacity discovery drives the operating QPS).
+
+Trace sources (`scenario.trace_source.kind`):
+
+- `vidur_processed_lengths_csv`: *untimed* lengths CSV → workflow generates `arrived_at`:
+  - static: all `arrived_at=0`
+  - dynamic: Poisson arrivals from `workload.qps` / capacity search
+- `trace_csv`: already-timed canonical trace (`arrived_at` present).
+  - static forces `arrived_at=0`; dynamic uses the arrivals in the CSV.
+- `legacy_workload_dir`: load from a `tmp/workloads/<id>/...` style directory (timed).
+
+### 2) Ensure model assets exist for Sarathi replay
+
+Sarathi requires `scenario.model.model_ref` to exist on disk (weights/tokenizer). This repo typically uses the symlink pattern under `models/`.
+
+- Create/repair the symlink:
+  - `bash models/<model>/bootstrap.sh`
+- Or add the model to `models/bootstrap.yaml` and run:
+  - `bash models/bootstrap.sh`
+
+### 3) Run host-matched profiling, then repro
+
+For meaningful sim-vs-real % error reproduction, generate a host profiling root (microbenchmarks) and pass it to `repro`:
+
+```bash
+pixi run paper-fidelity profile --scenario <new_scenario> --include-cpu-overhead
+
+pixi run paper-fidelity repro --scenario <new_scenario> --workload static \
+  scenario.vidur.profiling_root=/abs/path/to/tmp/paper_fidelity/profiling_roots/<new_scenario>/<timestamp-dir>
+
+pixi run paper-fidelity repro --scenario <new_scenario> --workload dynamic --scale medium \
+  scenario.vidur.profiling_root=/abs/path/to/tmp/paper_fidelity/profiling_roots/<new_scenario>/<timestamp-dir>
+```
+
 ## Common overrides
 
 ```bash
@@ -70,7 +123,7 @@ pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload dynamic \
 pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static \
   scenario.name=llama2_7b_arxiv_sim_vs_real_2026-01-09_00-00-00_static_small
 
-# Override profiling root (host-calibrated sim)
+# Override profiling root (host-matched; recommended for meaningful sim-vs-real % error)
 pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static \
   scenario.vidur.profiling_root=/abs/path/to/tmp/paper_fidelity/profiling_roots/...
 

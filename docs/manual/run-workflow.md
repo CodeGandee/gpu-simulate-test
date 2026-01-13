@@ -113,11 +113,19 @@ pixi run paper-fidelity trace --scenario llama2_7b_arxiv --workload dynamic \
   trace_subset.kind=range trace_subset.begin=0 trace_subset.end=32
 ```
 
-### 2) End-to-end reproduction (recommended)
+### 2) End-to-end reproduction (host-matched, recommended for % error)
 
 ```bash
-pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static
-pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload dynamic
+# Generate a host-matched Vidur profiling root (microbenchmarks).
+# (Omit `--include-cpu-overhead` if you don't need CPU overhead modeling inputs.)
+pixi run paper-fidelity profile --scenario llama2_7b_arxiv --include-cpu-overhead
+
+# Use the printed profiling root from `paper-fidelity profile` (host-matched microbenchmarks).
+pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static \
+  scenario.vidur.profiling_root=/abs/path/to/tmp/paper_fidelity/profiling_roots/...
+
+pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload dynamic --scale medium \
+  scenario.vidur.profiling_root=/abs/path/to/tmp/paper_fidelity/profiling_roots/...
 ```
 
 Outputs:
@@ -125,22 +133,16 @@ Outputs:
 - Trace: `tmp/paper_fidelity/traces/<scenario.name>/trace.csv`
 - Sim metrics: `tmp/paper_fidelity/runs/<scenario.name>/sim/request_metrics.csv`
 - Real metrics: `tmp/paper_fidelity/runs/<scenario.name>/real/request_metrics.csv`
-- Report: `results/reports/<date>/paper_fidelity/<scenario.name>/summary.md`
+- Capacity (dynamic only): `tmp/paper_fidelity/runs/<scenario.name>/capacity/capacity.json`
+- Report (static): `results/reports/<date>/paper_fidelity/<scenario.name>/summary.md`
+- Report (dynamic): `results/reports/<date>/paper_fidelity/<scenario.name>_dynamic_<scale>/summary.md`
 
-### 3) Host-calibrated profiling (optional)
+Notes:
 
-By default, scenarios point Vidur at the paper-provided profiling bundle under `extern/tracked/vidur`. To generate a host profiling root and rerun simulation with host-matched profiling:
+- If you omit `scenario.vidur.profiling_root`, the scenario default may point Vidur at the paper-provided profiling bundle under `extern/tracked/vidur`. That’s useful for a quick sanity check, but the sim-vs-real % error is not comparable to a host-matched run.
+- Parity note: do not rely on Vidur defaults. Keep scheduler knobs and CPU overhead modeling consistent across profiling, simulation, and real replay.
 
-```bash
-pixi run paper-fidelity profile --scenario llama2_7b_arxiv
-pixi run paper-fidelity profile --scenario llama2_7b_arxiv --include-cpu-overhead
-pixi run paper-fidelity repro --scenario llama2_7b_arxiv --workload static \
-  scenario.vidur.profiling_root=/abs/path/to/tmp/paper_fidelity/profiling_roots/...
-```
-
-Sim-vs-real parity note: do not rely on Vidur defaults. Set parity-critical knobs explicitly (scheduler type, chunk size, batch caps, CPU overhead modeling) and keep profiling, sim, and real runs aligned.
-
-### 4) Score-only report (optional)
+### 3) Score-only report (optional)
 
 ```bash
 pixi run paper-fidelity score \

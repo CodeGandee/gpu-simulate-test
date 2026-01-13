@@ -18,9 +18,15 @@
    - dynamic capacity search for the 85% operating point (dynamic only),
    - Vidur simulation (paper metric columns),
    - Sarathi real replay (paper metric columns),
-   - scoring + report (`results/reports/<date>/paper_fidelity/<scenario>/summary.md`).
+   - scoring + report (`results/reports/<date>/paper_fidelity/<report_scenario>/summary.md`).
 3. `paper-fidelity score` can run scoring only (given existing metrics CSVs).
-4. `paper-fidelity profile` generates a host profiling root and can be used to run “host-calibrated” simulations.
+4. `paper-fidelity profile` generates a host profiling root (microbenchmarks). Use it for meaningful sim-vs-real % error reproduction; the paper-provided profiling bundle is mainly for sanity checks.
+
+Report naming note:
+
+- `<report_scenario>` is derived from `scenario.name`:
+  - static: `<scenario.name>`
+  - dynamic: `<scenario.name>_dynamic_<scale>`
 
 ## Design constraints (from the spec)
 

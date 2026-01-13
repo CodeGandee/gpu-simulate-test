@@ -39,7 +39,7 @@ Directory: `tmp/comparisons/<comparison_id>/`
 Directory: `tmp/paper_fidelity/traces/<scenario>/`
 
 - `trace.csv`: canonical input schema (`arrived_at,num_prefill_tokens,num_decode_tokens`, optional ids)
-- `trace_meta.json`: provenance (source kind/path, seed, and any subset selection)
+- `trace_meta.json`: provenance (workload mode, seed, subset selection; may include trace source info and/or chosen dynamic QPS)
 
 ### Runs (sim + real)
 
@@ -51,10 +51,15 @@ Directory: `tmp/paper_fidelity/runs/<scenario>/`
 
 ### Report
 
-Directory: `results/reports/<date>/paper_fidelity/<scenario>/`
+Directory: `results/reports/<date>/paper_fidelity/<report_scenario>/`
 
 - `summary.md`
 - `run_meta.json`
+- `scores.json`
+- `inputs/` (snapshots of sim/real CSVs; trace/capacity inputs when available)
+- `figs/` and `tables/`
+
+Naming note: `<report_scenario>` is `scenario.name` for static runs, and `scenario.name_dynamic_<scale>` for dynamic runs.
 
 If you change schemas, update both:
 

@@ -78,7 +78,7 @@ This workflow is trace-driven: a canonical `trace.csv` is the shared input to bo
 - `trace.csv`: canonical trace input consumed end-to-end
   - required: `arrived_at` (seconds since start), `num_prefill_tokens`, `num_decode_tokens`
   - optional: `request_id`, `prompt_id`
-- `trace_meta.json`: trace provenance (source kind/path, seed, workload mode, and any `trace_subset` selection)
+- `trace_meta.json`: trace provenance (workload mode, seed, subset selection; may include trace source info and/or chosen dynamic QPS)
 
 Trace subsetting is supported via config overrides:
 
@@ -105,14 +105,22 @@ Paper-fidelity request metric columns (required on both sim and real sides):
 - `request_scheduling_delay`
 - `request_execution_plus_preemption_time_normalized`
 - `request_e2e_time_normalized`
+- `prefill_time_execution_plus_preemption_normalized`
+- `decode_time_execution_plus_preemption_normalized`
 - `request_num_decode_tokens`
 
-### Report (`results/reports/<date>/paper_fidelity/<scenario>/`)
+### Report (`results/reports/<date>/paper_fidelity/<report_scenario>/`)
 
 - `summary.md`: score tables + optional “gap diagnosis”
 - `run_meta.json`: resolved config, provenance, and (when enabled) paper reference metadata
+- `scores.json`: machine-readable score outputs (percentiles + percent error + verdict)
+- `inputs/`: snapshots of inputs used to generate the report (portable; avoids `tmp/` reuse)
+- `figs/`: SVG plots (ECDF + percentiles)
+- `tables/`: derived tables (CSV)
 
 Notes:
 
-- The `<scenario>` component is the resolved `scenario.name` (often the scenario key like `llama2_7b_arxiv`, but you can override it to a stamped run id to keep runs separate).
-- Canonical sim/real CSVs live under `tmp/paper_fidelity/runs/<scenario.name>/{sim,real}/request_metrics.csv`. Some reports may also include copies of these CSVs in the report directory for portability.
+- The `<report_scenario>` component is derived from `scenario.name`:
+  - static: `<scenario.name>`
+  - dynamic: `<scenario.name>_dynamic_<scale>`
+- Canonical sim/real CSVs live under `tmp/paper_fidelity/runs/<scenario.name>/{sim,real}/request_metrics.csv`. Reports also snapshot these CSVs under `inputs/` for reproducibility/portability.
