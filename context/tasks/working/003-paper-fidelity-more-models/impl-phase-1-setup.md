@@ -321,5 +321,6 @@ PY
 
 ## Implementation Summary
 
-TODO (fill after implementation)
-
+- **Implemented (T001)**: `FailureRecord` schema + JSON helpers in `src/gpu_simulate_test/paper_fidelity/failure_record.py` (`FailureRecord`, `build_failure_record`, `write_failure_record`).
+- **Implemented (T002)**: Matrix manifest schema + writer in `src/gpu_simulate_test/paper_fidelity/matrix_manifest.py` (`MatrixRunEntry`, `write_matrix_manifest`).
+- **Implemented (T003)**: Matrix output path helpers in `src/gpu_simulate_test/paper_fidelity/paths.py` (`matrix_dir`, `matrix_manifest_path`, `matrix_failures_dir`), targeting `results/reports/<UTC-YYYY-MM-DD>/paper_fidelity/paper_models_matrix_<run_id>/`.

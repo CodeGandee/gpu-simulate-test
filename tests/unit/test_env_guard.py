@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from gpu_simulate_test.env_guard import apply_cuda_visible_devices_from_gsim, load_dotenv_if_present
+from gpu_simulate_test.env_guard import count_visible_gpus
 
 
 def test_apply_cuda_visible_devices_from_gsim_uses_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -44,3 +45,18 @@ def test_load_dotenv_if_present_does_not_override(monkeypatch: pytest.MonkeyPatc
     load_dotenv_if_present(repo_root=tmp_path)
 
     assert (os.environ.get("FOO") or "") == "from_env"
+
+
+def test_count_visible_gpus_unset(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
+    assert count_visible_gpus() == 0
+
+
+def test_count_visible_gpus_empty(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "")
+    assert count_visible_gpus() == 0
+
+
+def test_count_visible_gpus_counts_ids(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "0, 1,, 2")
+    assert count_visible_gpus() == 3

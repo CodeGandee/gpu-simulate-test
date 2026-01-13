@@ -43,6 +43,15 @@ class PaperFidelityPaths:
     def reports_dir(self, *, date: str, scenario_name: str) -> Path:
         return self.results_root / "reports" / date / "paper_fidelity" / scenario_name
 
+    def matrix_dir(self, *, date: str, run_id: str) -> Path:
+        return self.results_root / "reports" / date / "paper_fidelity" / f"paper_models_matrix_{run_id}"
+
+    def matrix_manifest_path(self, *, date: str, run_id: str) -> Path:
+        return self.matrix_dir(date=date, run_id=run_id) / "manifest.json"
+
+    def matrix_failures_dir(self, *, date: str, run_id: str) -> Path:
+        return self.matrix_dir(date=date, run_id=run_id) / "failures"
+
     def profiling_outputs_dir(self, scenario_name: str, run_id: str) -> Path:
         """Large intermediate profiling outputs (timestamped by upstream profilers)."""
         return self.tmp_root / "profiling_outputs" / scenario_name / run_id

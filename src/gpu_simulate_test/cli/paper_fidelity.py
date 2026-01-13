@@ -30,17 +30,31 @@ from omegaconf import DictConfig
 from omegaconf import OmegaConf
 
 from gpu_simulate_test.config import register_omegaconf_resolvers
+from gpu_simulate_test.env_guard import find_repo_root
 from gpu_simulate_test.io import build_env_snapshot, get_git_info, stable_id, utcnow_iso, write_json
 from gpu_simulate_test.paper_fidelity.capacity import CapacityCriterion, discover_capacity, write_capacity_json
+from gpu_simulate_test.paper_fidelity.failure_record import (
+    build_failure_record,
+    categorize_blocker,
+    write_failure_record,
+)
+from gpu_simulate_test.paper_fidelity.matrix import MatrixArgs, default_matrix_run_id, run_matrix
+from gpu_simulate_test.paper_fidelity.paper_models import PAPER_MODEL_SCENARIOS, validate_paper_model_scenarios
 from gpu_simulate_test.paper_fidelity.paper_reference import maybe_load_paper_reference_rows_from_cfg
 from gpu_simulate_test.paper_fidelity.paths import PaperFidelityPaths
-from gpu_simulate_test.paper_fidelity.profiling import run_paper_fidelity_profiling
+from gpu_simulate_test.paper_fidelity.profiling import PaperFidelityProfilingError, run_paper_fidelity_profiling
 from gpu_simulate_test.paper_fidelity.report import ReportInputs, regenerate_summary_md_from_report_dir, write_summary_md
 from gpu_simulate_test.paper_fidelity.scoring import (
     ScoreThresholds,
     load_metrics_csv,
     score_metric,
     validate_sim_vs_real_compatibility,
+)
+from gpu_simulate_test.paper_fidelity.validation import (
+    MissingTraceSourceError,
+    ScenarioPreflightError,
+    preflight_repro,
+    preflight_trace,
 )
 from gpu_simulate_test.paper_fidelity.traces import (
     TraceSpec,
@@ -63,6 +77,12 @@ register_omegaconf_resolvers()
 
 
 PaperFidelityWorkload = Literal["static", "dynamic"]
+
+
+class PaperFidelityReproError(RuntimeError):
+    def __init__(self, message: str, *, failure_record_path: Path) -> None:
+        super().__init__(message)
+        self.failure_record_path = failure_record_path
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -92,6 +112,23 @@ def main(argv: list[str] | None = None) -> None:
     report.add_argument("--dir", required=True)
     report.add_argument("--paper-reference", choices=["include", "omit"], default="include")
 
+    matrix = sub.add_parser("matrix")
+    matrix.add_argument("--scale", choices=["small", "medium", "full"], default="small")
+    matrix.add_argument(
+        "--scenarios",
+        default=None,
+        help="Comma-separated scenario keys (default: paper models set).",
+    )
+    matrix.add_argument("--workloads", default="static,dynamic", help="Comma-separated workloads (static,dynamic).")
+    matrix.add_argument(
+        "--include-cpu-overhead",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Whether profiling should include CPU overhead microbenchmarks (default: true).",
+    )
+    matrix.add_argument("--run-id", default=None, help="Optional identifier for the matrix run.")
+    matrix.add_argument("--stop-on-failure", action="store_true", help="Stop after the first failure (still write manifest).")
+
     args, hydra_overrides = parser.parse_known_args(argv)
     prog = sys.argv[0]
 
@@ -110,6 +147,42 @@ def main(argv: list[str] | None = None) -> None:
         if args.include_cpu_overhead:
             sys.argv.append("profiling.include_cpu_overhead=true")
         _profile_main()
+    elif args.cmd == "matrix":
+        if hydra_overrides:
+            raise ValueError(f"`paper-fidelity matrix` does not accept Hydra overrides (got {hydra_overrides})")
+        repo_root = find_repo_root()
+        if repo_root is None:
+            raise RuntimeError("Could not locate repo root (expected to find pyproject.toml); run from inside the repo.")
+
+        if args.scenarios is None:
+            scenarios = list(PAPER_MODEL_SCENARIOS)
+        else:
+            scenarios = [s.strip() for s in str(args.scenarios).split(",") if s.strip()]
+        if not scenarios:
+            raise ValueError("--scenarios resolved to an empty list")
+        validate_paper_model_scenarios(scenarios)
+
+        workloads = [w.strip() for w in str(args.workloads).split(",") if w.strip()]
+        bad_workloads = sorted(set(workloads) - {"static", "dynamic"})
+        if bad_workloads:
+            raise ValueError(f"Invalid workloads: {bad_workloads} (expected static,dynamic)")
+        if not workloads:
+            raise ValueError("--workloads resolved to an empty list")
+
+        run_id = str(args.run_id) if args.run_id is not None else default_matrix_run_id()
+
+        manifest = run_matrix(
+            repo_root=repo_root,
+            args=MatrixArgs(
+                run_id=run_id,
+                scenarios=scenarios,
+                workloads=workloads,  # type: ignore[arg-type]
+                scale=str(args.scale),  # type: ignore[arg-type]
+                include_cpu_overhead=bool(args.include_cpu_overhead),
+                stop_on_failure=bool(args.stop_on_failure),
+            ),
+        )
+        print(str(manifest))
     elif args.cmd == "score":
         sim_csv = str(Path(args.sim).expanduser())
         real_csv = str(Path(args.real).expanduser())
@@ -253,9 +326,24 @@ def _trace_subset_from_cfg(cfg: DictConfig) -> tuple[str, object, object, list[o
 
 
 def _run_trace(cfg: DictConfig, *, repo_root: Path) -> Path:
+    try:
+        preflight_trace(cfg, repo_root=repo_root)
+    except MissingTraceSourceError as e:
+        raise RuntimeError(
+            f"{e}\n"
+            "Hint: initialize submodules with `git submodule update --init --recursive` "
+            "(the processed-lengths trace CSV lives under `extern/tracked/vidur`)."
+        ) from e
+    except ScenarioPreflightError as e:
+        raise RuntimeError(str(e)) from e
+
     scenario_name = str(cfg.scenario.name)
     trace_kind = str(cfg.scenario.trace_source.kind)
     trace_source_path = Path(cfg.scenario.trace_source.path).expanduser()
+    if not trace_source_path.is_absolute():
+        trace_source_path = (repo_root / trace_source_path).resolve()
+    else:
+        trace_source_path = trace_source_path.resolve()
 
     max_tokens = int(cfg.scenario.trace_source.max_tokens)
     seed = int(cfg.scenario.trace_source.seed)
@@ -358,6 +446,7 @@ def _run_score_only(
     real_csv: Path,
     repo_root: Path,
     profiling: dict[str, object] | None = None,
+    profiling_meta_json: Path | None = None,
     report_scenario_name: str | None = None,
     trace_csv: Path | None = None,
     trace_meta_json: Path | None = None,
@@ -415,6 +504,11 @@ def _run_score_only(
         capacity_snapshot = inputs_dir / "capacity.json"
         shutil.copy2(capacity_json, capacity_snapshot)
 
+    profiling_meta_snapshot: Path | None = None
+    if profiling_meta_json is not None and profiling_meta_json.exists():
+        profiling_meta_snapshot = inputs_dir / "profiling_meta.json"
+        shutil.copy2(profiling_meta_json, profiling_meta_snapshot)
+
     sim_df = load_metrics_csv(sim_snapshot)
     real_df = load_metrics_csv(real_snapshot)
     validate_sim_vs_real_compatibility(sim_df=sim_df, real_df=real_df)
@@ -468,6 +562,7 @@ def _run_score_only(
             "trace_csv": str(trace_snapshot) if trace_snapshot is not None else None,
             "trace_meta_json": str(trace_meta_snapshot) if trace_meta_snapshot is not None else None,
             "capacity_json": str(capacity_snapshot) if capacity_snapshot is not None else None,
+            "profiling_meta_json": str(profiling_meta_snapshot) if profiling_meta_snapshot is not None else None,
             "report_dir": str(report_dir.resolve()),
         },
     }
@@ -547,11 +642,13 @@ def _run_score_only(
 def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
     from gpu_simulate_test.env_guard import (
         apply_cuda_visible_devices_from_gsim,
+        count_visible_gpus,
         patch_sarathi_preserve_cuda_visible_devices,
     )
 
     apply_cuda_visible_devices_from_gsim(repo_root=repo_root)
     patch_sarathi_preserve_cuda_visible_devices()
+    preflight_repro(cfg, repo_root=repo_root, available_gpus=count_visible_gpus())
 
     scenario_name = str(cfg.scenario.name)
     workload_mode = str(cfg.workload.mode)
@@ -602,6 +699,10 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
         base = None
         trace_kind = str(cfg.scenario.trace_source.kind)
         trace_source_path = Path(cfg.scenario.trace_source.path).expanduser()
+        if not trace_source_path.is_absolute():
+            trace_source_path = (repo_root / trace_source_path).resolve()
+        else:
+            trace_source_path = trace_source_path.resolve()
         if trace_kind == "vidur_processed_lengths_csv":
             base = processed_lengths_csv_to_trace(trace_source_path, spec=trace_spec)
         else:
@@ -676,6 +777,8 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
         validate_trace(final_trace, spec=trace_spec)
         trace_csv = trace_dir / "trace.csv"
         final_trace.to_csv(trace_csv, index=False)
+        max_tokens = int(cfg.scenario.trace_source.max_tokens)
+        seed = int(cfg.scenario.trace_source.seed)
         write_json(
             trace_dir / "trace_meta.json",
             {
@@ -685,6 +788,13 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
                 "scale": OmegaConf.select(cfg, "scale"),
                 "qps": float(capacity.qps_85),
                 "seed": int(cfg.workload.seed),
+                "trace_source": {
+                    "kind": trace_kind,
+                    "path": str(trace_source_path),
+                    "max_tokens": max_tokens,
+                    "seed": seed,
+                    "num_requests": trace_spec.num_requests,
+                },
                 "trace_subset": {
                     "kind": subset_kind,
                     "begin": subset_begin,
@@ -692,6 +802,9 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
                     "indices": subset_indices,
                 },
                 "generated_at": utcnow_iso(),
+                "artifacts": {
+                    "trace_csv": str(trace_csv.resolve()),
+                },
             },
         )
     else:
@@ -787,6 +900,7 @@ def _run_repro(cfg: DictConfig, *, repo_root: Path) -> Path:
         trace_csv=trace_csv,
         trace_meta_json=trace_meta_json,
         capacity_json=capacity_json,
+        profiling_meta_json=profiling_root_resolved / "profiling_meta.json",
         profiling={
             "root": str(profiling_root_resolved),
             "mode": profiling_mode,
@@ -823,8 +937,43 @@ def _run_profile(cfg: DictConfig, *, repo_root: Path) -> Path:
 )
 def _repro_main(cfg: DictConfig) -> None:
     """Hydra main for `paper-fidelity repro` (see `configs/paper_fidelity/repro.yaml`)."""
-    out_dir = _run_repro(cfg, repo_root=Path(cfg.paths.repo_root))
-    print(str(out_dir))
+    repo_root = Path(cfg.paths.repo_root)
+    scenario_name = str(cfg.scenario.name)
+    workload_mode = str(cfg.workload.mode)
+    scale = str(OmegaConf.select(cfg, "scale") or "full")
+    report_name = scenario_name if workload_mode == "static" else f"{scenario_name}_{workload_mode}_{scale}"
+
+    pf_paths = PaperFidelityPaths(repo_root=repo_root)
+    report_dir = pf_paths.reports_dir(date=_utc_date_str(), scenario_name=report_name)
+    report_dir.mkdir(parents=True, exist_ok=True)
+
+    scenario_key = str(OmegaConf.select(cfg, "hydra.runtime.choices.scenario") or scenario_name)
+
+    try:
+        out_dir = _run_repro(cfg, repo_root=repo_root)
+    except Exception as e:
+        import traceback as tb
+
+        stack = tb.format_exc()
+        category = categorize_blocker(error_message=f"{type(e).__name__}: {e}", traceback=stack)
+        record = build_failure_record(
+            run_id=stable_id([scenario_key, report_name, workload_mode, scale], prefix="pf_repro", length=12),
+            action="repro",
+            scenario_key=scenario_key,
+            scenario_name=report_name,
+            workload=workload_mode,
+            scale=scale,
+            attempted_command=list(sys.argv),
+            hydra_overrides=[],
+            error_message=f"{type(e).__name__}: {e}",
+            traceback=stack,
+            blocker_category=category,
+        )
+        failure_path = write_failure_record(report_dir / "failure_record.json", record)
+        print(str(failure_path))
+        raise PaperFidelityReproError(f"{type(e).__name__}: {e}", failure_record_path=failure_path) from e
+    else:
+        print(str(out_dir))
 
 
 @hydra.main(
@@ -845,8 +994,13 @@ def _trace_main(cfg: DictConfig) -> None:
 )
 def _profile_main(cfg: DictConfig) -> None:
     """Hydra main for `paper-fidelity profile` (see `configs/paper_fidelity/profile.yaml`)."""
-    out_dir = _run_profile(cfg, repo_root=Path(cfg.paths.repo_root))
-    print(str(out_dir))
+    try:
+        out_dir = _run_profile(cfg, repo_root=Path(cfg.paths.repo_root))
+    except PaperFidelityProfilingError as e:
+        print(str(e.failure_record_path))
+        raise
+    else:
+        print(str(out_dir))
 
 
 @hydra.main(

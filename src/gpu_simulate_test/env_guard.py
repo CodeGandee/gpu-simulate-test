@@ -136,3 +136,17 @@ def patch_sarathi_preserve_cuda_visible_devices() -> None:
         _ray_utils.unset_cuda_visible_devices = _noop  # type: ignore[attr-defined]
     except Exception:
         pass
+
+
+def count_visible_gpus() -> int:
+    """Return the number of GPUs visible to this process.
+
+    Uses CUDA_VISIBLE_DEVICES semantics:
+    - unset => 0 (treat as unknown/unsafe)
+    - "" => 0
+    - "0,1,3" => 3
+    """
+    value = (os.environ.get("CUDA_VISIBLE_DEVICES") or "").strip()
+    if not value:
+        return 0
+    return len([part for part in value.split(",") if part.strip()])

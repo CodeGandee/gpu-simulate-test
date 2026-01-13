@@ -153,5 +153,6 @@ pixi run paper-fidelity repro --scenario llama2_70b_arxiv --workload static --sc
 
 ## Implementation Summary
 
-TODO (fill after implementation)
-
+- **Implemented (T023)**: `paper-fidelity repro` writes `results/reports/<DATE>/paper_fidelity/<scenario_name_or_tag>/failure_record.json` on any exception and prints the failure-record path as the last line (`src/gpu_simulate_test/cli/paper_fidelity.py`).
+- **Implemented (T024)**: Matrix runner writes one failure record per failed action under the matrix run dir and continues unless `--stop-on-failure` (`src/gpu_simulate_test/paper_fidelity/matrix.py`).
+- **Docs (T025)**: Failure record schema + blocker categories documented in `specs/003-paper-fidelity-more-models/quickstart.md`.

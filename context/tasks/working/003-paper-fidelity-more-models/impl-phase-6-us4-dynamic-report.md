@@ -136,5 +136,5 @@ cat "${report_dir}/inputs/trace_meta.json"
 
 ## Implementation Summary
 
-TODO (fill after implementation)
-
+- **Implemented (T016)**: Dynamic `tmp/paper_fidelity/traces/<scenario>/trace_meta.json` now matches the `paper-fidelity trace` meta schema subset (includes `trace_source` + `artifacts.trace_csv` absolute path) in `src/gpu_simulate_test/cli/paper_fidelity.py`.
+- **Docs**: dynamic repro tutorial updated for paper models in Phase 9 (see `docs/tutorial/howto/tut-paper-fidelity-static-and-dynamic.md`).

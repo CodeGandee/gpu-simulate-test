@@ -92,5 +92,8 @@ pixi run paper-fidelity matrix --scale small --workloads static,dynamic --includ
 
 ## Implementation Summary
 
-TODO (fill after implementation)
-
+- **Implemented (T026)**: Scenario tutorial updated to mention paper-model scenarios + matrix runner (`docs/tutorial/in-depth/adv-tut-add-paper-fidelity-scenario.md`).
+- **Implemented (T027)**: README entrypoints added for paper-fidelity docs (`README.md`).
+- **Implemented (T028)**: Added runbook for interpreting `manifest.json` + failure records (`docs/runbooks/paper_fidelity_matrix.md`).
+- **Implemented (T029)**: Updated quickstart commands/paths to match the implemented `paper-fidelity matrix` flags (`specs/003-paper-fidelity-more-models/quickstart.md`).
+- **Sanity checks**: Ran `pixi run pytest -q` (CPU-only) and `pixi run mkdocs build --strict` (docs build).

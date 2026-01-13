@@ -11,6 +11,22 @@ How do I implement a new paper-fidelity scenario (so I can run `pixi run paper-f
 - **Model assets:** You have a local model directory that Sarathi can load, referenced via `scenario.model.model_ref`.
 - **Basic Hydra familiarity:** you can pass `key=value` overrides on the CLI.
 
+## Paper models + matrix runner
+
+This repo already includes “paper model” scenarios under `configs/paper_fidelity/scenario/`:
+
+- `internlm_20b_arxiv`
+- `llama2_70b_arxiv`
+- `qwen_72b_arxiv`
+
+To run the full small-scale (50 requests) static+dynamic workflow across these scenarios, use the matrix runner:
+
+```bash
+pixi run paper-fidelity matrix --scale small --workloads static,dynamic --include-cpu-overhead
+```
+
+See `specs/003-paper-fidelity-more-models/quickstart.md` for the end-to-end procedure and output paths.
+
 ## Implementation Idea
 
 **Approach:**
@@ -273,4 +289,3 @@ Outputs:
 
 - Vidur (vendored source): `extern/tracked/vidur/`
 - Sarathi-Serve (vendored source): `extern/tracked/sarathi-serve/`
-

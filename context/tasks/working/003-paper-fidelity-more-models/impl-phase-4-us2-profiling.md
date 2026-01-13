@@ -100,10 +100,11 @@ except Exception as e:
 
 Ensure `paper-fidelity profile` prints the failure record path even when exiting non-zero.
 
-Implementation approach:
+Implementation approach (as implemented):
 
-- wrap `_run_profile(...)` call in `try/except`
-- if `run_paper_fidelity_profiling` created a profiling root, print the failure record path as the last line
+- `paper_fidelity.profiling.run_paper_fidelity_profiling()` wraps failures in a `PaperFidelityProfilingError`
+  that carries `failure_record_path`.
+- the Hydra entrypoint prints `failure_record_path` as the last line and re-raises (so the command exits non-zero).
 
 ```python
 # src/gpu_simulate_test/cli/paper_fidelity.py
@@ -119,10 +120,8 @@ def main(...):
 def _profile_main(cfg):
     try:
         out_dir = _run_profile(cfg, repo_root=Path(cfg.paths.repo_root))
-    except Exception:
-        # Print a best-effort failure record path (defined by profiling.py conventions).
-        # The exception should still propagate so the command fails.
-        # print(str(failure_record_path))
+    except PaperFidelityProfilingError as e:
+        print(str(e.failure_record_path))
         raise
     else:
         print(str(out_dir))
@@ -176,5 +175,6 @@ pixi run paper-fidelity profile --scenario qwen_72b_arxiv --include-cpu-overhead
 
 ## Implementation Summary
 
-TODO (fill after implementation)
-
+- **Implemented (T011)**: Profiling preflight validation via `preflight_profile()` (model assets exist + GPU sufficiency) in `src/gpu_simulate_test/paper_fidelity/profiling.py`.
+- **Implemented (T012)**: Profiling failures write `tmp/paper_fidelity/profiling_roots/<scenario.name>/<timestamp>/failure_record.json` and raise `PaperFidelityProfilingError` with `failure_record_path`.
+- **Implemented (T013)**: `paper-fidelity profile` prints the failure record path on failure in `src/gpu_simulate_test/cli/paper_fidelity.py` (`_profile_main`).

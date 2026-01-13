@@ -109,5 +109,5 @@ pixi run paper-fidelity repro --scenario llama2_70b_arxiv --workload static --sc
 
 ## Implementation Summary
 
-TODO (fill after implementation)
-
+- **Implemented (T014)**: `_run_score_only()` now accepts `profiling_meta_json` and snapshots it to `results/reports/.../inputs/profiling_meta.json` when present (`src/gpu_simulate_test/cli/paper_fidelity.py`).
+- **Docs**: static/dynamic tutorial updated for paper models in Phase 9 (see `docs/tutorial/howto/tut-paper-fidelity-static-and-dynamic.md`).

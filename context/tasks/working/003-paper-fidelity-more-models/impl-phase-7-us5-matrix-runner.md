@@ -237,5 +237,11 @@ pixi run paper-fidelity matrix \
 
 ## Implementation Summary
 
-TODO (fill after implementation)
-
+- **Implemented (T018)**: Paper model scenario list + Qwen3-0.6B exclusion in `src/gpu_simulate_test/paper_fidelity/paper_models.py`.
+- **Implemented (T019)**: Matrix runner orchestration in `src/gpu_simulate_test/paper_fidelity/matrix.py`:
+  - invokes `paper-fidelity profile` and `paper-fidelity repro` in subprocesses for Hydra isolation
+  - writes per-action failures under `results/reports/<DATE>/paper_fidelity/paper_models_matrix_<run_id>/failures/*.json`
+  - writes `manifest.json` via `src/gpu_simulate_test/paper_fidelity/matrix_manifest.py`
+- **Implemented (T020)**: `paper-fidelity matrix` argparse subcommand in `src/gpu_simulate_test/cli/paper_fidelity.py` (prints manifest path).
+- **Implemented (T021)**: Matrix output paths via `PaperFidelityPaths.matrix_*` in `src/gpu_simulate_test/paper_fidelity/paths.py`.
+- **Docs (T022)**: Quickstart updated to match the implemented CLI in `specs/003-paper-fidelity-more-models/quickstart.md`.

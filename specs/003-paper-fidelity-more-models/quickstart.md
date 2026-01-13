@@ -63,7 +63,7 @@ The matrix procedure must:
 - record failures with blocker categorization (including `insufficient GPUs`),
 - write one per-matrix manifest summarizing all attempted runs (successes + failures).
 
-Recommended interface for this feature (to be implemented):
+Recommended interface for this feature:
 
 ```bash
 cd /data1/huangzhe/code/gpu-simulate-test
@@ -74,16 +74,26 @@ cd /data1/huangzhe/code/gpu-simulate-test
 # - small scale only
 pixi run paper-fidelity matrix \
   --scale small \
-  --scenarios internlm_20b_arxiv,llama2_70b_arxiv,qwen_72b_arxiv \
   --workloads static,dynamic \
-  --include-cpu-overhead
+  --include-cpu-overhead \
+  --run-id my_run_001
 ```
+
+Notes:
+- `--scenarios` is optional; if omitted, the command defaults to the paper-model set:
+  `internlm_20b_arxiv,llama2_70b_arxiv,qwen_72b_arxiv` (Qwen3-0.6B is explicitly excluded).
+- `--include-cpu-overhead` defaults to `true` for `matrix` (you can also pass `--no-include-cpu-overhead`).
+- `--stop-on-failure` stops after the first failed action but still writes `manifest.json`.
 
 ## 4) Find outputs
 
 ### Profiling roots (per model, per run)
 
 - `/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_roots/<scenario.name>/<timestamp-dir>/`
+
+In `paper-fidelity matrix`, the runner overrides `scenario.name` to include the matrix run id:
+
+- `tmp/paper_fidelity/profiling_roots/<scenario_key>_matrix_<run_id>/<timestamp-dir>/`
 
 ### Reports (self-contained, stable)
 
@@ -105,6 +115,41 @@ The matrix procedure should write a dedicated output directory (example):
   - `manifest.json` (all attempted runs, including failures)
   - `failures/*.json` (structured failure records, one per failed action)
 
+### Failure records (schema + blocker categories)
+
+Failure records are always written as JSON with schema version `v1`.
+
+**Where to find them**
+
+- Repro failure (single-scenario `paper-fidelity repro`):
+  - `results/reports/<UTC-YYYY-MM-DD>/paper_fidelity/<scenario_name_or_tag>/failure_record.json`
+- Profiling failure (single-scenario `paper-fidelity profile`):
+  - `tmp/paper_fidelity/profiling_roots/<scenario.name>/<timestamp-dir>/failure_record.json`
+- Matrix failures:
+  - `results/reports/<UTC-YYYY-MM-DD>/paper_fidelity/paper_models_matrix_<run_id>/failures/*.json`
+
+**Key fields**
+
+- `action`: `trace|profile|repro|matrix`
+- `scenario_key`: the scenario key under `configs/paper_fidelity/scenario/`
+- `scenario_name`: the artifact/report namespace (may include `_matrix_<run_id>`)
+- `workload`: `static|dynamic` (nullable for profiling)
+- `scale`: `small|medium|full` (nullable for profiling)
+- `attempted_command`: exact argv list (when available)
+- `error_message` / `traceback`: failure details
+- `blocker_category` (one of):
+  - `insufficient GPUs`
+  - `OOM`
+  - `missing model files`
+  - `unsupported model`
+  - `unknown`
+
+**Common remediation**
+
+- `insufficient GPUs`: adjust `GSIM_CUDA_VISIBLE_DEVICES`, or override `scenario.real.parallel.{tensor,pipeline}_parallel_size` to fit.
+- `missing model files`: run the model bootstrap script and re-check `models/<model>/source-data`.
+- `OOM`: reduce parallelism, batch sizes, or choose a smaller model.
+
 ## 5) Manual fallback (single scenario)
 
 If you want to run one model manually (useful for debugging), the minimal sequence is:
@@ -120,4 +165,3 @@ pixi run paper-fidelity repro --scenario llama2_70b_arxiv --workload static --sc
 pixi run paper-fidelity repro --scenario llama2_70b_arxiv --workload dynamic --scale small \
   "scenario.vidur.profiling_root=${profiling_root}"
 ```
-

@@ -9,7 +9,7 @@ How do I produce the paper-fidelity **static** and **dynamic** reports (Vidur si
 - **GPU:** A working CUDA setup (`pixi run python -c "import torch; print(torch.cuda.is_available())"` prints `True`).
 - **GPU pinning:** Repo-local `.env` sets `GSIM_CUDA_VISIBLE_DEVICES` (see `context/instructions/prep-dev-env.md`).
 - **Submodules:** `git submodule update --init --recursive` has been run (needed for Vidur + Sarathi).
-- **Model assets:** `models/llama2-7b-hf/source-data` exists (create via `bash models/llama2-7b-hf/bootstrap.sh` or `bash models/bootstrap.sh`).
+- **Model assets:** The selected scenario’s `scenario.model.model_ref` exists (e.g., via `bash models/bootstrap.sh` or per-model bootstraps like `bash models/llama2-70b-hf/bootstrap.sh`).
 - **Sarathi import works:** `pixi run python -c "import sarathi; print(sarathi.__version__ if hasattr(sarathi, '__version__') else 'ok')"` succeeds.
 - **Host-matched profiling:** You will run `paper-fidelity profile` on this machine before running `paper-fidelity repro` (this is required to reproduce sim-vs-real % error meaningfully).
 
@@ -55,8 +55,7 @@ For sim-vs-real **% error reproduction**, you want a **host-matched** profiling 
 # Creates a profiling root under `tmp/paper_fidelity/profiling_roots/<scenario>/<timestamp>/`.
 pixi run paper-fidelity profile --scenario llama2_7b_arxiv
 
-# Optional: include CPU overhead microbenchmarks (required if you want to set
-# `scenario.vidur.skip_cpu_overhead_modeling=false` with `cpu_overhead.validation=strict`).
+# Recommended: include CPU overhead microbenchmarks (required for the paper-model matrix workflow).
 pixi run paper-fidelity profile --scenario llama2_7b_arxiv --include-cpu-overhead
 ```
 
@@ -70,6 +69,7 @@ This runs: trace generation → Vidur simulation → Sarathi replay → score �
 pixi run paper-fidelity repro \
   --scenario llama2_7b_arxiv \
   --workload static \
+  --scale small \
   "scenario.vidur.profiling_root=tmp/paper_fidelity/profiling_roots/llama2_7b_arxiv/<timestamp-dir>"
 ```
 
@@ -79,29 +79,67 @@ Expected output:
 - Files inside the report directory:
   - `summary.md`, `run_meta.json`, `scores.json`, `figs/*.svg`, `inputs/*.csv`
 
-### Step 4: Produce the dynamic report (medium scale)
+### Step 4: Produce the dynamic report (small scale)
 
-Dynamic mode supports `--scale`. For `medium`, the run uses the first 500 requests after max-token filtering.
+Dynamic mode supports `--scale`. For `small`, the run uses the first 50 requests after max-token filtering.
 
 ```bash
 pixi run paper-fidelity repro \
   --scenario llama2_7b_arxiv \
   --workload dynamic \
-  --scale medium \
+  --scale small \
   "scenario.vidur.profiling_root=tmp/paper_fidelity/profiling_roots/llama2_7b_arxiv/<timestamp-dir>"
 ```
 
 Expected output:
 - Report directory printed on the last line (for example):
-  - `results/reports/<UTC-YYYY-MM-DD>/paper_fidelity/llama2_7b_arxiv_dynamic_medium/`
+  - `results/reports/<UTC-YYYY-MM-DD>/paper_fidelity/llama2_7b_arxiv_dynamic_small/`
 
-### Step 4a: How the timed trace is generated (dynamic) and where to find it
+### Step 4a: Paper models (InternLM-20B, LLaMA2-70B, Qwen-72B)
+
+Scenarios added by this repo for the Vidur paper models:
+
+- `internlm_20b_arxiv`
+- `llama2_70b_arxiv`
+- `qwen_72b_arxiv`
+
+Static repro (small scale) for each:
+
+```bash
+# Run `paper-fidelity profile --scenario <scenario> --include-cpu-overhead` first and
+# set PROFILING_ROOT to the printed path for that scenario.
+PROFILING_ROOT="/abs/path/to/tmp/paper_fidelity/profiling_roots/<scenario>/<timestamp-dir>"
+
+pixi run paper-fidelity repro --scenario internlm_20b_arxiv --workload static --scale small \
+  "scenario.vidur.profiling_root=${PROFILING_ROOT}"
+
+pixi run paper-fidelity repro --scenario llama2_70b_arxiv --workload static --scale small \
+  "scenario.vidur.profiling_root=${PROFILING_ROOT}"
+
+pixi run paper-fidelity repro --scenario qwen_72b_arxiv --workload static --scale small \
+  "scenario.vidur.profiling_root=${PROFILING_ROOT}"
+```
+
+Dynamic repro (small scale) for each:
+
+```bash
+pixi run paper-fidelity repro --scenario internlm_20b_arxiv --workload dynamic --scale small \
+  "scenario.vidur.profiling_root=${PROFILING_ROOT}"
+
+pixi run paper-fidelity repro --scenario llama2_70b_arxiv --workload dynamic --scale small \
+  "scenario.vidur.profiling_root=${PROFILING_ROOT}"
+
+pixi run paper-fidelity repro --scenario qwen_72b_arxiv --workload dynamic --scale small \
+  "scenario.vidur.profiling_root=${PROFILING_ROOT}"
+```
+
+### Step 4b: How the timed trace is generated (dynamic) and where to find it
 
 **How it’s generated**
 
 - The base trace comes from the scenario’s token-length source (`configs/paper_fidelity/scenario/llama2_7b_arxiv.yaml`), producing rows with:
   - `num_prefill_tokens`, `num_decode_tokens`, `request_id`, and `arrived_at=0`.
-- For `--scale medium`, the run subsets to the first 500 rows (`configs/paper_fidelity/scale/medium.yaml`).
+- For `--scale small`, the run subsets to the first 50 rows (`configs/paper_fidelity/scale/small.yaml`).
 - For **dynamic**, the run assigns **arrival times** using `add_poisson_arrivals()`:
   - `arrived_at` is built from cumulative sums of exponential inter-arrival samples (mean `1 / qps`) with a fixed seed.
   - Source: `src/gpu_simulate_test/paper_fidelity/traces.py` (`add_poisson_arrivals`).
@@ -121,7 +159,7 @@ Expected output:
   - `results/reports/<UTC-YYYY-MM-DD>/paper_fidelity/<report_scenario>/inputs/trace_meta.json`
   - `results/reports/<UTC-YYYY-MM-DD>/paper_fidelity/<report_scenario>/inputs/capacity.json` (dynamic only)
 
-**Example: timed `trace.csv` (from the 2026-01-12 dynamic+medium report)**
+**Example: timed `trace.csv`**
 
 ```csv
 arrived_at,num_prefill_tokens,num_decode_tokens,request_id
@@ -135,13 +173,21 @@ arrived_at,num_prefill_tokens,num_decode_tokens,request_id
 
 ```json
 {
+  "artifacts": { "trace_csv": "/abs/path/to/tmp/paper_fidelity/traces/<scenario>/trace.csv" },
   "generated_at": "2026-01-12T15:24:17.365438+00:00",
   "qps": 0.85,
-  "scale": "medium",
+  "scale": "small",
   "scenario_name": "llama2_7b_arxiv",
   "schema_version": "v1",
   "seed": 42,
-  "trace_subset": { "begin": 0, "end": 500, "indices": null, "kind": "range" },
+  "trace_source": {
+    "kind": "vidur_processed_lengths_csv",
+    "max_tokens": 4096,
+    "num_requests": null,
+    "path": "/abs/path/to/extern/tracked/vidur/data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_v2.csv",
+    "seed": 42
+  },
+  "trace_subset": { "begin": 0, "end": 50, "indices": null, "kind": "range" },
   "workload_mode": "dynamic"
 }
 ```

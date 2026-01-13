@@ -34,6 +34,12 @@ Optional: configure `CODEX_HOME` and an HTTP proxy for tooling:
 ./setup-envs.sh --proxy auto
 ```
 
+## Paper-fidelity (Vidur sim vs Sarathi replay)
+
+- Tutorial: `docs/tutorial/howto/tut-paper-fidelity-static-and-dynamic.md`
+- Paper models matrix quickstart: `specs/003-paper-fidelity-more-models/quickstart.md`
+- Matrix manifest/failures runbook: `docs/runbooks/paper_fidelity_matrix.md`
+
 ## External Assets (models/datasets)
 
 Large machine-local assets are managed under `models/` and `datasets/` using an “external

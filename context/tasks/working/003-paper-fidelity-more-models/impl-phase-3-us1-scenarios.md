@@ -186,5 +186,9 @@ pixi run paper-fidelity trace --scenario qwen_72b_arxiv --workload dynamic --sca
 
 ## Implementation Summary
 
-TODO (fill after implementation)
-
+- **Implemented (T007–T009)**: Added new scenarios:
+  - `configs/paper_fidelity/scenario/internlm_20b_arxiv.yaml`
+  - `configs/paper_fidelity/scenario/llama2_70b_arxiv.yaml`
+  - `configs/paper_fidelity/scenario/qwen_72b_arxiv.yaml`
+- **Implemented (T010)**: `paper-fidelity trace` now calls `preflight_trace()` and raises a friendly error if the trace source CSV is missing (with a submodule-init hint) in `src/gpu_simulate_test/cli/paper_fidelity.py`.
+- **Behavior**: `_run_trace()` resolves relative `scenario.trace_source.path` against `repo_root` before reading.

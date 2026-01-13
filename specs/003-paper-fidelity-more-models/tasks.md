@@ -42,9 +42,9 @@ description: "Task list for implementing Paper-fidelity more models"
 
 **Purpose**: Add shared schema/paths helpers used across multiple user stories
 
-- [ ] T001 Create failure record schema + JSON helpers in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/failure_record.py`
-- [ ] T002 [P] Create matrix manifest schema + JSON writer in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/matrix_manifest.py`
-- [ ] T003 [P] Add matrix output path helpers (manifest dir + failures dir) to `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/paths.py`
+- [X] T001 Create failure record schema + JSON helpers in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/failure_record.py`
+- [X] T002 [P] Create matrix manifest schema + JSON writer in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/matrix_manifest.py`
+- [X] T003 [P] Add matrix output path helpers (manifest dir + failures dir) to `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/paths.py`
 
 ---
 
@@ -54,9 +54,9 @@ description: "Task list for implementing Paper-fidelity more models"
 
 **⚠️ CRITICAL**: No user story work should begin until this phase is complete
 
-- [ ] T004 Add `count_visible_gpus()` helper to `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/env_guard.py` (parse `CUDA_VISIBLE_DEVICES` after `apply_cuda_visible_devices_from_gsim`)
-- [ ] T005 Add scenario preflight validation + custom exceptions in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/validation.py` (validate `scenario.model.model_ref`, `scenario.trace_source.path`, and required GPUs from TP/PP)
-- [ ] T006 Add blocker categorization helper in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/failure_record.py` (map exception/stderr → `insufficient GPUs|OOM|missing model files|unsupported model|unknown`)
+- [X] T004 Add `count_visible_gpus()` helper to `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/env_guard.py` (parse `CUDA_VISIBLE_DEVICES` after `apply_cuda_visible_devices_from_gsim`)
+- [X] T005 Add scenario preflight validation + custom exceptions in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/validation.py` (validate `scenario.model.model_ref`, `scenario.trace_source.path`, and required GPUs from TP/PP)
+- [X] T006 Add blocker categorization helper in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/failure_record.py` (map exception/stderr → `insufficient GPUs|OOM|missing model files|unsupported model|unknown`)
 
 **Checkpoint**: Foundation ready — user story implementation can now begin
 
@@ -68,10 +68,10 @@ description: "Task list for implementing Paper-fidelity more models"
 
 **Independent Test**: A developer can select each new scenario and generate a valid canonical trace for both static and dynamic workloads.
 
-- [ ] T007 [P] [US1] Add InternLM-20B scenario config in `/data1/huangzhe/code/gpu-simulate-test/configs/paper_fidelity/scenario/internlm_20b_arxiv.yaml`
-- [ ] T008 [P] [US1] Add LLaMA2-70B scenario config in `/data1/huangzhe/code/gpu-simulate-test/configs/paper_fidelity/scenario/llama2_70b_arxiv.yaml`
-- [ ] T009 [P] [US1] Add Qwen-72B scenario config in `/data1/huangzhe/code/gpu-simulate-test/configs/paper_fidelity/scenario/qwen_72b_arxiv.yaml`
-- [ ] T010 [US1] Add trace preflight validation (trace source exists, friendly error) in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/cli/paper_fidelity.py`
+- [X] T007 [P] [US1] Add InternLM-20B scenario config in `/data1/huangzhe/code/gpu-simulate-test/configs/paper_fidelity/scenario/internlm_20b_arxiv.yaml`
+- [X] T008 [P] [US1] Add LLaMA2-70B scenario config in `/data1/huangzhe/code/gpu-simulate-test/configs/paper_fidelity/scenario/llama2_70b_arxiv.yaml`
+- [X] T009 [P] [US1] Add Qwen-72B scenario config in `/data1/huangzhe/code/gpu-simulate-test/configs/paper_fidelity/scenario/qwen_72b_arxiv.yaml`
+- [X] T010 [US1] Add trace preflight validation (trace source exists, friendly error) in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/cli/paper_fidelity.py`
 
 **Manual validation (commands live in docs)**: `/data1/huangzhe/code/gpu-simulate-test/specs/003-paper-fidelity-more-models/quickstart.md`
 
@@ -83,9 +83,9 @@ description: "Task list for implementing Paper-fidelity more models"
 
 **Independent Test**: For each model scenario, host profiling completes and produces a Vidur-compatible profiling root with the expected structure.
 
-- [ ] T011 [US2] Add profiling preflight validation (model assets exist, GPU sufficiency) in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/profiling.py`
-- [ ] T012 [US2] Write `failure_record.json` on profiling failures (include attempted command/hydra overrides + blocker category) in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/profiling.py`
-- [ ] T013 [US2] Print failure record path on `paper-fidelity profile` failure in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/cli/paper_fidelity.py`
+- [X] T011 [US2] Add profiling preflight validation (model assets exist, GPU sufficiency) in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/profiling.py`
+- [X] T012 [US2] Write `failure_record.json` on profiling failures (include attempted command/hydra overrides + blocker category) in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/profiling.py`
+- [X] T013 [US2] Print failure record path on `paper-fidelity profile` failure in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/cli/paper_fidelity.py`
 
 **Manual validation (commands live in docs)**: `/data1/huangzhe/code/gpu-simulate-test/specs/003-paper-fidelity-more-models/quickstart.md`
 
@@ -97,8 +97,8 @@ description: "Task list for implementing Paper-fidelity more models"
 
 **Independent Test**: A static run per model produces a report directory containing a human-readable summary and machine-readable scoring outputs.
 
-- [ ] T014 [US3] Snapshot profiling metadata into report inputs (copy `profiling_meta.json` when present) in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/cli/paper_fidelity.py`
-- [ ] T015 [US3] Update static repro documentation/examples for all paper models in `/data1/huangzhe/code/gpu-simulate-test/docs/tutorial/howto/tut-paper-fidelity-static-and-dynamic.md`
+- [X] T014 [US3] Snapshot profiling metadata into report inputs (copy `profiling_meta.json` when present) in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/cli/paper_fidelity.py`
+- [X] T015 [US3] Update static repro documentation/examples for all paper models in `/data1/huangzhe/code/gpu-simulate-test/docs/tutorial/howto/tut-paper-fidelity-static-and-dynamic.md`
 
 ---
 
@@ -108,8 +108,8 @@ description: "Task list for implementing Paper-fidelity more models"
 
 **Independent Test**: A dynamic run per model produces a report directory and includes trace and capacity artifacts needed for debugging.
 
-- [ ] T016 [US4] Normalize dynamic `trace_meta.json` schema (include `trace_source` + `artifacts.trace_csv` like `paper-fidelity trace`) in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/cli/paper_fidelity.py`
-- [ ] T017 [US4] Update dynamic repro documentation/examples for all paper models in `/data1/huangzhe/code/gpu-simulate-test/docs/tutorial/howto/tut-paper-fidelity-static-and-dynamic.md`
+- [X] T016 [US4] Normalize dynamic `trace_meta.json` schema (include `trace_source` + `artifacts.trace_csv` like `paper-fidelity trace`) in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/cli/paper_fidelity.py`
+- [X] T017 [US4] Update dynamic repro documentation/examples for all paper models in `/data1/huangzhe/code/gpu-simulate-test/docs/tutorial/howto/tut-paper-fidelity-static-and-dynamic.md`
 
 ---
 
@@ -119,11 +119,11 @@ description: "Task list for implementing Paper-fidelity more models"
 
 **Independent Test**: A single documented procedure produces per-model/per-workload outputs and a clear manifest summarizing successes and where reports are located.
 
-- [ ] T018 [US5] Add paper-model scenario constants and explicit Qwen3-0.6B exclusion in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/paper_models.py`
-- [ ] T019 [US5] Implement matrix runner orchestration (profile → repro static/dynamic) in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/matrix.py`
-- [ ] T020 [US5] Add `matrix` subcommand + flags (`--scale`, `--scenarios`, `--workloads`, `--include-cpu-overhead`, `--run-id`, `--stop-on-failure`) in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/cli/paper_fidelity.py`
-- [ ] T021 [US5] Write per-matrix outputs (`manifest.json`, `failures/*.json`) under `results/reports/<UTC-YYYY-MM-DD>/paper_fidelity/paper_models_matrix_<run_id>/` via `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/matrix_manifest.py`
-- [ ] T022 [US5] Update matrix quickstart to match implemented CLI flags and output paths in `/data1/huangzhe/code/gpu-simulate-test/specs/003-paper-fidelity-more-models/quickstart.md`
+- [X] T018 [US5] Add paper-model scenario constants and explicit Qwen3-0.6B exclusion in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/paper_models.py`
+- [X] T019 [US5] Implement matrix runner orchestration (profile → repro static/dynamic) in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/matrix.py`
+- [X] T020 [US5] Add `matrix` subcommand + flags (`--scale`, `--scenarios`, `--workloads`, `--include-cpu-overhead`, `--run-id`, `--stop-on-failure`) in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/cli/paper_fidelity.py`
+- [X] T021 [US5] Write per-matrix outputs (`manifest.json`, `failures/*.json`) under `results/reports/<UTC-YYYY-MM-DD>/paper_fidelity/paper_models_matrix_<run_id>/` via `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/matrix_manifest.py`
+- [X] T022 [US5] Update matrix quickstart to match implemented CLI flags and output paths in `/data1/huangzhe/code/gpu-simulate-test/specs/003-paper-fidelity-more-models/quickstart.md`
 
 ---
 
@@ -133,9 +133,9 @@ description: "Task list for implementing Paper-fidelity more models"
 
 **Independent Test**: Intentionally triggering a failure produces a failure record containing the attempted action, the error message, and the blocker category.
 
-- [ ] T023 [US6] Add repro failure record writing (create report dir + write `failure_record.json` on exception) in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/cli/paper_fidelity.py`
-- [ ] T024 [US6] Ensure matrix runner writes failure records per action (profile/static/dynamic) and continues unless `--stop-on-failure` in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/matrix.py`
-- [ ] T025 [US6] Document failure record schema + blocker categories in `/data1/huangzhe/code/gpu-simulate-test/specs/003-paper-fidelity-more-models/quickstart.md`
+- [X] T023 [US6] Add repro failure record writing (create report dir + write `failure_record.json` on exception) in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/cli/paper_fidelity.py`
+- [X] T024 [US6] Ensure matrix runner writes failure records per action (profile/static/dynamic) and continues unless `--stop-on-failure` in `/data1/huangzhe/code/gpu-simulate-test/src/gpu_simulate_test/paper_fidelity/matrix.py`
+- [X] T025 [US6] Document failure record schema + blocker categories in `/data1/huangzhe/code/gpu-simulate-test/specs/003-paper-fidelity-more-models/quickstart.md`
 
 ---
 
@@ -143,10 +143,10 @@ description: "Task list for implementing Paper-fidelity more models"
 
 **Purpose**: Documentation, UX, and consistency improvements across stories
 
-- [ ] T026 [P] Update scenario tutorial to reference paper-model scenarios + matrix runner in `/data1/huangzhe/code/gpu-simulate-test/docs/tutorial/in-depth/adv-tut-add-paper-fidelity-scenario.md`
-- [ ] T027 [P] Update top-level docs entrypoints for the matrix workflow in `/data1/huangzhe/code/gpu-simulate-test/README.md`
-- [ ] T028 [P] Add a short runbook for reading `manifest.json` + `failure_record.json` in `/data1/huangzhe/code/gpu-simulate-test/docs/runbooks/paper_fidelity_matrix.md`
-- [ ] T029 Run the quickstart end-to-end and refresh expected outputs/examples in `/data1/huangzhe/code/gpu-simulate-test/specs/003-paper-fidelity-more-models/quickstart.md`
+- [X] T026 [P] Update scenario tutorial to reference paper-model scenarios + matrix runner in `/data1/huangzhe/code/gpu-simulate-test/docs/tutorial/in-depth/adv-tut-add-paper-fidelity-scenario.md`
+- [X] T027 [P] Update top-level docs entrypoints for the matrix workflow in `/data1/huangzhe/code/gpu-simulate-test/README.md`
+- [X] T028 [P] Add a short runbook for reading `manifest.json` + `failure_record.json` in `/data1/huangzhe/code/gpu-simulate-test/docs/runbooks/paper_fidelity_matrix.md`
+- [X] T029 Run the quickstart end-to-end and refresh expected outputs/examples in `/data1/huangzhe/code/gpu-simulate-test/specs/003-paper-fidelity-more-models/quickstart.md`
 
 ---
 

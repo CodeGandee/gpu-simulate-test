@@ -256,5 +256,7 @@ PY
 
 ## Implementation Summary
 
-TODO (fill after implementation)
-
+- **Implemented (T004)**: `count_visible_gpus()` in `src/gpu_simulate_test/env_guard.py` with CUDA_VISIBLE_DEVICES parsing semantics.
+- **Implemented (T005)**: Scenario preflight validation in `src/gpu_simulate_test/paper_fidelity/validation.py` (`preflight_trace`, `preflight_profile`, `preflight_repro` plus `MissingModelFilesError`, `MissingTraceSourceError`, `InsufficientGpusError`).
+- **Implemented (T006)**: Blocker categorization in `src/gpu_simulate_test/paper_fidelity/failure_record.py` (`categorize_blocker`).
+- **Tests**: Extended `tests/unit/test_env_guard.py` to cover `count_visible_gpus()`.

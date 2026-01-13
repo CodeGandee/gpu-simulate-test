@@ -19,6 +19,32 @@ and adds a repeatable **small-scale** (`--scale small`, 50 requests) **static+dy
 
 **Path convention**: All repo paths are relative to `<WORKSPACE_ROOT>` (repository root).
 
+## Implementation Status (as of 2026-01-13)
+
+The feature is implemented across these key areas:
+
+- **Phase 1/2 (shared scaffolding + validation)**:
+  - Failure records: `src/gpu_simulate_test/paper_fidelity/failure_record.py`
+  - Scenario preflight: `src/gpu_simulate_test/paper_fidelity/validation.py`
+  - Visible GPU counting: `src/gpu_simulate_test/env_guard.py` (`count_visible_gpus`)
+  - Matrix manifest schema: `src/gpu_simulate_test/paper_fidelity/matrix_manifest.py`
+  - Matrix output paths: `src/gpu_simulate_test/paper_fidelity/paths.py` (`matrix_*`)
+- **Phase 3/4 (scenarios + profiling)**:
+  - New scenarios: `configs/paper_fidelity/scenario/{internlm_20b_arxiv,llama2_70b_arxiv,qwen_72b_arxiv}.yaml`
+  - Trace preflight: `src/gpu_simulate_test/cli/paper_fidelity.py` (`_run_trace`)
+  - Profiling preflight + failure records: `src/gpu_simulate_test/paper_fidelity/profiling.py`
+- **Phase 5/6 (report portability + dynamic meta)**:
+  - `inputs/profiling_meta.json` snapshot: `src/gpu_simulate_test/cli/paper_fidelity.py` (`_run_score_only`)
+  - Dynamic `trace_meta.json` normalized: `src/gpu_simulate_test/cli/paper_fidelity.py` (`_run_repro`)
+- **Phase 7/8 (matrix runner + failure transparency)**:
+  - Paper models set + Qwen3 exclusion: `src/gpu_simulate_test/paper_fidelity/paper_models.py`
+  - Matrix runner: `src/gpu_simulate_test/paper_fidelity/matrix.py`
+  - Matrix CLI: `src/gpu_simulate_test/cli/paper_fidelity.py` (`matrix` subcommand)
+  - Repro failure records: `src/gpu_simulate_test/cli/paper_fidelity.py` (`_repro_main`)
+- **Phase 9 (docs)**:
+  - Matrix quickstart: `specs/003-paper-fidelity-more-models/quickstart.md`
+  - Runbook: `docs/runbooks/paper_fidelity_matrix.md`
+
 ## Phase Flow
 
 **MUST HAVE: End-to-End Sequence Diagram**
@@ -241,6 +267,10 @@ stateDiagram-v2
 pixi run pytest tests/unit/test_env_guard.py
 pixi run pytest tests/unit/test_paper_fidelity_trace.py
 pixi run pytest tests/unit/test_paper_fidelity_manifest.py
+pixi run pytest -q
+
+# Docs (CPU-only)
+pixi run mkdocs build --strict
 
 # Manual (GPU required; model assets required)
 pixi run paper-fidelity matrix --scale small --workloads static,dynamic --include-cpu-overhead
@@ -261,4 +291,3 @@ pixi run paper-fidelity matrix --scale small --workloads static,dynamic --includ
 - Tasks breakdown (authoritative checklist): `specs/003-paper-fidelity-more-models/tasks.md`
 - Data model: `specs/003-paper-fidelity-more-models/data-model.md`
 - Contracts: `specs/003-paper-fidelity-more-models/contracts/`
-
