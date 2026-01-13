@@ -1,0 +1,389 @@
+openapi: 3.0.3
+info:
+  title: gpu-simulate-test paper-fidelity contract
+  version: v1
+  description: |
+    Logical REST-style contract for the paper-fidelity workflow.
+
+    Note: This repository currently executes these operations via the CLI:
+      - `pixi run paper-fidelity trace|profile|repro`
+    and (for this feature) a matrix runner procedure.
+
+    This OpenAPI document specifies inputs/outputs and artifact paths so the workflow
+    can be automated and validated consistently (even if the implementation remains CLI-first).
+
+paths:
+  /paper-fidelity/trace:
+    post:
+      summary: Generate or validate a canonical trace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TraceRequest"
+      responses:
+        "200":
+          description: Trace generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TraceResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /paper-fidelity/profile:
+    post:
+      summary: Generate a host-matched profiling root for Vidur simulation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileRequest"
+      responses:
+        "200":
+          description: Profiling completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Profiling failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /paper-fidelity/repro:
+    post:
+      summary: Run end-to-end repro (trace → sim → real → score → report)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReproRequest"
+      responses:
+        "200":
+          description: Repro completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReproResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Repro failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /paper-fidelity/matrix:
+    post:
+      summary: Run the required model/workload matrix (small scale) and write a manifest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MatrixRequest"
+      responses:
+        "200":
+          description: Matrix completed (with success and/or failures recorded)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatrixResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    Workload:
+      type: string
+      enum: [static, dynamic]
+
+    Scale:
+      type: string
+      enum: [small, medium, full]
+
+    BlockerCategory:
+      type: string
+      enum:
+        - insufficient GPUs
+        - OOM
+        - missing model files
+        - unsupported model
+        - unknown
+
+    TraceRequest:
+      type: object
+      additionalProperties: false
+      required: [scenario, workload]
+      properties:
+        scenario:
+          type: string
+          description: Scenario key under `configs/paper_fidelity/scenario/` (filename stem).
+          example: llama2_70b_arxiv
+        workload:
+          $ref: "#/components/schemas/Workload"
+        scale:
+          $ref: "#/components/schemas/Scale"
+        hydra_overrides:
+          type: array
+          items: { type: string }
+          description: Optional Hydra overrides passed as `key=value`.
+
+    TraceArtifacts:
+      type: object
+      additionalProperties: false
+      required: [trace_csv, trace_meta_json]
+      properties:
+        trace_csv:
+          type: string
+          description: Absolute path to `trace.csv`.
+          example: /data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/traces/llama2_70b_arxiv/trace.csv
+        trace_meta_json:
+          type: string
+          description: Absolute path to `trace_meta.json`.
+          example: /data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/traces/llama2_70b_arxiv/trace_meta.json
+
+    TraceResponse:
+      type: object
+      additionalProperties: false
+      required: [scenario_name, out_dir, artifacts]
+      properties:
+        scenario_name:
+          type: string
+        out_dir:
+          type: string
+          description: Absolute path to the trace output directory.
+        artifacts:
+          $ref: "#/components/schemas/TraceArtifacts"
+
+    ProfileRequest:
+      type: object
+      additionalProperties: false
+      required: [scenario]
+      properties:
+        scenario:
+          type: string
+          example: internlm_20b_arxiv
+        include_cpu_overhead:
+          type: boolean
+          default: true
+          description: Required `true` for this feature’s acceptance matrix.
+        hydra_overrides:
+          type: array
+          items: { type: string }
+          description: Optional Hydra overrides passed as `key=value` (e.g., `profiling.num_gpus=4`).
+
+    ProfileArtifacts:
+      type: object
+      additionalProperties: false
+      required: [profiling_root, profiling_meta_json]
+      properties:
+        profiling_root:
+          type: string
+          description: Absolute path to the profiling root directory.
+        profiling_meta_json:
+          type: string
+          description: Absolute path to `profiling_meta.json`.
+
+    ProfileResponse:
+      type: object
+      additionalProperties: false
+      required: [scenario_name, artifacts]
+      properties:
+        scenario_name:
+          type: string
+        artifacts:
+          $ref: "#/components/schemas/ProfileArtifacts"
+
+    ReproRequest:
+      type: object
+      additionalProperties: false
+      required: [scenario, workload, profiling_root]
+      properties:
+        scenario:
+          type: string
+        workload:
+          $ref: "#/components/schemas/Workload"
+        scale:
+          $ref: "#/components/schemas/Scale"
+        profiling_root:
+          type: string
+          description: Absolute path to the host profiling root to use for Vidur.
+        scenario_name_override:
+          type: string
+          description: Optional override for `scenario.name` to avoid report collisions.
+        hydra_overrides:
+          type: array
+          items: { type: string }
+          description: Optional Hydra overrides passed as `key=value`.
+
+    ReproArtifacts:
+      type: object
+      additionalProperties: false
+      required: [report_dir, summary_md, scores_json, run_meta_json]
+      properties:
+        report_dir:
+          type: string
+        summary_md:
+          type: string
+        scores_json:
+          type: string
+        run_meta_json:
+          type: string
+
+    ReproResponse:
+      type: object
+      additionalProperties: false
+      required: [scenario_name, artifacts]
+      properties:
+        scenario_name:
+          type: string
+        artifacts:
+          $ref: "#/components/schemas/ReproArtifacts"
+
+    FailureRecord:
+      type: object
+      additionalProperties: false
+      required:
+        - schema_version
+        - generated_at
+        - run_id
+        - action
+        - scenario_key
+        - error_message
+        - blocker_category
+      properties:
+        schema_version:
+          type: string
+          example: v1
+        generated_at:
+          type: string
+          description: ISO8601 UTC timestamp.
+        run_id:
+          type: string
+        action:
+          type: string
+          enum: [trace, profile, repro, matrix]
+        scenario_key:
+          type: string
+        scenario_name:
+          type: string
+        workload:
+          $ref: "#/components/schemas/Workload"
+        scale:
+          $ref: "#/components/schemas/Scale"
+        attempted_command:
+          description: The exact argv list (or a rendered command string) attempted.
+          oneOf:
+            - type: array
+              items: { type: string }
+            - type: string
+        hydra_overrides:
+          type: array
+          items: { type: string }
+        error_message:
+          type: string
+        traceback:
+          type: string
+          nullable: true
+        blocker_category:
+          $ref: "#/components/schemas/BlockerCategory"
+
+    MatrixRunEntry:
+      type: object
+      additionalProperties: false
+      required: [scenario_key, workload, scale, status]
+      properties:
+        scenario_key:
+          type: string
+        workload:
+          $ref: "#/components/schemas/Workload"
+        scale:
+          $ref: "#/components/schemas/Scale"
+        status:
+          type: string
+          enum: [success, failure]
+        report_dir:
+          type: string
+          nullable: true
+        failure_record_json:
+          type: string
+          nullable: true
+        blocker_category:
+          $ref: "#/components/schemas/BlockerCategory"
+
+    MatrixRequest:
+      type: object
+      additionalProperties: false
+      required: [scenarios, workloads, scale]
+      properties:
+        scenarios:
+          type: array
+          items: { type: string }
+          example: [internlm_20b_arxiv, llama2_70b_arxiv, qwen_72b_arxiv]
+        workloads:
+          type: array
+          items: { $ref: "#/components/schemas/Workload" }
+          example: [static, dynamic]
+        scale:
+          $ref: "#/components/schemas/Scale"
+        include_cpu_overhead:
+          type: boolean
+          default: true
+        run_id:
+          type: string
+          description: Optional caller-provided identifier for the matrix run.
+        stop_on_failure:
+          type: boolean
+          default: false
+          description: If true, stop after the first failure (still write manifest).
+
+    MatrixResponse:
+      type: object
+      additionalProperties: false
+      required: [run_id, manifest_json, runs]
+      properties:
+        run_id:
+          type: string
+        manifest_json:
+          type: string
+          description: Absolute path to the per-matrix manifest JSON file.
+        runs:
+          type: array
+          items: { $ref: "#/components/schemas/MatrixRunEntry" }
+
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message:
+          type: string
+        failure_record:
+          $ref: "#/components/schemas/FailureRecord"
+
