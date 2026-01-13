@@ -1,0 +1,295 @@
+{
+  "artifacts": {
+    "profiling_meta_json": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_roots/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104/profiling_meta.json",
+    "profiling_outputs_dir": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_outputs/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104",
+    "profiling_root": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_roots/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104"
+  },
+  "ended_at": "2026-01-13T13:03:48.429841+00:00",
+  "env": {
+    "cuda_available": true,
+    "cuda_device_name": "NVIDIA A100-SXM4-80GB",
+    "cwd": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/runs/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/profile",
+    "platform": "Linux-6.8.0-90-generic-x86_64-with-glibc2.39",
+    "python": "3.13.11",
+    "torch": "2.9.1+cu128"
+  },
+  "git_commit": "5ef212e05e73056b543a94868165b30146069355",
+  "git_dirty": true,
+  "params": {
+    "paths": {
+      "repo_root": "/data1/huangzhe/code/gpu-simulate-test",
+      "results_root": "/data1/huangzhe/code/gpu-simulate-test/results",
+      "tmp_root": "/data1/huangzhe/code/gpu-simulate-test/tmp"
+    },
+    "profiling": {
+      "cpu_overhead": {
+        "max_batch_size": 128,
+        "validation": "strict"
+      },
+      "include_cpu_overhead": true,
+      "max_tokens": 4096,
+      "num_gpus": 4,
+      "tensor_parallel_size": 4
+    },
+    "scenario": {
+      "capacity_search": {
+        "enabled": true,
+        "max_iters": 6,
+        "max_qps": 20.0,
+        "min_qps": 1.0,
+        "overload_p99_scheduling_delay_s": 5.0,
+        "qps_operating_point_fraction": 0.85
+      },
+      "model": {
+        "model_id": "meta-llama/Llama-2-70b-hf",
+        "model_ref": "/data1/huangzhe/code/gpu-simulate-test/models/llama2-70b-hf/source-data"
+      },
+      "name": "llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365",
+      "paper_reference": {
+        "dynamic": {
+          "load_frac_of_capacity": 0.85,
+          "metric": "request_e2e_time_normalized",
+          "p50_json": "/data1/huangzhe/code/gpu-simulate-test/context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_85_p50.json",
+          "p95_json": "/data1/huangzhe/code/gpu-simulate-test/context/summaries/vidur-kb/paper-results/dynamic_fidelity_v8_request_e2e_time_normalized_85_p95.json"
+        },
+        "enabled": true,
+        "model": "LLaMA2-70B (TP4)",
+        "series": "predicted",
+        "static": {
+          "metric": "request_execution_plus_preemption_time_normalized",
+          "p50_json": "/data1/huangzhe/code/gpu-simulate-test/context/summaries/vidur-kb/paper-results/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p50.json",
+          "p95_json": "/data1/huangzhe/code/gpu-simulate-test/context/summaries/vidur-kb/paper-results/static_fidelity_v12_request_execution_plus_preemption_time_normalized_p95.json"
+        },
+        "trace": "Arxiv-4K"
+      },
+      "real": {
+        "backend": "sarathi",
+        "metrics": {
+          "enable_chrome_trace": false,
+          "write_metrics": true
+        },
+        "parallel": {
+          "pipeline_parallel_size": 1,
+          "tensor_parallel_size": 4
+        },
+        "sampling": {
+          "ignore_eos": true
+        },
+        "scheduler": {
+          "chunk_size": 16,
+          "max_num_seqs": 16
+        }
+      },
+      "scoring": {
+        "percentiles": [
+          0.5,
+          0.95
+        ],
+        "thresholds": {
+          "pass_pct": 0.05,
+          "warn_pct": 0.09
+        }
+      },
+      "trace_source": {
+        "kind": "vidur_processed_lengths_csv",
+        "max_tokens": 4096,
+        "num_requests": null,
+        "path": "/data1/huangzhe/code/gpu-simulate-test/extern/tracked/vidur/data/processed_traces/arxiv_summarization_stats_llama2_tokenizer_filtered_v2.csv",
+        "seed": 42
+      },
+      "vidur": {
+        "cpu_overhead": {
+          "validation": "strict"
+        },
+        "device": "a100",
+        "network_device": "a100_pairwise_nvlink",
+        "num_pipeline_stages": 1,
+        "profiling_root": "/data1/huangzhe/code/gpu-simulate-test/extern/tracked/vidur",
+        "scheduler": {
+          "batch_size_cap": 16,
+          "block_size": 16,
+          "chunk_size": 16,
+          "type": "sarathi",
+          "watermark_blocks_fraction": 0.01
+        },
+        "seed": 42,
+        "skip_cpu_overhead_modeling": true,
+        "tensor_parallel_size": 4
+      }
+    }
+  },
+  "profiling": {
+    "cpu_overhead_max_batch_size": 128,
+    "cpu_overhead_validation": "strict",
+    "device": "a100",
+    "include_cpu_overhead": true,
+    "max_tokens": 4096,
+    "model_id": "meta-llama/Llama-2-70b-hf",
+    "network_device": "a100_pairwise_nvlink",
+    "num_gpus": 4,
+    "tensor_parallel_size": 4
+  },
+  "profiling_commands": {
+    "attention": [
+      "/data1/huangzhe/code/gpu-simulate-test/.pixi/envs/default/bin/python",
+      "-m",
+      "gpu_simulate_test.vidur_ext.vidur_profiling_attention_main",
+      "--num_gpus",
+      "4",
+      "--num_tensor_parallel_workers",
+      "4",
+      "--models",
+      "meta-llama/Llama-2-70b-hf",
+      "--output_dir",
+      "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_outputs/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104",
+      "--max_model_len",
+      "4096",
+      "--max_seq_len",
+      "4096",
+      "--min_batch_size",
+      "1",
+      "--max_batch_size",
+      "1",
+      "--block_size",
+      "16",
+      "--profile_only_decode"
+    ],
+    "mlp": [
+      "/data1/huangzhe/code/gpu-simulate-test/.pixi/envs/default/bin/python",
+      "-m",
+      "gpu_simulate_test.vidur_ext.vidur_profiling_mlp_main",
+      "--num_gpus",
+      "4",
+      "--num_tensor_parallel_workers",
+      "4",
+      "--models",
+      "meta-llama/Llama-2-70b-hf",
+      "--output_dir",
+      "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_outputs/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104",
+      "--max_tokens",
+      "4096"
+    ]
+  },
+  "profiling_outputs": {
+    "attention_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_roots/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104/data/profiling/compute/a100/meta-llama/Llama-2-70b-hf/attention.csv",
+    "attention_profiled": false,
+    "cpu_overhead_profiled": true,
+    "cpu_overhead_validation": {
+      "batch_size_unique": 12,
+      "column_count": 14,
+      "csv_path": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_outputs/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104/cpu_overhead/2026-01-13_12-54-25/meta-llama/Llama-2-70b-hf/cpu_overhead.csv",
+      "mode": "strict",
+      "placeholder_like": false,
+      "row_count": 13,
+      "unique_values": {
+        "model_execution_e2e_mean": 13,
+        "model_execution_e2e_median": 10,
+        "prepare_inputs_e2e_mean": 13,
+        "prepare_inputs_e2e_median": 13,
+        "process_model_outputs_mean": 13,
+        "process_model_outputs_median": 13,
+        "ray_comm_time_mean": 13,
+        "sampler_e2e_mean": 13,
+        "sampler_e2e_median": 13,
+        "schedule_mean": 13,
+        "schedule_median": 13
+      },
+      "warnings": []
+    },
+    "cpu_overheads_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_roots/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104/data/profiling/cpu_overhead/a100_pairwise_nvlink/meta-llama/Llama-2-70b-hf/cpu_overheads.csv",
+    "mlp_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_roots/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104/data/profiling/compute/a100/meta-llama/Llama-2-70b-hf/mlp.csv"
+  },
+  "run_id": "2026-01-13_12-52-27-168104",
+  "run_type": "paper_fidelity_profile",
+  "scenario_name": "llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365",
+  "schema_version": "v1",
+  "started_at": "2026-01-13T12:52:27.168092+00:00",
+  "vidur_profile_result": {
+    "attention_cmd": [
+      "/data1/huangzhe/code/gpu-simulate-test/.pixi/envs/default/bin/python",
+      "-m",
+      "gpu_simulate_test.vidur_ext.vidur_profiling_attention_main",
+      "--num_gpus",
+      "4",
+      "--num_tensor_parallel_workers",
+      "4",
+      "--models",
+      "meta-llama/Llama-2-70b-hf",
+      "--output_dir",
+      "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_outputs/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104",
+      "--max_model_len",
+      "4096",
+      "--max_seq_len",
+      "4096",
+      "--min_batch_size",
+      "1",
+      "--max_batch_size",
+      "1",
+      "--block_size",
+      "16",
+      "--profile_only_decode"
+    ],
+    "attention_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_roots/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104/data/profiling/compute/a100/meta-llama/Llama-2-70b-hf/attention.csv",
+    "attention_profiled": false,
+    "cpu_overhead_cmd": [
+      "/data1/huangzhe/code/gpu-simulate-test/.pixi/envs/default/bin/python",
+      "-m",
+      "gpu_simulate_test.vidur_ext.vidur_profiling_cpu_overhead_main",
+      "--models",
+      "meta-llama/Llama-2-70b-hf",
+      "--num_tensor_parallel_workers",
+      "4",
+      "--max_batch_size",
+      "128",
+      "--output_dir",
+      "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_outputs/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104",
+      "--model_path",
+      "/data1/huangzhe/llm-models/Llama-2-70b-hf"
+    ],
+    "cpu_overhead_profiled": true,
+    "cpu_overheads_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_roots/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104/data/profiling/cpu_overhead/a100_pairwise_nvlink/meta-llama/Llama-2-70b-hf/cpu_overheads.csv",
+    "extra": {
+      "attention_fallback_template": "/data1/huangzhe/code/gpu-simulate-test/extern/tracked/vidur/data/profiling/compute/a100/microsoft/phi-2/attention.csv",
+      "cpu_overhead_validation": {
+        "batch_size_unique": 12,
+        "column_count": 14,
+        "csv_path": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_outputs/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104/cpu_overhead/2026-01-13_12-54-25/meta-llama/Llama-2-70b-hf/cpu_overhead.csv",
+        "mode": "strict",
+        "placeholder_like": false,
+        "row_count": 13,
+        "unique_values": {
+          "model_execution_e2e_mean": 13,
+          "model_execution_e2e_median": 10,
+          "prepare_inputs_e2e_mean": 13,
+          "prepare_inputs_e2e_median": 13,
+          "process_model_outputs_mean": 13,
+          "process_model_outputs_median": 13,
+          "ray_comm_time_mean": 13,
+          "sampler_e2e_mean": 13,
+          "sampler_e2e_median": 13,
+          "schedule_mean": 13,
+          "schedule_median": 13
+        },
+        "warnings": []
+      }
+    },
+    "mlp_cmd": [
+      "/data1/huangzhe/code/gpu-simulate-test/.pixi/envs/default/bin/python",
+      "-m",
+      "gpu_simulate_test.vidur_ext.vidur_profiling_mlp_main",
+      "--num_gpus",
+      "4",
+      "--num_tensor_parallel_workers",
+      "4",
+      "--models",
+      "meta-llama/Llama-2-70b-hf",
+      "--output_dir",
+      "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_outputs/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104",
+      "--max_tokens",
+      "4096"
+    ],
+    "mlp_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_roots/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104/data/profiling/compute/a100/meta-llama/Llama-2-70b-hf/mlp.csv",
+    "profiling_root": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_roots/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104",
+    "staging_root": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/profiling_outputs/llama2_70b_arxiv_sweep_2026-01-13_12-52-21-924310365/2026-01-13_12-52-27-168104"
+  }
+}
