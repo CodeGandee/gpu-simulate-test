@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "vidur-cli resources.json (v1)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "resolved_at",
+    "repo_root",
+    "models_root",
+    "datasets_root",
+    "workspace_root",
+    "config_toml",
+    "hydra_config_roots"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "v1" },
+    "resolved_at": { "type": "string" },
+    "repo_root": { "$ref": "#/$defs/resolved_path" },
+    "models_root": { "$ref": "#/$defs/resolved_path" },
+    "datasets_root": { "$ref": "#/$defs/resolved_path" },
+    "workspace_root": { "$ref": "#/$defs/resolved_workspace" },
+    "config_toml": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["path", "source"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "enum": ["flag", "env", "default"] }
+      }
+    },
+    "hydra_config_roots": { "type": "array", "items": { "type": "string" } },
+    "env_snapshot": { "type": "object", "additionalProperties": true }
+  },
+  "$defs": {
+    "resolved_path": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["value", "source"],
+      "properties": {
+        "value": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "enum": ["env", "config_toml", "repo_fallback", "pwd_default"] },
+        "details": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "resolved_workspace": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["value", "source"],
+      "properties": {
+        "value": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "enum": ["env", "config_toml", "pwd_default"] },
+        "details": { "type": "object", "additionalProperties": true }
+      }
+    }
+  }
+}

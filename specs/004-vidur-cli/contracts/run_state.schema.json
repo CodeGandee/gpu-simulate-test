@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "vidur-cli run_state.json (v1)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "created_at",
+    "updated_at",
+    "run_tag",
+    "run_dir",
+    "presets",
+    "overrides",
+    "artifacts"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "v1" },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" },
+    "run_tag": { "type": "string", "minLength": 1 },
+    "run_dir": { "type": "string", "minLength": 1 },
+    "presets": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["model", "hardware", "backend", "workload", "vidur"],
+      "properties": {
+        "model": { "type": "string", "minLength": 1 },
+        "hardware": { "type": "string", "minLength": 1 },
+        "backend": { "type": "string", "minLength": 1 },
+        "workload": { "type": "string", "minLength": 1 },
+        "vidur": { "type": "string", "minLength": 1 }
+      }
+    },
+    "overrides": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "trace": { "$ref": "#/$defs/stage_trace" },
+        "profile": { "$ref": "#/$defs/stage_profile" },
+        "sim": { "$ref": "#/$defs/stage_sim" },
+        "real": { "$ref": "#/$defs/stage_real" },
+        "report": { "$ref": "#/$defs/stage_report" }
+      }
+    }
+  },
+  "$defs": {
+    "stage_status": { "type": "string", "enum": ["ok", "failed"] },
+    "stage_trace": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["trace_csv", "trace_meta_json", "status", "ended_at"],
+      "properties": {
+        "trace_csv": { "type": "string", "minLength": 1 },
+        "trace_meta_json": { "type": "string", "minLength": 1 },
+        "status": { "$ref": "#/$defs/stage_status" },
+        "ended_at": { "type": "string" }
+      }
+    },
+    "stage_profile": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["profiling_root", "include_cpu_overhead", "status", "ended_at"],
+      "properties": {
+        "profiling_root": { "type": "string", "minLength": 1 },
+        "include_cpu_overhead": { "type": "boolean" },
+        "status": { "$ref": "#/$defs/stage_status" },
+        "ended_at": { "type": "string" }
+      }
+    },
+    "stage_sim": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["sim_run_dir", "status", "ended_at"],
+      "properties": {
+        "sim_run_dir": { "type": "string", "minLength": 1 },
+        "status": { "$ref": "#/$defs/stage_status" },
+        "ended_at": { "type": "string" }
+      }
+    },
+    "stage_real": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["real_run_dir", "backend", "status", "ended_at"],
+      "properties": {
+        "real_run_dir": { "type": "string", "minLength": 1 },
+        "backend": { "type": "string", "minLength": 1 },
+        "status": { "$ref": "#/$defs/stage_status" },
+        "ended_at": { "type": "string" }
+      }
+    },
+    "stage_report": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["report_dir", "summary_md", "status", "ended_at"],
+      "properties": {
+        "report_dir": { "type": "string", "minLength": 1 },
+        "summary_md": { "type": "string", "minLength": 1 },
+        "status": { "$ref": "#/$defs/stage_status" },
+        "ended_at": { "type": "string" }
+      }
+    }
+  }
+}

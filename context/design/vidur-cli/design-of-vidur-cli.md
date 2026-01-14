@@ -22,10 +22,10 @@
 2. **Hydra-native configuration**: keep Hydra composition/overrides as the underlying configuration mechanism (no bespoke config format for experiments).
 3. **Config extensibility**: allow users to add their own Hydra config directories in custom locations and compose them together with in-repo configs.
 4. **Portable resource resolution**: resolve resources (models, datasets, output roots, etc.) with a clear precedence:
-   - **env** > **user home config toml** > **in-repo predefined location**
-   - (repo root itself can be specified via env or home config; otherwise `pwd` is used)
+   - **env** > **project-local config toml** > **in-repo predefined location**
+   - (repo root itself can be specified via env or project config; otherwise `pwd` is used)
 5. **Reproducibility + provenance**: every step writes machine-readable metadata and points to the resolved config/resources it used.
-6. **Good UX for mistakes**: when something can’t be resolved (missing model path, missing config), error messages should show *which source was tried* (env vs home config vs repo fallback) and how to fix it.
+6. **Good UX for mistakes**: when something can’t be resolved (missing model path, missing config), error messages should show *which source was tried* (env vs project config vs repo fallback) and how to fix it.
 
 ### Non-goals (for v1)
 - Replace Hydra or hide Hydra entirely (users will still be able to pass `key=value` overrides).
@@ -100,9 +100,8 @@ High-level structure:
 ### Global flags (apply to all subcommands)
 These flags affect config + resource resolution and should be accepted before the subcommand name:
 - `--user-config <path>`
-  - Path to user home config TOML.
-  - Default: `$XDG_CONFIG_HOME/vidur-cli/config.toml` or `~/.config/vidur-cli/config.toml`.
-  - Env fallback: `GSIM_VIDUR_CLI_USER_CONFIG`.
+  - Path to the `vidur-cli` TOML config.
+  - Resolution order: `--user-config` > `GSIM_VIDUR_CLI_USER_CONFIG` > `<pwd>/.vidur-config/default.toml`.
 - `--config-dir <path>` (repeatable)
   - Additional Hydra config directories to add (see section 4).
   - Env fallback: `GSIM_VIDUR_CLI_HYDRA_CONFIG_DIRS` (OS-specific path separator; e.g. `:` on Linux).
@@ -131,7 +130,7 @@ The design preference is **Option A** for parity with existing repo UX.
 1. **User-specified config dirs** (highest priority)
    - from `--config-dir ...`
    - then from `GSIM_VIDUR_CLI_HYDRA_CONFIG_DIRS`
-   - then from `~/.config/vidur-cli/config.toml` (if it contains default config dirs)
+   - then from the resolved config TOML (if it contains default config dirs)
 2. **Repo config dirs** (default fallback)
    - derived from the resolved `repo_root`
    - fixed end-user root: `<repo_root>/configs/compare_vidur_real`
@@ -176,7 +175,7 @@ Add a config inspection command to prevent confusion:
 
 ---
 
-## 5) Resource resolution (env > home config toml > repo fallback)
+## 5) Resource resolution (env > project config toml > repo fallback)
 
 ### Motivation
 Tutorial workflows often assume:
@@ -191,7 +190,7 @@ That breaks for:
 ### Resolution precedence
 For each resource key, resolve in this order:
 1. **Environment variables**
-2. **User home config TOML**
+2. **Project-local config TOML**
 3. **In-repo predefined location** (relative to resolved repo root)
 
 If resolution fails, error messages should explicitly list what was tried.
@@ -201,12 +200,12 @@ If resolution fails, error messages should explicitly list what was tried.
 
 Resolution order:
 1. `GSIM_REPO_ROOT` (env var)
-2. `~/.config/vidur-cli/config.toml` (user home config TOML)
+2. the resolved config TOML (project-local config TOML)
    - key: `resources.repo_root`
 3. `pwd` (current working directory)
 
-### User home config TOML
-Default path: `~/.config/vidur-cli/config.toml` (or XDG variant).
+### Project-local config TOML
+Default path: `<pwd>/.vidur-config/default.toml` (unless overridden by `GSIM_VIDUR_CLI_USER_CONFIG` or `--user-config`).
 
 Proposed minimal schema:
 ```toml
@@ -227,7 +226,7 @@ config_dirs = ["/abs/path/to/my/configs"]
 ```
 
 ### Resource keys
-At minimum, define and resolve these keys (env var → home TOML key → repo fallback):
+At minimum, define and resolve these keys (env var → project TOML key → repo fallback):
 - `GSIM_REPO_ROOT` → `resources.repo_root` → `pwd`
 - `GSIM_MODELS_ROOT` → `resources.models_root` → `<repo_root>/models`
 - `GSIM_DATASETS_ROOT` → `resources.datasets_root` → `<repo_root>/datasets`
@@ -357,8 +356,8 @@ vidur-cli --config-dir /home/me/my_vidur_configs svr init-run \
   model=my_model hardware=a100 backend=transformers workload=default vidur=default
 ```
 
-### Example C: user-defined model location via home config
-Put in `~/.config/vidur-cli/config.toml`:
+### Example C: user-defined model location via project config
+Put in `<pwd>/.vidur-config/default.toml`:
 ```toml
 [models]
 "meta-llama/Llama-2-70b-hf" = "/mnt/models/Llama-2-70b-hf"
@@ -379,12 +378,12 @@ Then the model preset can reference `model_id`, and the CLI resolves the local p
 ### Architecture (modules)
 - `gpu_simulate_test/cli/vidur_cli.py`
   - argparse top-level + subcommands
-  - loads user config toml
+  - loads project-local config toml
   - resolves repo root + resources
   - constructs Hydra search path
   - dispatches to underlying Hydra apps or Python functions
 - `gpu_simulate_test/resources/resolver.py` (new)
-  - `ResourceResolver` implementing env > home toml > repo fallback
+  - `ResourceResolver` implementing env > project toml > repo fallback
 - `gpu_simulate_test/configs/search_path.py` (new)
   - builds Hydra search path from `--config-dir` + config toml + repo configs
 

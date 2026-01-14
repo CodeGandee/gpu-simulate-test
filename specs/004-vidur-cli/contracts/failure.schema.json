@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "vidur-cli failure.json (v1)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schema_version", "failed_at", "stage", "error_type", "message"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "v1" },
+    "failed_at": { "type": "string" },
+    "stage": {
+      "type": "string",
+      "enum": ["init-run", "trace", "profile", "sim", "real", "report", "resources", "configs"]
+    },
+    "error_type": { "type": "string", "minLength": 1 },
+    "message": { "type": "string", "minLength": 1 },
+    "context": { "type": "object", "additionalProperties": true }
+  }
+}

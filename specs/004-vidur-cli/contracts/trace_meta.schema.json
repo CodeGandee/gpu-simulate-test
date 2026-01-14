@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "vidur-cli trace_meta.json (v1)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schema_version", "created_at", "trace_csv", "source", "arrival_schedule"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "v1" },
+    "created_at": { "type": "string" },
+    "trace_csv": { "type": "string", "minLength": 1 },
+    "source": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["import", "lengths_csv"] },
+        "path": { "type": "string" }
+      }
+    },
+    "arrival_schedule": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["kind", "seed"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["fixed_interval", "poisson"] },
+        "seed": { "type": "integer" },
+        "inter_arrival_ns": { "type": "integer" },
+        "poisson_rate_per_s": { "type": "number" }
+      }
+    }
+  }
+}
