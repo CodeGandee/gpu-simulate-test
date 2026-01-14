@@ -1,0 +1,75 @@
+{
+  "generated_at": "2026-01-14T03:16:44.334513+00:00",
+  "inputs": {
+    "real_csv": "/data1/huangzhe/code/gpu-simulate-test/results/reports/2026-01-14/paper_fidelity/llama2_70b_arxiv_sweep_llama2_70b_static_tp4_2026-01-14_02-52-31/inputs/real_request_metrics.csv",
+    "sim_csv": "/data1/huangzhe/code/gpu-simulate-test/results/reports/2026-01-14/paper_fidelity/llama2_70b_arxiv_sweep_llama2_70b_static_tp4_2026-01-14_02-52-31/inputs/sim_request_metrics.csv"
+  },
+  "metrics": [
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.06700132240909194,
+          "real": 0.12178306977413565,
+          "sim": 0.11362344305222985
+        },
+        "p95": {
+          "pct_error": 0.06879618240852227,
+          "real": 0.258911256908934,
+          "sim": 0.24109915085100722
+        }
+      },
+      "verdict": "warn"
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.0649078707778272,
+          "real": 1.6112985580611667,
+          "sim": 1.5067125994700332
+        },
+        "p95": {
+          "pct_error": 0.06580096509185526,
+          "real": 4.049475664831563,
+          "sim": 3.7830162579696642
+        }
+      },
+      "verdict": "warn"
+    },
+    {
+      "metric": "prefill_time_execution_plus_preemption_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.07828933784583449,
+          "real": 0.00393314027032525,
+          "sim": 0.0036252173229066997
+        },
+        "p95": {
+          "pct_error": 0.07018611801628975,
+          "real": 0.004222533025479705,
+          "sim": 0.003926169824225705
+        }
+      },
+      "verdict": "warn"
+    },
+    {
+      "metric": "decode_time_execution_plus_preemption_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.07682778708035432,
+          "real": 0.058441408721051344,
+          "sim": 0.05395148461515445
+        },
+        "p95": {
+          "pct_error": 0.07884847125083902,
+          "real": 0.05971152723260563,
+          "sim": 0.05500336459426183
+        }
+      },
+      "verdict": "warn"
+    }
+  ],
+  "scenario_name": "llama2_70b_arxiv_sweep_llama2_70b_static_tp4_2026-01-14_02-52-31",
+  "schema_version": "v1"
+}
