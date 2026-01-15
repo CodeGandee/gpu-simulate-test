@@ -1,0 +1,70 @@
+{
+  "generated_at": "2026-01-15T09:18:57.267657+00:00",
+  "metrics": [
+    {
+      "metric": "request_execution_plus_preemption_time_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.11873323859474551,
+          "real": 0.03487910277768565,
+          "sim": 0.03902041160975925
+        },
+        "p95": {
+          "pct_error": 0.18140046107224095,
+          "real": 0.06989937399665153,
+          "sim": 0.08257915266830512
+        }
+      }
+    },
+    {
+      "metric": "request_e2e_time_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.15535388105729456,
+          "real": 0.44728301874586235,
+          "sim": 0.5167701716390547
+        },
+        "p95": {
+          "pct_error": 0.1437784299137556,
+          "real": 1.1345976878204258,
+          "sim": 1.297728361959024
+        }
+      }
+    },
+    {
+      "metric": "prefill_time_execution_plus_preemption_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.13507552595986372,
+          "real": 0.00109739966791205,
+          "sim": 0.00124563150524345
+        },
+        "p95": {
+          "pct_error": 0.08544777086115703,
+          "real": 0.00123913387248153,
+          "sim": 0.00134501509968363
+        }
+      }
+    },
+    {
+      "metric": "decode_time_execution_plus_preemption_normalized",
+      "percentiles": {
+        "p50": {
+          "pct_error": 0.10654739201512056,
+          "real": 0.0167377236630172,
+          "sim": 0.018521084467581453
+        },
+        "p95": {
+          "pct_error": 0.051536606852952735,
+          "real": 0.017908236307560114,
+          "sim": 0.018831166041572613
+        }
+      }
+    }
+  ],
+  "percentiles": [
+    "p50",
+    "p95"
+  ],
+  "schema_version": "v1"
+}

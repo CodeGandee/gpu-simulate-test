@@ -1,0 +1,63 @@
+{
+  "config": {
+    "arrival_kind": "fixed_interval",
+    "arrival_params": {
+      "kind": "fixed_interval",
+      "seed": 0
+    },
+    "model_id": "meta-llama/Llama-2-7b-hf",
+    "real": {
+      "ignore_eos": true,
+      "max_tokens": 4096,
+      "pipeline_parallel_size": 1,
+      "scheduler": {
+        "chunk_size": 16,
+        "max_num_seqs": 16
+      },
+      "tensor_parallel_size": 1
+    },
+    "real_model_ref": "<MODEL_REF>",
+    "sim": {
+      "cpu_overhead": {
+        "include_cpu_overhead": true,
+        "skip_cpu_overhead_modeling": false
+      },
+      "max_tokens": 4096,
+      "num_pipeline_stages": 1,
+      "scheduler": {
+        "batch_size_cap": 16,
+        "block_size": 16,
+        "chunk_size": 16,
+        "type": "sarathi",
+        "watermark_blocks_fraction": 0.01
+      },
+      "tensor_parallel_size": 1
+    },
+    "sim_model_ref": "<MODEL_REF>",
+    "trace": {
+      "max_decode_tokens": 2131,
+      "max_prefill_tokens": 3930,
+      "max_total_tokens": 4021,
+      "num_requests": 50,
+      "status": "ok",
+      "trace_csv": "<RUN_DIR>/trace/trace.csv"
+    }
+  },
+  "generated_at": "2026-01-15T09:18:58.293389+00:00",
+  "inputs": {
+    "real_request_metrics_csv": "<RUN_DIR>/report/inputs/real_request_metrics.csv",
+    "sim_request_metrics_csv": "<RUN_DIR>/report/inputs/sim_request_metrics.csv"
+  },
+  "profiling": {
+    "cpu_overhead": {
+      "cpu_overheads_csv": "<RUN_DIR>/profile/data/profiling/cpu_overhead/a100_pairwise_nvlink/meta-llama/Llama-2-7b-hf/cpu_overheads.csv",
+      "include_cpu_overhead": true,
+      "status": "ok"
+    },
+    "root": "<RUN_DIR>/profile"
+  },
+  "real_run_dir": "<RUN_DIR>/real",
+  "run_dir": "<RUN_DIR>",
+  "schema_version": "v1",
+  "sim_run_dir": "<RUN_DIR>/sim"
+}

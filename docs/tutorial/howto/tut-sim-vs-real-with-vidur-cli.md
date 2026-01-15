@@ -31,6 +31,26 @@ Static vs dynamic is controlled by the **arrival schedule** used when generating
 - **Static:** `workload.arrival.kind=fixed_interval` with `workload.arrival.inter_arrival_ns=0` (all arrivals at time 0).
 - **Dynamic:** `workload.arrival.kind=poisson` with `workload.arrival.poisson_rate_per_s=<qps>` (timed arrivals).
 
+## Quickstart Demo (self-contained, tracked)
+
+This repo includes a self-contained demo under:
+
+- `examples/tut-sim-vs-real-with-vidur-cli/`
+
+It vendors a paper-fidelity trace snapshot and a representative expected report snapshot, so users can run an end-to-end `vidur-cli` demo without relying on any mutable `tmp/` inputs.
+
+Run:
+
+```bash
+examples/tut-sim-vs-real-with-vidur-cli/run_demo_static_from_pf_trace.sh
+```
+
+Tracked demo artifacts:
+
+- Input trace (paper-fidelity schema): `examples/tut-sim-vs-real-with-vidur-cli/inputs/trace.csv`
+- Input trace (vidur-cli import schema): `examples/tut-sim-vs-real-with-vidur-cli/inputs/trace_import.csv`
+- Expected report snapshot: `examples/tut-sim-vs-real-with-vidur-cli/expected_report/`
+
 ## Step-by-Step with Code
 
 ### Step 1: Confirm environment and assets
