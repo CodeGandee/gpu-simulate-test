@@ -9,6 +9,7 @@ Generate a sim-vs-real comparison report as the final stage:
 - Inputs: `run_state.json` must record `sim_run_dir` and `real_run_dir`
 - Outputs under `<run_dir>/report/`:
   - `summary.md` (must include arrival kind + CPU overhead status; warn if CPU overhead disabled)
+  - `inputs/*` (stable snapshots of the exact CSVs scored; avoids “mutable tmp/” references)
   - `tables/*` and `figs/*` (optional)
 - Update `run_state.json.artifacts.report` and print the report path on success.
 
@@ -139,6 +140,8 @@ Completed (T063–T068).
   - Generates `<run_dir>/report/summary.md` using `src/gpu_simulate_test/vidur_cli/reporting.py` (`write_paper_fidelity_style_report`):
     - Scores table for paper-fidelity normalized latency metrics (p50/p95, no Verdict column).
     - ECDF + percentiles SVGs for each scored metric under `<run_dir>/report/figs/`.
+    - Snapshots the exact scored inputs under `<run_dir>/report/inputs/` (so the report is stable even if other runs overwrite
+      any “canonical” tmp outputs elsewhere).
     - Provenance snapshots under `<run_dir>/report/run_meta.json` and `<run_dir>/report/scores.json`.
   - Adds an explicit “Config (apple-to-apple)” section listing parity-critical sim/real knobs (max_tokens, batch/chunk sizes, TP/PP, cpu_overhead modeling) and flags mismatches/unknowns.
   - Records `artifacts.report` (`report_dir`, `summary_md`, status, ended_at, overrides) and writes `failure.json` on errors.

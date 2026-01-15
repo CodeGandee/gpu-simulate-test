@@ -15,6 +15,15 @@ Create a run directory that anchors the whole workflow:
 
 **Path convention**: All repo paths are relative to `<WORKSPACE_ROOT>` (repository root). The run workspace is under `<PWD>` by default (unless `workspace_dir` is absolute).
 
+**Workspace root resolution (as implemented)**:
+- If `GSIM_VIDUR_WORKSPACE_DIR` is **unset** and `.vidur-config/*.toml` does not override `resources.workspace_dir`,
+  the resolved workspace root is: `<pwd>/.vidur-output/default/`.
+- If `GSIM_VIDUR_WORKSPACE_DIR` is set to a **relative** path like `my_exp`, the resolved workspace root is:
+  `<pwd>/.vidur-output/my_exp/`.
+- If `GSIM_VIDUR_WORKSPACE_DIR` is set to an **absolute** path like `<pwd>/tmp/my_exp`, that absolute path is used.
+  This is the recommended day-to-day pattern for experiments because it keeps all run artifacts under a single, easy-to-clean
+  directory (and `tmp/` is git-ignored when `<pwd>` is the repo root).
+
 ## Public APIs
 
 ### T037: Run tag generation (`src/gpu_simulate_test/vidur_cli/run_state.py`)
@@ -178,3 +187,7 @@ Completed (T037–T044).
   - Creates the run directory and writes `run_state.json`, `resources.json`, and best-effort `resolved_config.yaml`.
   - Uses `run_with_failure_json(stage=\"init-run\")` so failures record `failure.json` without deleting partial outputs.
 - CLI wiring lives in `src/gpu_simulate_test/cli/vidur_cli.py` (`_parse_required_presets` enforces that `model/hardware/backend/workload/vidur` are provided exactly once).
+- Workspace root resolution is implemented in `src/gpu_simulate_test/vidur_cli/resources.py`:
+  - Default: `<pwd>/.vidur-output/default/`.
+  - Relative `GSIM_VIDUR_WORKSPACE_DIR=<name>`: `<pwd>/.vidur-output/<name>/`.
+  - Absolute `GSIM_VIDUR_WORKSPACE_DIR=/abs/path/...`: uses the absolute path verbatim.

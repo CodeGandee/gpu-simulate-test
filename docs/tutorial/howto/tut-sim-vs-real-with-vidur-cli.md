@@ -144,14 +144,23 @@ Expected output:
 
 Unlike the `paper-fidelity` workflow, `vidur-cli` does **not** do an automatic capacity search; you must choose the QPS (`workload.arrival.poisson_rate_per_s`) yourself.
 
+If you want a paper-fidelity-like “85% of capacity” operating point:
+
+1. Run a paper-fidelity **dynamic** repro once (it writes `capacity.json` under `tmp/paper_fidelity/runs/<scenario>/capacity/`).
+2. Read `qps_85` from that `capacity.json`.
+3. Use that value as `workload.arrival.poisson_rate_per_s` for `vidur-cli`.
+
 #### 5.1 Create a new run directory (dynamic arrival overrides)
 
 ```bash
+# Choose a QPS (requests/second). For paper-fidelity-like runs, use the `qps_85` from capacity search.
+QPS="0.85"
+
 RUN_DIR_DYN=$(
   pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr init-run \
     model=llama2_7b hardware=a100 backend=sarathi workload=default vidur=default \
     workload.arrival.kind=poisson \
-    workload.arrival.poisson_rate_per_s=0.85 \
+    workload.arrival.poisson_rate_per_s="$QPS" \
     workload.arrival.seed=42
 )
 echo "RUN_DIR_DYN=$RUN_DIR_DYN"
