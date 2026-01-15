@@ -140,6 +140,31 @@ Expected output:
 - Each stage prints its primary output path (e.g., `$RUN_DIR/profile`, `$RUN_DIR/sim`, `$RUN_DIR/real`, `$RUN_DIR/report/summary.md`).
 - The final report is: `$RUN_DIR/report/summary.md`.
 
+#### 4.4 (Optional) Match a `paper-fidelity` run to the same profiling + trace (static)
+
+If you want to compare `vidur-cli` against `paper-fidelity` **apples-to-apples**, run `paper-fidelity repro`
+while explicitly pointing it at:
+
+- the same profiling root produced by `vidur-cli` (`$RUN_DIR/profile`)
+- the same lengths CSV used by `vidur-cli svr trace`
+
+```bash
+# Unique scenario name so you don't overwrite other tmp/paper_fidelity outputs.
+PF_SCENARIO="llama2_7b_arxiv_match_vidur_cli_static_$(date -u +%Y%m%dT%H%M%SZ)"
+
+pixi run paper-fidelity repro \
+  --scenario llama2_7b_arxiv \
+  --workload static \
+  --scale small \
+  "scenario.name=$PF_SCENARIO" \
+  "scenario.trace_source.path=$INPUTS_DIR/lengths_arxiv_small.csv" \
+  "scenario.vidur.profiling_root=$RUN_DIR/profile"
+```
+
+Expected output:
+- A report under `results/reports/<UTC-YYYY-MM-DD>/paper_fidelity/$PF_SCENARIO/summary.md`
+- The trace snapshot in that report (`inputs/trace.csv`) has the same 50 `(num_prefill_tokens, num_decode_tokens)` pairs as your `vidur-cli` run.
+
 ### Step 5: Produce the dynamic report (Poisson arrivals)
 
 Unlike the `paper-fidelity` workflow, `vidur-cli` does **not** do an automatic capacity search; you must choose the QPS (`workload.arrival.poisson_rate_per_s`) yourself.
@@ -176,6 +201,71 @@ pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR_DYN"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr sim     --run-dir "$RUN_DIR_DYN"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr real    --run-dir "$RUN_DIR_DYN"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr report  --run-dir "$RUN_DIR_DYN"
+```
+
+### (Optional) Match `paper-fidelity` dynamic arrivals exactly
+
+For dynamic, matching just the QPS is not enough if you want *identical arrival times*; you must also match the generated arrival schedule.
+`paper-fidelity` produces its timed trace as `inputs/trace.csv` in the report directory (schema uses `arrived_at` in seconds).
+
+To run `vidur-cli` on the **same timed trace** *and* the **same profiling root**:
+
+1) Create a fresh `vidur-cli` run and do `svr profile` once.  
+2) Run `paper-fidelity repro --workload dynamic` while pointing it at that same profiling root (so sim uses identical profiling).  
+3) Convert the paper-fidelity `inputs/trace.csv` into `vidur-cli`’s canonical trace format (`arrival_time_ns` in nanoseconds) and import it into the same `vidur-cli` run.  
+4) Run `svr sim/real/report`.
+
+```bash
+# 1) Create a fresh vidur-cli run and profile once (profiling is trace-independent).
+RUN_DIR_MATCH=$(
+  pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr init-run \
+    model=llama2_7b hardware=a100 backend=sarathi workload=default vidur=default
+)
+pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR_MATCH"
+
+# 2) Run paper-fidelity dynamic once to produce a timed trace snapshot (using the same profiling root).
+PF_DYN_SCENARIO="llama2_7b_arxiv_match_vidur_cli_dynamic_$(date -u +%Y%m%dT%H%M%SZ)"
+PF_REPORT_DIR=$(
+  pixi run paper-fidelity repro \
+    --scenario llama2_7b_arxiv \
+    --workload dynamic \
+    --scale small \
+    "scenario.name=$PF_DYN_SCENARIO" \
+    "scenario.trace_source.path=$INPUTS_DIR/lengths_arxiv_small.csv" \
+    "scenario.vidur.profiling_root=$RUN_DIR_MATCH/profile" \
+    2>&1 | grep -E '^/.*results/reports/' | tail -n 1
+)
+
+# 3) Convert paper-fidelity trace (arrived_at seconds) -> vidur-cli canonical trace (arrival_time_ns int),
+#    then import it into the same vidur-cli run.
+PF_TRACE_CSV="$PF_REPORT_DIR/inputs/trace.csv"
+VC_IMPORT_TRACE="$INPUTS_DIR/trace_import_from_paper_fidelity.csv"
+export PF_TRACE_CSV VC_IMPORT_TRACE
+pixi run python - <<'PY'
+from pathlib import Path
+import os
+import pandas as pd
+
+src = Path(os.environ["PF_TRACE_CSV"]).expanduser().resolve()
+out = Path(os.environ["VC_IMPORT_TRACE"]).expanduser().resolve()
+df = pd.read_csv(src)
+out.parent.mkdir(parents=True, exist_ok=True)
+pd.DataFrame(
+    {
+        "request_id": df["request_id"].astype("int64"),
+        "arrival_time_ns": (df["arrived_at"].astype(float) * 1e9).round().astype("int64"),
+        "num_prefill_tokens": df["num_prefill_tokens"].astype("int64"),
+        "num_decode_tokens": df["num_decode_tokens"].astype("int64"),
+    }
+).to_csv(out, index=False)
+print(out)
+PY
+pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr trace --run-dir "$RUN_DIR_MATCH" --import-trace "$VC_IMPORT_TRACE"
+
+# 4) Run vidur-cli sim/real/report on that exact timed trace.
+pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr sim    --run-dir "$RUN_DIR_MATCH"
+pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr real   --run-dir "$RUN_DIR_MATCH"
+pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr report --run-dir "$RUN_DIR_MATCH"
 ```
 
 ## Where outputs are written
