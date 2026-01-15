@@ -167,5 +167,14 @@ test -f "$RUN_DIR/resources.json"
 
 ## Implementation Summary
 
-TODO(after implementation): summarize run tag rules and the exact run-dir layout created by init-run.
+Completed (T037–T044).
 
+- Run tag + run-dir policy is implemented in `src/gpu_simulate_test/vidur_cli/run_state.py` and `src/gpu_simulate_test/cli/vidur_cli.py`:
+  - Default run tag: `m=<model>+h=<hardware>+b=<backend>+w=<workload>+v=<vidur>+<UTC timestamp>` (sanitized for filesystem safety).
+  - Default run dir: `<workspace_root>/sim_vs_real/<run_tag>/`.
+  - `--run-dir <relative>` is interpreted relative to `workspace_root` (not `<pwd>`).
+  - Optional `--run-tag` overrides the generated tag when allocating a new run dir.
+- `svr init-run` is implemented in `src/gpu_simulate_test/vidur_cli/stages.py`:
+  - Creates the run directory and writes `run_state.json`, `resources.json`, and best-effort `resolved_config.yaml`.
+  - Uses `run_with_failure_json(stage=\"init-run\")` so failures record `failure.json` without deleting partial outputs.
+- CLI wiring lives in `src/gpu_simulate_test/cli/vidur_cli.py` (`_parse_required_presets` enforces that `model/hardware/backend/workload/vidur` are provided exactly once).

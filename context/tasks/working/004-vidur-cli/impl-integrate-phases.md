@@ -16,6 +16,14 @@ The run directory is the integration spine: every stage reads `run_state.json` a
 
 **Path convention**: All repo paths are relative to `<WORKSPACE_ROOT>` (repository root). Commands can run from arbitrary `<PWD>` via `pixi run -m <WORKSPACE_ROOT> ...`.
 
+## Implementation Status
+
+All phases (1–9) are implemented and tracked as complete in `specs/004-vidur-cli/tasks.md`.
+
+- End-to-end runbook: `tests/manual/vidur_cli_smoke.md`
+- “Keep green” checklist: `specs/004-vidur-cli/checklists/smoke.md`
+- Artifact layout contract: `specs/004-vidur-cli/contracts/artifacts.md`
+
 ## Phase Flow
 
 **MUST HAVE: End-to-End Sequence Diagram**
@@ -63,11 +71,13 @@ sequenceDiagram
     U->>CLI: svr sim<br/>--run-dir run_dir
     CLI->>ST: run_sim
     ST->>FS: write sim/request_metrics.csv
+    ST->>FS: write sim/paper_fidelity/request_metrics.csv
     ST->>FS: update run_state.json
 
     U->>CLI: svr real<br/>--run-dir run_dir
     CLI->>ST: run_real
     ST->>FS: write real/request_metrics.csv
+    ST->>FS: write real/paper_fidelity/request_metrics.csv
     ST->>FS: update run_state.json
 
     Note over U,FS: Phase 8: Report
@@ -97,7 +107,9 @@ graph TD
     subgraph P7["Phase 7: profile/sim/real"]
         PROOT[profile/]
         SIM[sim/request_metrics.csv]
+        SIMPF[sim/paper_fidelity/request_metrics.csv]
         REAL[real/request_metrics.csv]
+        REALPF[real/paper_fidelity/request_metrics.csv]
     end
 
     subgraph P8["Phase 8: report"]
@@ -112,7 +124,9 @@ graph TD
     PROOT --> SIM;
     TCSV --> REAL;
     SIM --> SUM;
+    SIMPF --> SUM;
     REAL --> SUM;
+    REALPF --> SUM;
     SUM --> TBL;
     SUM --> FIG;
 ```
@@ -252,8 +266,7 @@ from gpu_simulate_test.vidur_cli.real_runner import run_token_length_replay
 **Code dependencies**:
 
 ```python
-from gpu_simulate_test.analysis.load_metrics import load_run_metrics
-from gpu_simulate_test.analysis.report import write_report
+from gpu_simulate_test.vidur_cli.reporting import write_paper_fidelity_style_report
 ```
 
 ## Integration Testing
@@ -298,4 +311,3 @@ set -e
 - Tasks breakdown: `specs/004-vidur-cli/tasks.md`
 - Data model: `specs/004-vidur-cli/data-model.md`
 - Contracts: `specs/004-vidur-cli/contracts/`
-

@@ -26,11 +26,11 @@ Add a helper that reads `run_state.json` and enforces prerequisites with actiona
 
 Recommended implementation approach:
 
-- Use the existing report writer to generate tables/figs:
-  - `src/gpu_simulate_test/analysis/report.py`
-- Use trace metadata + profile state to enrich `summary.md`:
-  - Arrival kind from `<run_dir>/trace/trace_meta.json` (`arrival_schedule.kind`)
-  - CPU overhead status from `run_state.json.artifacts.profile.include_cpu_overhead`
+- Use the paper-fidelity scoring utilities to generate a paper-fidelity-style sim-vs-real report:
+  - `src/gpu_simulate_test/vidur_cli/reporting.py` (`write_paper_fidelity_style_report`)
+- Enrich the report with trace metadata + profile state:
+  - Arrival kind/params from `<run_dir>/trace/trace_meta.json` (`arrival_schedule`)
+  - CPU overhead status + CSV path from `artifacts.profile` + profiling root layout
 
 ```python
 # src/gpu_simulate_test/vidur_cli/stages.py
@@ -39,34 +39,28 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from gpu_simulate_test.analysis.compare import align_tokens_by_actual_decode
-from gpu_simulate_test.analysis.load_metrics import load_run_metrics
-from gpu_simulate_test.analysis.report import ReportPaths, write_report
+from gpu_simulate_test.vidur_cli.reporting import write_paper_fidelity_style_report
 
 
-def run_report(*, run_dir: Path, real_run_dir: Path, sim_run_dir: Path) -> Path:
-    out_dir = run_dir / "report"
-    real = load_run_metrics(real_run_dir)
-    sim = load_run_metrics(sim_run_dir)
-    real_tok, sim_tok = align_tokens_by_actual_decode(real=real, sim=sim)
-
-    paths = ReportPaths(
-        out_dir=out_dir,
-        summary_md=out_dir / "summary.md",
-        tables_dir=out_dir / "tables",
-        figs_dir=out_dir / "figs",
+def run_report(
+    *,
+    run_dir: Path,
+    sim_run_dir: Path,
+    real_run_dir: Path,
+    profiling_root: Path,
+    include_cpu_overhead: bool,
+) -> Path:
+    report_dir = run_dir / "report"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    summary_md = write_paper_fidelity_style_report(
+        run_dir=run_dir,
+        report_dir=report_dir,
+        sim_run_dir=sim_run_dir,
+        real_run_dir=real_run_dir,
+        profiling_root=profiling_root,
+        include_cpu_overhead=bool(include_cpu_overhead),
     )
-    _ = write_report(
-        paths,
-        ttft_real=real.request_metrics["ttft_ns"].astype(float),
-        ttft_sim=sim.request_metrics["ttft_ns"].astype(float),
-        token_lat_real=real_tok["token_latency_ns"].astype(float),
-        token_lat_sim=sim_tok["token_latency_ns"].astype(float),
-        percentiles=[0.5, 0.9, 0.99],
-        real_run_dir=real.run_dir,
-        sim_run_dir=sim.run_dir,
-    )
-    return paths.summary_md.resolve()
+    return summary_md
 ```
 
 **Usage Flow**:
@@ -76,12 +70,12 @@ sequenceDiagram
     participant U as User
     participant CLI as vidur-cli<br/>cli/vidur_cli.py
     participant ST as stages.py<br/>run_report
-    participant REP as analysis/report.py
+    participant REP as vidur_cli/reporting.py
     participant FS as filesystem
 
     U->>CLI: svr report<br/>--run-dir run_dir
     CLI->>ST: run_report(run_dir)
-    ST->>REP: write_report
+    ST->>REP: write_paper_fidelity_style_report
     REP->>FS: write summary.md
     REP-->>ST: ok
     ST-->>CLI: summary.md path
@@ -94,7 +88,7 @@ sequenceDiagram
 graph TD
     CLI[cli/vidur_cli.py] --> ST[vidur_cli/stages.py];
     ST --> RSTATE[vidur_cli/run_state.py];
-    ST --> RPT[analysis/report.py];
+    ST --> RPT[vidur_cli/reporting.py];
 ```
 
 ## Testing
@@ -132,10 +126,19 @@ test -f "<run_dir>/report/summary.md"
 ## References
 
 - Spec: `specs/004-vidur-cli/spec.md` (US6 + FR-025..FR-026)
-- Existing reporting code: `src/gpu_simulate_test/analysis/report.py`
+- Report writer: `src/gpu_simulate_test/vidur_cli/reporting.py`
 - Contracts: `specs/004-vidur-cli/contracts/cli.md`
 
 ## Implementation Summary
 
-TODO(after implementation): summarize how the report stage reads run state, generates artifacts, and enriches the summary with parity-critical metadata.
+Completed (T063–T068).
 
+- CLI surface in `src/gpu_simulate_test/cli/vidur_cli.py`: added `svr report --run-dir <run_dir>` (prints the report path on success).
+- Report stage runner in `src/gpu_simulate_test/vidur_cli/stages.py`:
+  - Requires `artifacts.sim` and `artifacts.real` in `run_state.json` (fails fast with actionable errors if missing).
+  - Generates `<run_dir>/report/summary.md` using `src/gpu_simulate_test/vidur_cli/reporting.py` (`write_paper_fidelity_style_report`):
+    - Scores table for paper-fidelity normalized latency metrics (p50/p95, no Verdict column).
+    - ECDF + percentiles SVGs for each scored metric under `<run_dir>/report/figs/`.
+    - Provenance snapshots under `<run_dir>/report/run_meta.json` and `<run_dir>/report/scores.json`.
+  - Adds an explicit “Config (apple-to-apple)” section listing parity-critical sim/real knobs (max_tokens, batch/chunk sizes, TP/PP, cpu_overhead modeling) and flags mismatches/unknowns.
+  - Records `artifacts.report` (`report_dir`, `summary_md`, status, ended_at, overrides) and writes `failure.json` on errors.

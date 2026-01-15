@@ -73,5 +73,11 @@ cat tests/manual/vidur_cli_smoke.md
 
 ## Implementation Summary
 
-TODO(after implementation): summarize doc changes, checklist coverage, and any UX polish made to `--help`.
+Completed (T069–T073).
 
+- Help/UX polish: `src/gpu_simulate_test/cli/vidur_cli.py` includes improved `--help` text, subcommand descriptions, and an epilog with end-to-end examples (including `--print-resolved`).
+- Run-dir contract reconciliation: `specs/004-vidur-cli/contracts/artifacts.md` reflects the implemented run directory layout (schemas + required/optional files).
+- Smoke docs:
+  - `tests/manual/vidur_cli_smoke.md` provides a human-run CPU-only + GPU-required checklist.
+  - `specs/004-vidur-cli/checklists/smoke.md` provides a short v1 “keep green” checklist.
+- Pixi wiring stability: `pyproject.toml` defines a `vidur-cli` console script plus a Pixi task that uses `scripts/vidur_cli_task.sh` to preserve run-from-anywhere semantics for relative paths.

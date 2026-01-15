@@ -211,5 +211,15 @@ test -f "$RUN_DIR/trace/trace_intervals.csv"
 
 ## Implementation Summary
 
-TODO(after implementation): document supported trace inputs (`--import-trace`, `--from-lengths`, default) and determinism controls.
+Completed (T045–T053).
 
+- Canonical trace helpers are implemented in `src/gpu_simulate_test/vidur_cli/trace.py`:
+  - `validate_canonical_trace()` enforces required columns and invariants (unique `request_id`, non-decreasing `arrival_time_ns`, token counts `>= 1`).
+  - `import_canonical_trace()` validates an existing trace and materializes it under `<run_dir>/trace/` (rewrites `request_id` to `0..N-1` for legacy compatibility, preserving originals in `import_request_id` if needed).
+  - `build_from_lengths_csv()` builds a canonical trace deterministically from a lengths-only CSV + an `ArrivalScheduleConfig`.
+  - `build_default_trace()` computes token lengths from `workload.prompts` + `model.tokenizer_ref` and merges with the configured arrival schedule.
+  - Compatibility outputs are always produced: `trace_lengths.csv` and `trace_intervals.csv`.
+- `svr trace` stage runner is implemented in `src/gpu_simulate_test/vidur_cli/stages.py`:
+  - Writes artifacts under `<run_dir>/trace/` and records them in `run_state.json.artifacts.trace` (paths + status + ended_at + overrides).
+  - Supports exactly one of `--import-trace` or `--from-lengths` (or neither for default generation).
+  - Best-effort convenience: if the default prompts path is missing and the repo has `tmp/prompts/example.prompts.jsonl`, it copies it into place.

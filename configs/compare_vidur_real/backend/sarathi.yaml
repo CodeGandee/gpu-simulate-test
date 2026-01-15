@@ -1,2 +1,9 @@
 name: sarathi
-
+max_tokens: 4096
+ignore_eos: true
+scheduler:
+  chunk_size: 16
+  max_num_seqs: 16
+  # Vidur scheduler parity knobs (Sarathi-Serve uses these semantics internally).
+  block_size: 16
+  watermark_blocks_fraction: 0.01

@@ -28,7 +28,8 @@ Add a console script and a Pixi task so the CLI can be invoked as either:
 vidur-cli = "gpu_simulate_test.cli.vidur_cli:main"
 
 [tool.pixi.tasks]
-vidur-cli = "python -m gpu_simulate_test.cli.vidur_cli"
+# Use a small wrapper to preserve "run-from-anywhere" semantics for relative paths.
+vidur-cli = "bash scripts/vidur_cli_task.sh"
 ```
 
 ---
@@ -136,7 +137,7 @@ cd /tmp/vidur-cli-smoke
 pixi run -m <WORKSPACE_ROOT> python -c "import gpu_simulate_test.cli.vidur_cli as v; print(v.build_parser().prog)"
 
 # Verify the CLI help path is wired:
-pixi run -m <WORKSPACE_ROOT> python -m gpu_simulate_test.cli.vidur_cli --help
+pixi run -m <WORKSPACE_ROOT> vidur-cli --help
 ```
 
 ### Test Output
@@ -152,5 +153,8 @@ pixi run -m <WORKSPACE_ROOT> python -m gpu_simulate_test.cli.vidur_cli --help
 
 ## Implementation Summary
 
-TODO(after implementation): summarize created files and how to verify this phase.
+Completed (T001–T011).
 
+- Added the `vidur-cli` console script in `pyproject.toml` and a Pixi task wrapper in `scripts/vidur_cli_task.sh` (uses `INIT_CWD` so relative paths resolve relative to the user’s invocation directory, not the repo root).
+- Created the `src/gpu_simulate_test/vidur_cli/` helper package with the phase-1 module skeletons: `errors.py`, `resources.py`, `search_path.py`, `run_state.py`, `trace.py`, `stages.py`.
+- Basic wiring check: `pixi run -m <WORKSPACE_ROOT> vidur-cli --help`

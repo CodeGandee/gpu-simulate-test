@@ -14,12 +14,21 @@ Within `<run_dir>`:
 - `resources.json`
   - Schema: `specs/004-vidur-cli/contracts/resources.schema.json`
 
+## Optional provenance files
+
+- `resolved_config.yaml`
+  - Written by `svr init-run` as a best-effort snapshot of presets/overrides/resources used for the run.
+
 ## Trace files (after `svr trace`)
 
 - `trace/trace.csv`
   - Required columns: `request_id`, `arrival_time_ns`, `num_prefill_tokens`, `num_decode_tokens`
 - `trace/trace_meta.json`
   - Schema: `specs/004-vidur-cli/contracts/trace_meta.schema.json`
+- `trace/trace_lengths.csv` *(compatibility)*
+  - Used by legacy Vidur runners; includes `request_id`, `prompt_id`, `num_prefill_tokens`, `num_decode_tokens`
+- `trace/trace_intervals.csv` *(compatibility)*
+  - Used by legacy Vidur runners; includes `request_id`, `inter_arrival_ns`, `arrival_time_ns`
 
 ## Failure file (on stage failure)
 

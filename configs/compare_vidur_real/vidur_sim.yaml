@@ -1,6 +1,7 @@
 defaults:
   - model: qwen3_0_6b
   - hardware: a100
+  - backend: transformers
   - workload: default
   - vidur: default
   - _self_
@@ -17,4 +18,3 @@ hydra:
     dir: ${paths.tmp_root}/vidur_runs/${output.run_id}
   job:
     chdir: true
-

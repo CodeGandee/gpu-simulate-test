@@ -1,0 +1,3 @@
+model_id: meta-llama/Llama-2-7b-hf
+tokenizer_ref: ${paths.repo_root}/models/llama2-7b-hf/source-data
+

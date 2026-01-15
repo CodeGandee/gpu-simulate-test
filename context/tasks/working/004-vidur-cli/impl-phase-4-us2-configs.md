@@ -145,5 +145,12 @@ pixi run -m <WORKSPACE_ROOT> vidur-cli --config-dir ./my_configs configs list --
 
 ## Implementation Summary
 
-TODO(after implementation): summarize how preset discovery handles collisions and how warnings are formatted.
+Completed (T031–T036).
 
+- Implemented filesystem-only config discovery in `src/gpu_simulate_test/vidur_cli/search_path.py`:
+  - `discover_groups(config_roots)` returns available groups across all roots.
+  - `list_presets_for_group(group=..., config_roots=...)` returns `PresetEntry` with `active_path` (highest precedence) and `all_paths` (including shadowed paths).
+- Implemented `vidur-cli configs list --group <group>` in `src/gpu_simulate_test/cli/vidur_cli.py`:
+  - Output format: `<key>\\t<active_path>` per line.
+  - Override warnings: prints `WARNING: preset overridden ...` to stderr when `len(all_paths) > 1` (includes active + shadowed paths).
+  - Unknown group: exits non-zero with `available_groups` in the error context.

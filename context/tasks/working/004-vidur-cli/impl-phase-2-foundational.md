@@ -292,5 +292,10 @@ pixi run -m <WORKSPACE_ROOT> python -c "from gpu_simulate_test.cli.vidur_cli imp
 
 ## Implementation Summary
 
-TODO(after implementation): summarize key modules (`errors.py`, `resources.py`, `search_path.py`, `run_state.py`) and their public APIs.
+Completed (T012–T022).
 
+- CLI plumbing: `src/gpu_simulate_test/cli/vidur_cli.py` implements global flags (`--user-config`, `--config-dir`, `--print-resolved`), subcommand dispatch, and `split_hydra_overrides()` (enforces trailing `key=value` overrides).
+- Error model: `src/gpu_simulate_test/vidur_cli/errors.py` defines `UserFacingError` and `format_exception_for_cli()` (consistent stderr formatting + exit codes).
+- Resource primitives: `src/gpu_simulate_test/vidur_cli/resources.py` implements stdlib `tomllib` parsing (`load_project_config_toml`) and `resources.json` writing (`write_resources_json`, schema v1).
+- Hydra helpers: `src/gpu_simulate_test/vidur_cli/search_path.py` implements config-root resolution (`build_config_roots`), filesystem discovery (`discover_groups`, `list_presets_for_group`), and programmatic composition (`compose_config`).
+- Run state + failures: `src/gpu_simulate_test/vidur_cli/run_state.py` implements `run_state.json` read/write (schema v1), `failure.json` writing + stage wrapper (`run_with_failure_json`), run-dir normalization (`normalize_run_dir`), and prerequisite helpers (`require_file`, `require_dir`).

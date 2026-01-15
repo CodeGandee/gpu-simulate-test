@@ -47,6 +47,16 @@ class VidurSimInputs:
     tensor_parallel_size: int = 1
     num_pipeline_stages: int = 1
     seed: int = 42
+    max_tokens: int = 4096
+    # Vidur's interface uses the negative form.
+    skip_cpu_overhead_modeling: bool = True
+    # Guardrails: `strict` rejects placeholder-like dummy CPU overhead CSVs.
+    cpu_overhead_validation: str = "strict"
+    # Optional parity-critical scheduler knobs. If unset, Vidur defaults apply.
+    scheduler_chunk_size: int | None = None
+    scheduler_batch_size_cap: int | None = None
+    scheduler_block_size: int | None = None
+    scheduler_watermark_blocks_fraction: float | None = None
 
 
 def _build_vidur_trace_csv(inputs: VidurSimInputs, *, out_dir: Path) -> Path:
@@ -169,7 +179,8 @@ def run_vidur_sim(inputs: VidurSimInputs, *, out_dir: Path, run_meta: dict) -> N
         network_device=inputs.network_device,
         tensor_parallel_size=inputs.tensor_parallel_size,
         num_pipeline_stages=inputs.num_pipeline_stages,
-        skip_cpu_overhead_modeling=True,
+        skip_cpu_overhead_modeling=bool(inputs.skip_cpu_overhead_modeling),
+        cpu_overhead_validation=str(inputs.cpu_overhead_validation),
     )
     validate_profiling_root(layout)
 
@@ -196,8 +207,22 @@ def run_vidur_sim(inputs: VidurSimInputs, *, out_dir: Path, run_meta: dict) -> N
         device=str(inputs.device),
         network_device=str(inputs.network_device),
     )
-    cluster_config = ClusterConfig(num_replicas=1, replica_config=replica_config)
-    request_generator_config = TraceRequestGeneratorConfig(trace_file=str(trace_csv), max_tokens=4096)
+    replica_scheduler_config = SarathiSchedulerConfig()
+    if inputs.scheduler_chunk_size is not None:
+        replica_scheduler_config.chunk_size = int(inputs.scheduler_chunk_size)
+    if inputs.scheduler_batch_size_cap is not None:
+        replica_scheduler_config.batch_size_cap = int(inputs.scheduler_batch_size_cap)
+    if inputs.scheduler_block_size is not None:
+        replica_scheduler_config.block_size = int(inputs.scheduler_block_size)
+    if inputs.scheduler_watermark_blocks_fraction is not None:
+        replica_scheduler_config.watermark_blocks_fraction = float(inputs.scheduler_watermark_blocks_fraction)
+
+    cluster_config = ClusterConfig(
+        num_replicas=1,
+        replica_config=replica_config,
+        replica_scheduler_config=replica_scheduler_config,
+    )
+    request_generator_config = TraceRequestGeneratorConfig(trace_file=str(trace_csv), max_tokens=int(inputs.max_tokens))
 
     exec_cfg = RandomForrestExecutionTimePredictorConfig(
         compute_input_file=str(profiling_base / "compute/{DEVICE}/{MODEL}/mlp.csv"),
@@ -205,7 +230,7 @@ def run_vidur_sim(inputs: VidurSimInputs, *, out_dir: Path, run_meta: dict) -> N
         all_reduce_input_file=str(profiling_base / "network/{NETWORK_DEVICE}/all_reduce.csv"),
         send_recv_input_file=str(profiling_base / "network/{NETWORK_DEVICE}/send_recv.csv"),
         cpu_overhead_input_file=str(profiling_base / "cpu_overhead/{NETWORK_DEVICE}/{MODEL}/cpu_overheads.csv"),
-        skip_cpu_overhead_modeling=True,
+        skip_cpu_overhead_modeling=bool(inputs.skip_cpu_overhead_modeling),
     )
 
     metrics_cfg = MetricsConfig(

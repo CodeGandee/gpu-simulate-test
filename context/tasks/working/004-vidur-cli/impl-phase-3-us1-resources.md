@@ -212,5 +212,18 @@ env -u GSIM_REPO_ROOT -u GSIM_MODELS_ROOT -u GSIM_DATASETS_ROOT \
 
 ## Implementation Summary
 
-TODO(after implementation): document the final env/TOML precedence and show a sample `resources show` output.
+Completed (T023–T030).
 
+- Implemented `ResourceMapV1` resolution in `src/gpu_simulate_test/vidur_cli/resources.py` with provenance (`env` vs `config_toml` vs fallbacks) and schema-aligned JSON via `ResourceMapV1.to_json()`.
+- Config TOML resolution precedence:
+  - `--user-config` (relative paths resolve relative to `<pwd>`)
+  - `GSIM_VIDUR_CLI_USER_CONFIG` (relative ⇒ `<pwd>`)
+  - default `<pwd>/.vidur-config/default.toml` (optional)
+- Resource resolution precedence:
+  - `repo_root`: `GSIM_REPO_ROOT` > `resources.repo_root` (TOML) > `<pwd>` (validated to look like this repo)
+  - `models_root`/`datasets_root`: `GSIM_MODELS_ROOT`/`GSIM_DATASETS_ROOT` > TOML > `<repo_root>/models|datasets` (must exist)
+  - `workspace_root`: `GSIM_VIDUR_WORKSPACE_DIR` / `resources.workspace_dir` (absolute ⇒ used as-is; relative ⇒ `<pwd>/.vidur-output/<value>`; default `"default"`)
+- CLI integration in `src/gpu_simulate_test/cli/vidur_cli.py`:
+  - `vidur-cli resources show` prints the resolved resource map as JSON
+  - `--print-resolved` prints the same JSON to stderr before executing any command
+- Quick validation (run from any directory `<pwd>`): `GSIM_REPO_ROOT=<WORKSPACE_ROOT> pixi run -m <WORKSPACE_ROOT> vidur-cli resources show`

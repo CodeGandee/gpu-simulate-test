@@ -226,5 +226,20 @@ pixi run -m <WORKSPACE_ROOT> vidur-cli svr real    --run-dir "$RUN_DIR"
 
 ## Implementation Summary
 
-TODO(after implementation): document which backends are supported for token-length replay and the exact output directory layout under `<run_dir>/`.
+Completed (T054–T062).
 
+- CLI surface in `src/gpu_simulate_test/cli/vidur_cli.py`:
+  - Added `svr profile|sim|real` (all require `--run-dir`).
+  - `svr profile` supports `--include-cpu-overhead` (default) and `--no-include-cpu-overhead`.
+- Stage runners in `src/gpu_simulate_test/vidur_cli/stages.py`:
+  - `run_profile()` writes `<run_dir>/profile/`, calls `vidur_ext.profile_runner.run_vidur_profiling`, and records `artifacts.profile` (`profiling_root`, `include_cpu_overhead`, status, ended_at, overrides).
+  - `run_sim()` requires trace + profiling artifacts, writes `<run_dir>/sim/` via `vidur_ext.sim_runner.run_vidur_sim`, and records `artifacts.sim` (`sim_run_dir`, status, ended_at, overrides).
+    - CPU overhead parity: `skip_cpu_overhead_modeling` is set from `artifacts.profile.include_cpu_overhead`.
+    - Paper-fidelity compatibility: writes `<run_dir>/sim/paper_fidelity/request_metrics.csv` and records `artifacts.sim.paper_fidelity_request_metrics_csv`.
+    - Provenance: writes `<run_dir>/sim/run_meta.json` with parity-critical knobs (model id/ref, max_tokens, scheduler chunk/batch/block/watermark, cpu_overhead flags).
+  - `run_real()` requires trace artifacts, writes `<run_dir>/real/` via `vidur_cli.real_runner.run_token_length_replay`, and records `artifacts.real` (`real_run_dir`, backend, status, ended_at, overrides).
+    - For `backend=sarathi`, also writes `<run_dir>/real/paper_fidelity/request_metrics.csv` (converted from Sarathi `sequence_metrics.csv`) and records `artifacts.real.paper_fidelity_request_metrics_csv`.
+  - All stages are wrapped with `run_with_failure_json(...)` so failures write `<run_dir>/failure.json` and mark the stage as failed in `run_state.json` without deleting partial outputs.
+- Token-length replay backends in `src/gpu_simulate_test/vidur_cli/real_runner.py`:
+  - Supported `backend` values: `transformers` and `sarathi`.
+  - Outputs: `<run_dir>/real/request_metrics.csv` and `<run_dir>/real/token_metrics.csv` (Sarathi also writes engine outputs under `<run_dir>/real/sarathi/` and paper-fidelity metrics under `<run_dir>/real/paper_fidelity/`).
