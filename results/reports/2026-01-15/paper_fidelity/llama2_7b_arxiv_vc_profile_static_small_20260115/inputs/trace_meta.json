@@ -1,0 +1,23 @@
+{
+  "artifacts": {
+    "trace_csv": "/data1/huangzhe/code/gpu-simulate-test/tmp/paper_fidelity/traces/llama2_7b_arxiv_vc_profile_static_small_20260115/trace.csv"
+  },
+  "generated_at": "2026-01-15T07:34:53.359611+00:00",
+  "scale": "small",
+  "scenario_name": "llama2_7b_arxiv_vc_profile_static_small_20260115",
+  "schema_version": "v1",
+  "trace_source": {
+    "kind": "vidur_processed_lengths_csv",
+    "max_tokens": 4096,
+    "num_requests": null,
+    "path": "/data1/huangzhe/code/gpu-simulate-test/tmp/verify_pf_vs_vidur_cli_static_llama2_7b_20260115/inputs/lengths_arxiv_small.csv",
+    "seed": 42
+  },
+  "trace_subset": {
+    "begin": 0,
+    "end": 50,
+    "indices": null,
+    "kind": "range"
+  },
+  "workload_mode": "static"
+}
