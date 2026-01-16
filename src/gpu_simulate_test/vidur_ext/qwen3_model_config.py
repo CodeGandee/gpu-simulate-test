@@ -9,6 +9,9 @@ from vidur.config.model_config import BaseModelConfig
 from vidur.types import ActivationType, NormType
 
 
+QWEN3_0_6B_MODEL_ID = "Qwen/Qwen3-0.6B"
+
+
 @dataclass(frozen=True)
 class Qwen3ModelRef:
     config_json: Path
@@ -37,7 +40,7 @@ class Qwen3_0_6BModelConfig(BaseModelConfig):
 
     @staticmethod
     def get_name():
-        return "Qwen/Qwen3-0.6B"
+        return QWEN3_0_6B_MODEL_ID
 
 
 def register_qwen3_0_6b(*, model_ref: Qwen3ModelRef) -> None:
@@ -66,3 +69,23 @@ def register_qwen3_0_6b(*, model_ref: Qwen3ModelRef) -> None:
     # Import side-effect is sufficient: BaseModelConfig.create_from_name uses subclass discovery.
     _ = Qwen3_0_6BModelConfig
 
+
+def maybe_register_qwen3_0_6b(*, model_id: str, tokenizer_ref: Path) -> bool:
+    """Register the Qwen3-0.6B model config if the requested model matches.
+
+    Parameters
+    ----------
+    model_id
+        HuggingFace model id (e.g., `meta-llama/Llama-2-7b-hf`).
+    tokenizer_ref
+        Path to the model's tokenizer/config directory (must contain `config.json` for Qwen3).
+
+    Returns
+    -------
+    bool
+        True if the Qwen3 config was registered, otherwise False.
+    """
+    if str(model_id) != QWEN3_0_6B_MODEL_ID:
+        return False
+    register_qwen3_0_6b(model_ref=Qwen3ModelRef(config_json=tokenizer_ref / "config.json"))
+    return True

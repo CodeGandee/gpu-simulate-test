@@ -8,7 +8,7 @@ from omegaconf import DictConfig, OmegaConf
 from gpu_simulate_test.config import register_omegaconf_resolvers
 from gpu_simulate_test.io import build_env_snapshot, get_git_info, utcnow_iso, write_json
 from gpu_simulate_test.vidur_ext.profile_runner import VidurProfileInputs, run_vidur_profiling
-from gpu_simulate_test.vidur_ext.qwen3_model_config import Qwen3ModelRef, register_qwen3_0_6b
+from gpu_simulate_test.vidur_ext.qwen3_model_config import maybe_register_qwen3_0_6b
 
 
 register_omegaconf_resolvers()
@@ -23,12 +23,9 @@ def main(cfg: DictConfig) -> None:
     profiling_root = Path.cwd()
     repo_root = Path(cfg.paths.repo_root)
 
-    # Ensure Vidur can resolve the model name via subclass discovery.
-    register_qwen3_0_6b(
-        model_ref=Qwen3ModelRef(
-            config_json=repo_root / "models" / "qwen3-0.6b" / "source-data" / "config.json"
-        )
-    )
+    model_id = str(cfg.model.model_id)
+    tokenizer_ref = Path(str(cfg.model.tokenizer_ref)).expanduser()
+    maybe_register_qwen3_0_6b(model_id=model_id, tokenizer_ref=tokenizer_ref)
 
     started_at = utcnow_iso()
     git = get_git_info(repo_root=repo_root)
@@ -58,7 +55,7 @@ def main(cfg: DictConfig) -> None:
     mlp_fallback_method = str(mlp_fallback_method_val or "cuda_event").strip()
 
     inputs = VidurProfileInputs(
-        model_id=str(cfg.model.model_id),
+        model_id=model_id,
         hardware_id=str(cfg.hardware.hardware_id),
         profiling_root=profiling_root,
         mlp_profile_method=mlp_profile_method,
