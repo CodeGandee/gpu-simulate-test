@@ -1,8 +1,31 @@
 #!/usr/bin/env bash
+# End-to-end demo runner for `vidur-cli` sim-vs-real (STATIC case) using:
+# - Model: llama2_7b
+# - Hardware preset: a100
+# - Real backend: sarathi
+# - Trace: this directory's tracked `inputs/trace_import.csv`
+#
+# This creates a fresh `<run_dir>` under a fresh workspace (defaults to `<repo>/tmp/...`),
+# then runs the full pipeline:
+#   init-run → trace(import) → profile → sim → real → report
+#
+# Usage (from repo root):
+#   docs/tutorial/howto/tut-sim-vs-real-with-vidur-cli/run_demo_static_from_pf_trace.sh
+#
+# Maintainers only (overwrites tracked snapshot):
+#   docs/tutorial/howto/tut-sim-vs-real-with-vidur-cli/run_demo_static_from_pf_trace.sh --refresh-expected-report
+
+# Strict mode:
+# -e: fail fast
+# -u: treat unset vars as errors
+# -o pipefail: fail if any command in a pipeline fails
 set -euo pipefail
 
+# Absolute directory of this script (so the script works regardless of current working dir).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Determine repo root. Prefer git (fast + correct when inside a repo),
+# and fall back to walking up until we find `pyproject.toml`.
 REPO_ROOT="$(
   git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || true
 )"
@@ -17,6 +40,7 @@ if [[ -z "$REPO_ROOT" ]]; then
   fi
 fi
 
+# Optional maintainer flag to overwrite the git-tracked `expected_report/` snapshot.
 REFRESH_EXPECTED_REPORT="0"
 if [[ "${1:-}" == "--refresh-expected-report" ]]; then
   REFRESH_EXPECTED_REPORT="1"
@@ -27,59 +51,82 @@ if [[ "${1:-}" != "" ]]; then
   exit 2
 fi
 
+# This repo's CLI runner expects GSIM_REPO_ROOT so it can resolve config + resource roots.
 export GSIM_REPO_ROOT="${GSIM_REPO_ROOT:-$REPO_ROOT}"
 
-# GPU pinning: this host reserves GPUs 4,5 for these experiments (see repo .env).
+# GPU pinning:
+# - This host reserves GPUs 4,5 for these experiments (see repo `.env`).
+# - `GSIM_CUDA_VISIBLE_DEVICES` is used by repo code; `CUDA_VISIBLE_DEVICES` is used by CUDA/PyTorch.
 export GSIM_CUDA_VISIBLE_DEVICES="${GSIM_CUDA_VISIBLE_DEVICES:-4,5}"
 export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-$GSIM_CUDA_VISIBLE_DEVICES}"
 
+# Workspace dir: where `vidur-cli` will create per-run directories.
+# We intentionally use `<repo>/tmp/<exp>` (gitignored) so it is easy to delete and doesn't pollute the repo.
 EXP_NAME="${EXP_NAME:-vidur_cli_demo_pf_trace_llama2_7b_static_$(date -u +%Y%m%dT%H%M%SZ)}"
 export GSIM_VIDUR_WORKSPACE_DIR="${GSIM_VIDUR_WORKSPACE_DIR:-$REPO_ROOT/tmp/$EXP_NAME}"
 mkdir -p "$GSIM_VIDUR_WORKSPACE_DIR"
 
+# This demo vendors a deterministic trace import file (static → arrival_time_ns should be 0).
 TRACE_IMPORT_CSV="${SCRIPT_DIR}/inputs/trace_import.csv"
 if [[ ! -f "$TRACE_IMPORT_CSV" ]]; then
   echo "missing trace import CSV: $TRACE_IMPORT_CSV" >&2
   exit 1
 fi
 
+# Submodules are required for Vidur + Sarathi.
 if [[ ! -d "$REPO_ROOT/extern/tracked/vidur" || ! -d "$REPO_ROOT/extern/tracked/sarathi-serve" ]]; then
   echo "missing submodules (vidur/sarathi); run:" >&2
   echo "  git submodule update --init --recursive" >&2
   exit 1
 fi
 
+# Model/tokenizer assets must exist. The tutorial uses `models/llama2-7b-hf/bootstrap.sh` to populate this.
 if [[ ! -e "$REPO_ROOT/models/llama2-7b-hf/source-data" ]]; then
   echo "missing model ref: $REPO_ROOT/models/llama2-7b-hf/source-data" >&2
   echo "hint: run: bash models/llama2-7b-hf/bootstrap.sh" >&2
   exit 1
 fi
 
+# Print key environment to make reproduction/debugging easier.
 echo "GSIM_REPO_ROOT=$GSIM_REPO_ROOT"
 echo "GSIM_VIDUR_WORKSPACE_DIR=$GSIM_VIDUR_WORKSPACE_DIR"
 echo "GSIM_CUDA_VISIBLE_DEVICES=$GSIM_CUDA_VISIBLE_DEVICES"
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 
+# 1) Create a fresh run directory with the chosen presets.
 RUN_DIR="$(
   pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr init-run \
     model=llama2_7b hardware=a100 backend=sarathi workload=default vidur=default
 )"
 echo "RUN_DIR=$RUN_DIR"
 
+# 2) Import the trace into `<run_dir>/trace/trace.csv` (canonical schema: arrival_time_ns).
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr trace --run-dir "$RUN_DIR" --import-trace "$TRACE_IMPORT_CSV"
+
+# 3) Profile on THIS host, to generate profiling data used by the simulator (GPU kernels + CPU overhead).
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR"
+
+# 4) Run the Vidur simulation using the imported trace + the freshly generated profiling bundle.
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr sim --run-dir "$RUN_DIR"
+
+# 5) Run the real replay (Sarathi) using the SAME trace, so sim-vs-real is comparable.
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr real --run-dir "$RUN_DIR"
 
+# 6) Generate the report and print the stable output path.
+# The report also snapshots the scored CSVs under `<run_dir>/report/inputs/` so the report is self-contained.
 SUMMARY_MD="$(pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr report --run-dir "$RUN_DIR")"
 echo "SUMMARY_MD=$SUMMARY_MD"
 
 if [[ "$REFRESH_EXPECTED_REPORT" == "1" ]]; then
+  # Maintainers only:
+  # Copy the newly produced report into `expected_report/` so reviewers can compare structure/provenance.
+  # Do NOT expect the numbers to match on different hosts; the goal is "same artifacts + same parity config".
   EXPECTED_DIR="${SCRIPT_DIR}/expected_report"
   rm -rf "$EXPECTED_DIR"
   mkdir -p "$EXPECTED_DIR"
   cp -a "$RUN_DIR/report/." "$EXPECTED_DIR/"
-  # Sanitize machine-local absolute paths in the tracked snapshot.
+
+  # Sanitize machine-local absolute paths in the tracked snapshot (so git diffs are stable).
   MODEL_REF="$(readlink -f "$REPO_ROOT/models/llama2-7b-hf/source-data" || true)"
   SANITIZER_PY="${SCRIPT_DIR}/scripts/sanitize_expected_report.py"
   if [[ ! -f "$SANITIZER_PY" ]]; then
