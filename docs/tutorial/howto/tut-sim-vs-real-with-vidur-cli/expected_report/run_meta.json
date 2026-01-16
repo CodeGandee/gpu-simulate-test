@@ -54,6 +54,16 @@
       "include_cpu_overhead": true,
       "status": "ok"
     },
+    "mlp": {
+      "fallback_enabled": false,
+      "fallback_method": "cuda_event",
+      "fallback_used": false,
+      "profile_method": "cuda_event",
+      "requested_profile_method": "cuda_event",
+      "small_input_threshold": 128,
+      "validation_mode": "strict",
+      "zero_heavy_limit": 0.01
+    },
     "root": "<RUN_DIR>/profile"
   },
   "real_run_dir": "<RUN_DIR>/real",
