@@ -1,0 +1,6 @@
+method,run_dir,summary_md,mlp_profile_method,mlp_validation,mlp_fallback
+cuda_event,<RUN_DIR_cuda_event>,<SUMMARY_MD_cuda_event>,cuda_event,mode=strict small_input_threshold=128 zero_heavy_limit=0.01,enabled=false method=cuda_event used=false
+record_function,<RUN_DIR_record_function>,<SUMMARY_MD_record_function>,record_function,mode=strict small_input_threshold=128 zero_heavy_limit=0.01,enabled=false method=cuda_event used=false
+kineto,<RUN_DIR_kineto>,<SUMMARY_MD_kineto>,kineto,mode=strict small_input_threshold=128 zero_heavy_limit=0.01,enabled=false method=cuda_event used=false
+perf_counter,<RUN_DIR_perf_counter>,<SUMMARY_MD_perf_counter>,perf_counter,mode=strict small_input_threshold=128 zero_heavy_limit=0.01,enabled=false method=cuda_event used=false
+
