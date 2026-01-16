@@ -12,8 +12,8 @@
 # Usage (from repo root):
 #   docs/tutorial/howto/tut-sim-vs-real-with-vidur-cli/run_demo_static_from_pf_trace.sh
 #
-# Maintainers only (overwrites tracked snapshot):
-#   docs/tutorial/howto/tut-sim-vs-real-with-vidur-cli/run_demo_static_from_pf_trace.sh --refresh-expected-report
+# Optional: also write a sanitized report snapshot under the workspace (does NOT modify this tutorial dir):
+#   docs/tutorial/howto/tut-sim-vs-real-with-vidur-cli/run_demo_static_from_pf_trace.sh --snapshot-report
 
 # Strict mode:
 # -e: fail fast
@@ -40,14 +40,14 @@ if [[ -z "$REPO_ROOT" ]]; then
   fi
 fi
 
-# Optional maintainer flag to overwrite the git-tracked `expected_report/` snapshot.
-REFRESH_EXPECTED_REPORT="0"
-if [[ "${1:-}" == "--refresh-expected-report" ]]; then
-  REFRESH_EXPECTED_REPORT="1"
+# Optional flag to write a sanitized report snapshot under the workspace.
+SNAPSHOT_REPORT="0"
+if [[ "${1:-}" == "--snapshot-report" ]]; then
+  SNAPSHOT_REPORT="1"
   shift
 fi
 if [[ "${1:-}" != "" ]]; then
-  echo "usage: $0 [--refresh-expected-report]" >&2
+  echo "usage: $0 [--snapshot-report]" >&2
   exit 2
 fi
 
@@ -62,16 +62,31 @@ export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-$GSIM_CUDA_VISIBLE_DEVICES}
 
 # Workspace dir: where `vidur-cli` will create per-run directories.
 # We intentionally use `<repo>/tmp/<exp>` (gitignored) so it is easy to delete and doesn't pollute the repo.
-EXP_NAME="${EXP_NAME:-vidur_cli_demo_pf_trace_llama2_7b_static_$(date -u +%Y%m%dT%H%M%SZ)}"
+EXP_NAME="${EXP_NAME:-vidur_cli_demo_pf_trace_llama2_7b_static_$(date -u +%Y%m%dT%H%M%SZ)_$$}"
 export GSIM_VIDUR_WORKSPACE_DIR="${GSIM_VIDUR_WORKSPACE_DIR:-$REPO_ROOT/tmp/$EXP_NAME}"
 mkdir -p "$GSIM_VIDUR_WORKSPACE_DIR"
 
-# This demo vendors a deterministic trace import file (static → arrival_time_ns should be 0).
-TRACE_IMPORT_CSV="${SCRIPT_DIR}/inputs/trace_import.csv"
-if [[ ! -f "$TRACE_IMPORT_CSV" ]]; then
-  echo "missing trace import CSV: $TRACE_IMPORT_CSV" >&2
+# Safety: never write any outputs under this tutorial directory.
+SCRIPT_DIR_REAL="$(readlink -f "$SCRIPT_DIR" || true)"
+WORKSPACE_REAL="$(readlink -f "$GSIM_VIDUR_WORKSPACE_DIR" || true)"
+if [[ -n "$SCRIPT_DIR_REAL" && -n "$WORKSPACE_REAL" && "$WORKSPACE_REAL" == "$SCRIPT_DIR_REAL"* ]]; then
+  echo "refusing to use a workspace under the tutorial dir (would overwrite tracked files):" >&2
+  echo "  tutorial_dir=$SCRIPT_DIR_REAL" >&2
+  echo "  workspace_dir=$WORKSPACE_REAL" >&2
   exit 1
 fi
+
+# This demo vendors a deterministic trace import file (static → arrival_time_ns should be 0).
+# Copy it into the workspace so this script never risks modifying tracked inputs.
+TRACE_IMPORT_CSV_SRC="${SCRIPT_DIR}/inputs/trace_import.csv"
+if [[ ! -f "$TRACE_IMPORT_CSV_SRC" ]]; then
+  echo "missing trace import CSV: $TRACE_IMPORT_CSV_SRC" >&2
+  exit 1
+fi
+WORKSPACE_INPUTS_DIR="$GSIM_VIDUR_WORKSPACE_DIR/inputs"
+mkdir -p "$WORKSPACE_INPUTS_DIR"
+TRACE_IMPORT_CSV="$WORKSPACE_INPUTS_DIR/trace_import.csv"
+cp -a "$TRACE_IMPORT_CSV_SRC" "$TRACE_IMPORT_CSV"
 
 # Submodules are required for Vidur + Sarathi.
 if [[ ! -d "$REPO_ROOT/extern/tracked/vidur" || ! -d "$REPO_ROOT/extern/tracked/sarathi-serve" ]]; then
@@ -117,16 +132,17 @@ pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr real --run-dir "$RUN_DIR"
 SUMMARY_MD="$(pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr report --run-dir "$RUN_DIR")"
 echo "SUMMARY_MD=$SUMMARY_MD"
 
-if [[ "$REFRESH_EXPECTED_REPORT" == "1" ]]; then
-  # Maintainers only:
-  # Copy the newly produced report into `expected_report/` so reviewers can compare structure/provenance.
-  # Do NOT expect the numbers to match on different hosts; the goal is "same artifacts + same parity config".
-  EXPECTED_DIR="${SCRIPT_DIR}/expected_report"
-  rm -rf "$EXPECTED_DIR"
-  mkdir -p "$EXPECTED_DIR"
-  cp -a "$RUN_DIR/report/." "$EXPECTED_DIR/"
+if [[ "$SNAPSHOT_REPORT" == "1" ]]; then
+  # Write a sanitized report snapshot under the workspace (never into this tutorial directory).
+  SNAPSHOT_DIR="$GSIM_VIDUR_WORKSPACE_DIR/report_snapshot_$(basename "$RUN_DIR")"
+  if [[ -e "$SNAPSHOT_DIR" ]]; then
+    echo "snapshot dir already exists (refusing to overwrite): $SNAPSHOT_DIR" >&2
+    exit 1
+  fi
+  mkdir -p "$SNAPSHOT_DIR"
+  cp -a "$RUN_DIR/report/." "$SNAPSHOT_DIR/"
 
-  # Sanitize machine-local absolute paths in the tracked snapshot (so git diffs are stable).
+  # Sanitize machine-local absolute paths in the snapshot.
   MODEL_REF="$(readlink -f "$REPO_ROOT/models/llama2-7b-hf/source-data" || true)"
   SANITIZER_PY="${SCRIPT_DIR}/scripts/sanitize_expected_report.py"
   if [[ ! -f "$SANITIZER_PY" ]]; then
@@ -134,9 +150,9 @@ if [[ "$REFRESH_EXPECTED_REPORT" == "1" ]]; then
     exit 1
   fi
   pixi run python "$SANITIZER_PY" \
-    --expected-dir "$EXPECTED_DIR" \
+    --expected-dir "$SNAPSHOT_DIR" \
     --run-dir "$RUN_DIR" \
     --repo-root "$REPO_ROOT" \
     --model-ref "$MODEL_REF"
-  echo "refreshed expected_report/: $EXPECTED_DIR"
+  echo "wrote report snapshot: $SNAPSHOT_DIR"
 fi

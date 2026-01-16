@@ -32,10 +32,16 @@ Tracked demo artifacts in this directory:
 ### Maintainers: refresh `expected_report/`
 
 ```bash
-docs/tutorial/howto/tut-sim-vs-real-with-vidur-cli/run_demo_static_from_pf_trace.sh --refresh-expected-report
+docs/tutorial/howto/tut-sim-vs-real-with-vidur-cli/run_demo_static_from_pf_trace.sh --snapshot-report
 ```
 
-This overwrites `expected_report/` with the newly produced `<run_dir>/report/` directory. Machine-local paths are sanitized after copying (so the snapshot is stable to commit).
+This writes a sanitized report snapshot under the workspace:
+
+- `$GSIM_VIDUR_WORKSPACE_DIR/report_snapshot_<run_id>/`
+
+To update the git-tracked `expected_report/`, copy the snapshot into:
+
+- `docs/tutorial/howto/tut-sim-vs-real-with-vidur-cli/expected_report/`
 
 ## Question
 
