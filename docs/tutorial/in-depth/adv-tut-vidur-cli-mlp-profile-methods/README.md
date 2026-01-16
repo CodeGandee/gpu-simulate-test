@@ -23,15 +23,114 @@ microbenchmark dataset that feeds Vidur’s execution-time predictors).
 Those predictors directly affect simulated request latency, so changing the profiling method can significantly shift
 sim-vs-real accuracy.
 
+Where it lives in Vidur:
+
+- `vidur.profiling.mlp.mlp_wrapper.MlpWrapper.profile` decides whether to use trace-based attribution
+  (`record_function`) or timer-based sampling (everything else).
+- `vidur.profiling.common.cuda_timer.CudaTimer` implements `cuda_event`, `kineto`, and `perf_counter` timing inside
+  the model, feeding `vidur.profiling.common.timer_stats_store.TimerStatsStore`.
+
 Vidur supports four methods:
 
-- `cuda_event`: times GPU work using CUDA events around operations (stable; usually the recommended default).
-- `record_function`: uses `torch.profiler.record_function` + trace attribution (higher overhead).
-  - Caveat: historically, this path could miss GPU time for kernels launched via the CUDA *driver* API; that was the
-    motivating bug fixed by `005-vidur-mlp-cuda-driver`.
-- `kineto`: uses `torch.profiler` (Kineto) and aggregates CUDA time from profiler events (high overhead; slow).
-- `perf_counter`: wall-clock timing using `time.perf_counter()` with CUDA synchronizations (coarse; often overestimates
-  due to sync/launch overhead).
+- `cuda_event` (timer-based): records a CUDA start/end event around each operation and reports `elapsed_time` (GPU time
+  on the stream; excludes forced synchronizations).
+- `record_function` (trace-based): runs `torch.profiler.profile(...CUDA...)` and uses `record_function` regions
+  (`cat=user_annotation`) as op boundaries; then attributes GPU time by correlating launch events to `kernel` events.
+  - Caveat: historically, Vidur’s upstream tracer only considered `cuda_runtime` launches, so it could miss GPU time
+    when kernels were launched via the CUDA *driver* API (`cuda_driver`). This repo fixes that gap in
+    `005-vidur-mlp-cuda-driver`, but trace attribution can still be sensitive to trace contents and adds overhead.
+- `kineto` (timer-based): wraps each op in a `torch.profiler.profile(...CUDA...)` context and aggregates
+  `cuda_time_total` from profiler events (high overhead; slow).
+- `perf_counter` (timer-based): uses `time.perf_counter()` with `torch.cuda.synchronize()` before/after each op (simple
+  but coarse; tends to overestimate due to sync/launch overhead).
+
+## Timing brackets (sequence diagrams)
+
+These diagrams show the **measurement bracket** used for each method (what’s “inside the timer”) at a high level.
+
+### `cuda_event`
+
+```mermaid
+sequenceDiagram
+    participant MW as MlpWrapper<br/>(Ray actor)
+    participant CT as CudaTimer<br/>(cuda_event)
+    participant CU as CUDA stream<br/>(kernels)
+    participant TS as TimerStatsStore
+
+    loop ACTIVE_STEPS
+        MW->>CT: __enter__()
+        CT->>CU: start_event.record
+        MW->>CU: run op<br/>(enqueue kernels)
+        MW->>CT: __exit__()
+        CT->>CU: end_event.record
+        CT->>TS: record_time<br/>(start_event,end_event)
+    end
+    MW->>CU: cuda.synchronize
+    MW->>TS: get_stats<br/>(elapsed_time)
+```
+
+### `perf_counter`
+
+```mermaid
+sequenceDiagram
+    participant MW as MlpWrapper<br/>(Ray actor)
+    participant CT as CudaTimer<br/>(perf_counter)
+    participant CU as CUDA device
+    participant TS as TimerStatsStore
+
+    loop each sample
+        MW->>CT: __enter__()
+        CT->>CU: cuda.synchronize
+        CT->>CT: start=perf_counter()
+        MW->>CU: run op
+        MW->>CT: __exit__()
+        CT->>CU: cuda.synchronize
+        CT->>TS: record_time<br/>(end-start)
+    end
+```
+
+### `kineto`
+
+```mermaid
+sequenceDiagram
+    participant MW as MlpWrapper<br/>(Ray actor)
+    participant CT as CudaTimer<br/>(kineto)
+    participant TP as torch.profiler<br/>profile
+    participant CU as CUDA stream<br/>(kernels)
+    participant TS as TimerStatsStore
+
+    MW->>CT: __enter__()
+    CT->>TP: profile.__enter__()
+    MW->>CU: run op
+    MW->>CT: __exit__()
+    CT->>TP: profile.__exit__()
+    TP-->>CT: on_trace_ready
+    CT->>TS: record_time<br/>(sum cuda_time_total)
+```
+
+### `record_function`
+
+```mermaid
+sequenceDiagram
+    participant MW as MlpWrapper<br/>(Ray actor)
+    participant TP as torch.profiler<br/>profile
+    participant RF as record_function<br/>(user_annotation)
+    participant CU as CUDA trace<br/>(launch + kernels)
+    participant TR as RecordFunctionTracerV2<br/>(trace parse)
+
+    MW->>MW: warmup run<br/>(no trace)
+    MW->>CU: cuda.synchronize
+    MW->>TP: profile.__enter__()
+    loop ops inside model
+        MW->>RF: record_function<br/>(vidur_op)
+        MW->>CU: op executes<br/>(cuda_runtime/cuda_driver)
+        MW-->>RF: end scope
+    end
+    MW->>CU: cuda.synchronize
+    MW->>TP: export_chrome_trace
+    MW->>TR: attribute GPU time<br/>(by correlation)
+    TR-->>MW: per-op stats
+```
 
 ## Step-by-step
 

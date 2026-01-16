@@ -69,6 +69,13 @@ How do I produce **static** and **dynamic** sim-vs-real reports (Vidur sim vs re
 controls how Vidur measures per-op time for MLP profiling. This tutorial defaults to `record_function` (historical
 Vidur default; and this repo fixed a driver-kernel attribution gap for it in `005-vidur-mlp-cuda-driver`).
 
+Brief tradeoffs:
+
+- `record_function`: profiler trace attribution (higher overhead; can be sensitive to tracer/trace quirks).
+- `cuda_event`: CUDA events around ops (stable GPU-time measurement; usually recommended for profiling throughput).
+- `kineto`: torch.profiler (Kineto) aggregation (high overhead; slow; useful for deeper investigation).
+- `perf_counter`: wall-clock with CUDA sync (coarse; often overestimates due to sync/launch overhead).
+
 For a full sweep + discussion, see:
 
 - `docs/tutorial/in-depth/adv-tut-vidur-cli-mlp-profile-methods/`
