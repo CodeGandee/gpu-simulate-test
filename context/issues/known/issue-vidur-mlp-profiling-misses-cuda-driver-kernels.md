@@ -146,3 +146,7 @@ If missing measurements are staged as 0.0:
 2) **Stop turning NaNs into 0.0 silently**:
    - either drop those rows for affected ops during training, or fail profiling with acknowledging “missing measurement” explicitly.
 3) **Expose a knob in our profiling wrapper** to run Vidur MLP profiling with `--profile_method cuda_event` (or similar), and record the method in `profiling_meta.json` for provenance.
+
+## Implementation plan
+
+- `context/plans/plan-fix-vidur-mlp-profiling-cuda-driver-kernels.md`
