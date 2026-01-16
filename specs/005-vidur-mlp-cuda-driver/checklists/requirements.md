@@ -32,3 +32,4 @@
 ## Notes
 
 - Reviewed against the checklist on 2026-01-16; no gaps found.
+- Verified alignment with `context/tasks/working/req-vidur-sim-vs-real.md` “2) Hard requirements” on 2026-01-16 (provenance, TP/PP and CPU-overhead applicability, and artifact location stability captured as requirements).

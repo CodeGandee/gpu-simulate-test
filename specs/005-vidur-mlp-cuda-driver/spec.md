@@ -99,6 +99,9 @@ As a maintainer, I want automated checks that cover both runtime-launched and dr
 - **FR-008**: System MUST include automated regression tests that demonstrate non-zero attribution for both runtime-launched and driver-launched kernel traces.
 - **FR-009**: System MUST run validation in strict mode by default and MUST allow users to explicitly select non-strict validation via run configuration.
 - **FR-010**: System MUST apply the same validation rules at both staging and consumption, using the configured strictness.
+- **FR-011**: System MUST record reproducibility and provenance metadata sufficient to reproduce profiling outputs, including the code revision identifier, whether local changes were present at run time, the run configuration used, and an environment snapshot.
+- **FR-012**: System MUST record the profiling root’s applicability constraints (e.g., parallelism/topology and CPU-overhead inclusion settings) in provenance, and consumers MUST be able to detect and reject incompatible combinations.
+- **FR-013**: System MUST preserve existing artifact location contracts used by current workflows (profiling roots and reports continue to be written to the established directories); this feature MUST NOT require relocating outputs to new paths to be usable.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -113,6 +116,7 @@ As a maintainer, I want automated checks that cover both runtime-launched and dr
 - A fallback profiling approach exists that can be used when the selected profiling approach cannot produce complete data.
 - “Core timing targets” are a defined set of fields used downstream for training/simulation and can be validated consistently.
 - The “small input” threshold and “zero-heavy” limit are configurable and have sensible defaults.
+- Current workflows already write profiling roots and reports to stable directories, and consumers rely on those locations.
 
 ### Dependencies
 
@@ -136,3 +140,4 @@ As a maintainer, I want automated checks that cover both runtime-launched and dr
 - **SC-003**: Automated regression tests cover both runtime-launched and driver-launched kernel traces and pass consistently.
 - **SC-004**: For a known driver-launch workload, the proportion of exact-zero values in core timing targets above the default “small input” threshold is ≤ 1%.
 - **SC-005**: When a profiling root is loaded for training/simulation/reporting, validation detects missing core timing targets with 100% accuracy and blocks usage under strict mode.
+- **SC-006**: Each produced profiling root includes a provenance record containing the code revision identifier, local-change indicator, run configuration, and environment snapshot.
