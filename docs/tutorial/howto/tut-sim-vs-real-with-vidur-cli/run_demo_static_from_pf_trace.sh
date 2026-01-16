@@ -108,6 +108,14 @@ echo "GSIM_VIDUR_WORKSPACE_DIR=$GSIM_VIDUR_WORKSPACE_DIR"
 echo "GSIM_CUDA_VISIBLE_DEVICES=$GSIM_CUDA_VISIBLE_DEVICES"
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 
+# MLP profiling method selection is REQUIRED (no hidden defaults). Use CUDA events by default for
+# stability; override to `record_function` to exercise record-function attribution.
+export GSIM_VIDUR_MLP_PROFILE_METHOD="${GSIM_VIDUR_MLP_PROFILE_METHOD:-cuda_event}"
+
+# Optional: automatically retry with a fallback method when validation fails.
+export GSIM_VIDUR_MLP_FALLBACK_ENABLED="${GSIM_VIDUR_MLP_FALLBACK_ENABLED:-false}"
+export GSIM_VIDUR_MLP_FALLBACK_METHOD="${GSIM_VIDUR_MLP_FALLBACK_METHOD:-cuda_event}"
+
 # 1) Create a fresh run directory with the chosen presets.
 RUN_DIR="$(
   pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr init-run \
@@ -119,7 +127,10 @@ echo "RUN_DIR=$RUN_DIR"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr trace --run-dir "$RUN_DIR" --import-trace "$TRACE_IMPORT_CSV"
 
 # 3) Profile on THIS host, to generate profiling data used by the simulator (GPU kernels + CPU overhead).
-pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR"
+pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR" \
+  "profiling.mlp.profile_method=${GSIM_VIDUR_MLP_PROFILE_METHOD}" \
+  "profiling.mlp.fallback.enabled=${GSIM_VIDUR_MLP_FALLBACK_ENABLED}" \
+  "profiling.mlp.fallback.method=${GSIM_VIDUR_MLP_FALLBACK_METHOD}"
 
 # 4) Run the Vidur simulation using the imported trace + the freshly generated profiling bundle.
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr sim --run-dir "$RUN_DIR"
