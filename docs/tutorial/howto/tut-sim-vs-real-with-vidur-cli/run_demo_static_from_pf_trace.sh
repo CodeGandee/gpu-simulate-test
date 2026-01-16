@@ -108,9 +108,15 @@ echo "GSIM_VIDUR_WORKSPACE_DIR=$GSIM_VIDUR_WORKSPACE_DIR"
 echo "GSIM_CUDA_VISIBLE_DEVICES=$GSIM_CUDA_VISIBLE_DEVICES"
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 
-# MLP profiling method selection is REQUIRED (no hidden defaults). Use CUDA events by default for
-# stability; override to `record_function` to exercise record-function attribution.
-export GSIM_VIDUR_MLP_PROFILE_METHOD="${GSIM_VIDUR_MLP_PROFILE_METHOD:-cuda_event}"
+# MLP profiling method selection is REQUIRED (no hidden defaults).
+#
+# This tutorial defaults to `record_function`:
+# - historically Vidur defaulted to record_function
+# - this repo fixed a record_function gap for CUDA *driver*-launched kernels (005-vidur-mlp-cuda-driver)
+#
+# Alternatives: `cuda_event` | `kineto` | `perf_counter`. See:
+# - docs/tutorial/in-depth/adv-tut-vidur-cli-mlp-profile-methods/
+export GSIM_VIDUR_MLP_PROFILE_METHOD="${GSIM_VIDUR_MLP_PROFILE_METHOD:-record_function}"
 
 # Optional: automatically retry with a fallback method when validation fails.
 export GSIM_VIDUR_MLP_FALLBACK_ENABLED="${GSIM_VIDUR_MLP_FALLBACK_ENABLED:-false}"

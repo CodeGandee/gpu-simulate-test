@@ -11,7 +11,7 @@
   - csv: `<RUN_DIR>/profile/data/profiling/cpu_overhead/a100_pairwise_nvlink/meta-llama/Llama-2-7b-hf/cpu_overheads.csv`
   - status: `ok`
 - mlp:
-  - profile_method: `cuda_event`
+  - profile_method: `record_function`
   - validation: `mode=strict small_input_threshold=128 zero_heavy_limit=0.01`
   - fallback: `enabled=false method=cuda_event used=false`
 

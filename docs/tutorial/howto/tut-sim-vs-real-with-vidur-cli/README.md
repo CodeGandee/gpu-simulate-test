@@ -17,6 +17,7 @@ The script:
 - pins GPUs via `GSIM_CUDA_VISIBLE_DEVICES` (defaults to `4,5`)
 - creates a fresh workspace under `<repo>/tmp/`
 - runs: `init-run → trace(import) → profile → sim → real → report`
+- uses `profiling.mlp.profile_method=record_function` by default (see “MLP profiling method” below)
 - prints the final report path (`<run_dir>/report/summary.md`)
 
 Tracked demo artifacts in this directory:
@@ -58,6 +59,19 @@ How do I produce **static** and **dynamic** sim-vs-real reports (Vidur sim vs re
   - For the example model in this tutorial (`llama2_7b`): `bash models/llama2-7b-hf/bootstrap.sh`.
 - **Real backend import works (Sarathi backend):** `pixi run python -c "import sarathi; print('ok')"` succeeds.
 - **Host-matched profiling:** Run `vidur-cli svr profile` on this machine before `vidur-cli svr sim` (this is required for meaningful sim-vs-real comparisons).
+
+### MLP profiling method (why it matters)
+
+`vidur-cli svr profile` produces `mlp.csv`, which feeds Vidur’s execution-time predictors. The knob:
+
+`profiling.mlp.profile_method = cuda_event | record_function | kineto | perf_counter`
+
+controls how Vidur measures per-op time for MLP profiling. This tutorial defaults to `record_function` (historical
+Vidur default; and this repo fixed a driver-kernel attribution gap for it in `005-vidur-mlp-cuda-driver`).
+
+For a full sweep + discussion, see:
+
+- `docs/tutorial/in-depth/adv-tut-vidur-cli-mlp-profile-methods/`
 
 ## Implementation Idea
 
@@ -174,7 +188,7 @@ pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr trace --run-dir "$RUN_DIR" --from-le
 
 ```bash
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR" \
-  profiling.mlp.profile_method=cuda_event
+  profiling.mlp.profile_method=record_function
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr sim     --run-dir "$RUN_DIR"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr real    --run-dir "$RUN_DIR"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr report  --run-dir "$RUN_DIR"
@@ -243,7 +257,7 @@ echo "RUN_DIR_DYN=$RUN_DIR_DYN"
 INPUTS_DIR="$GSIM_VIDUR_WORKSPACE_DIR/inputs"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr trace --run-dir "$RUN_DIR_DYN" --from-lengths "$INPUTS_DIR/lengths_arxiv_small.csv"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR_DYN" \
-  profiling.mlp.profile_method=cuda_event
+  profiling.mlp.profile_method=record_function
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr sim     --run-dir "$RUN_DIR_DYN"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr real    --run-dir "$RUN_DIR_DYN"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr report  --run-dir "$RUN_DIR_DYN"
@@ -268,7 +282,7 @@ RUN_DIR_MATCH=$(
     model=llama2_7b hardware=a100 backend=sarathi workload=default vidur=default
 )
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR_MATCH" \
-  profiling.mlp.profile_method=cuda_event
+  profiling.mlp.profile_method=record_function
 
 # 2) Run paper-fidelity dynamic once to produce a timed trace snapshot (using the same profiling root).
 PF_DYN_SCENARIO="llama2_7b_arxiv_match_vidur_cli_dynamic_$(date -u +%Y%m%dT%H%M%SZ)"
@@ -368,25 +382,25 @@ head -n 51 "$ARXIV_LENGTHS_CSV" > "$INPUTS_DIR/lengths_arxiv_small.csv"
 
 # Static
 RUN_DIR=$(
-  pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr init-run \
+    pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr init-run \
     model=llama2_7b hardware=a100 backend=sarathi workload=default vidur=default
 )
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr trace   --run-dir "$RUN_DIR" --from-lengths "$INPUTS_DIR/lengths_arxiv_small.csv"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR" \
-  profiling.mlp.profile_method=cuda_event
+  profiling.mlp.profile_method=record_function
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr sim     --run-dir "$RUN_DIR"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr real    --run-dir "$RUN_DIR"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr report  --run-dir "$RUN_DIR"
 
 # Dynamic (choose QPS)
 RUN_DIR_DYN=$(
-  pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr init-run \
+    pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr init-run \
     model=llama2_7b hardware=a100 backend=sarathi workload=default vidur=default \
     workload.arrival.kind=poisson workload.arrival.poisson_rate_per_s=0.85 workload.arrival.seed=42
 )
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr trace   --run-dir "$RUN_DIR_DYN" --from-lengths "$INPUTS_DIR/lengths_arxiv_small.csv"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR_DYN" \
-  profiling.mlp.profile_method=cuda_event
+  profiling.mlp.profile_method=record_function
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr sim     --run-dir "$RUN_DIR_DYN"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr real    --run-dir "$RUN_DIR_DYN"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr report  --run-dir "$RUN_DIR_DYN"
