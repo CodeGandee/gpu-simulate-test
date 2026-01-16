@@ -135,6 +135,31 @@ def _extract_override_value(overrides: list[object], *, key: str) -> str | None:
     return None
 
 
+def _infer_mlp_profile_method_from_staging(*, run_dir: Path) -> str | None:
+    """Infer the MLP profiling method from the latest staging config, if present."""
+    staging_root = run_dir / "profile" / "_staging" / "mlp"
+    if not staging_root.exists():
+        return None
+
+    candidates = [p for p in staging_root.glob("*") if p.is_dir()]
+    if not candidates:
+        return None
+
+    latest = max(candidates, key=lambda p: p.stat().st_mtime)
+    config_yaml = latest / "config.yaml"
+    if not config_yaml.exists():
+        return None
+
+    for line in config_yaml.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("profile_method:"):
+            continue
+        _, value = stripped.split(":", 1)
+        method = value.strip().strip("\"'").strip()
+        return method or None
+    return None
+
+
 def _load_profile_mlp_selection(*, run_dir: Path) -> dict[str, Any] | None:
     """Best-effort extraction of MLP profiling selections for the final report.
 
@@ -166,7 +191,13 @@ def _load_profile_mlp_selection(*, run_dir: Path) -> dict[str, Any] | None:
 
     profile_method = _extract_override_value(overrides, key="profiling.mlp.profile_method")
     if profile_method is None:
-        return None
+        inferred = _infer_mlp_profile_method_from_staging(run_dir=run_dir)
+        if inferred is None:
+            return None
+        return {
+            "requested_profile_method": str(inferred),
+            "profile_method": str(inferred),
+        }
 
     out: dict[str, Any] = {
         "requested_profile_method": str(profile_method),
