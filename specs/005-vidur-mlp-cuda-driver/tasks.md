@@ -27,6 +27,18 @@ description: "Task list for implementing reliable Vidur MLP profiling for driver
 
 ---
 
+## Implementation Guides
+
+- `context/tasks/working/005-vidur-mlp-cuda-driver/impl-phase-1-setup.md`
+- `context/tasks/working/005-vidur-mlp-cuda-driver/impl-phase-2-foundational.md`
+- `context/tasks/working/005-vidur-mlp-cuda-driver/impl-phase-3-us1-mlp-timings.md`
+- `context/tasks/working/005-vidur-mlp-cuda-driver/impl-phase-4-us2-validation.md`
+- `context/tasks/working/005-vidur-mlp-cuda-driver/impl-phase-5-us3-regression-tests.md`
+- `context/tasks/working/005-vidur-mlp-cuda-driver/impl-phase-6-polish.md`
+- `context/tasks/working/005-vidur-mlp-cuda-driver/impl-integrate-phases.md`
+
+---
+
 ## Phase 1: Setup (Shared Infrastructure)
 
 **Purpose**: Ensure the repo environment and submodules match the feature’s assumptions.
@@ -193,4 +205,3 @@ Task: "Add profiling-root validation tests in tests/unit/test_profiling_root_mlp
 2. US1 attribution fix → verify on known driver-launch workload
 3. US2 validation + fallback + provenance → verify fail-fast + fallback behavior
 4. US3 regression tests → keep behavior stable across refactors
-
