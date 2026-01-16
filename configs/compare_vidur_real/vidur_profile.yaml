@@ -18,6 +18,8 @@ profiling:
     # - record_function: torch.profiler record_function trace attribution (higher overhead; uses kernel correlation).
     # - kineto: torch.profiler (Kineto) trace aggregation (high overhead; useful for debugging/investigation).
     # - perf_counter: time.perf_counter wall-clock with cuda synchronize (coarse; includes sync/launch overhead).
+    # NOTE: Before the 005-vidur-mlp-cuda-driver change, this repo relied on Vidur's default, which is
+    # `record_function`. To reproduce the old behavior, set `profile_method=record_function`.
     profile_method: ???
     validation:
       # strict (default) | non_strict
