@@ -122,6 +122,76 @@ def _load_trace_meta(*, run_dir: Path) -> dict[str, Any]:
     return meta if isinstance(meta, dict) else {}
 
 
+def _extract_override_value(overrides: list[object], *, key: str) -> str | None:
+    for item in overrides:
+        if not isinstance(item, str):
+            continue
+        if "=" not in item:
+            continue
+        raw_key, value = item.split("=", 1)
+        normalized_key = raw_key.lstrip("+~")
+        if normalized_key == key:
+            return value
+    return None
+
+
+def _load_profile_mlp_selection(*, run_dir: Path) -> dict[str, Any] | None:
+    """Best-effort extraction of MLP profiling selections for the final report.
+
+    The profiling method selection is critical for reproducibility. Prefer the structured
+    `artifacts.profile.mlp` payload written by `svr profile`, but fall back to parsing
+    `artifacts.profile.overrides` for older runs.
+    """
+    run_state_path = run_dir / "run_state.json"
+    if not run_state_path.exists():
+        return None
+
+    state = read_json(run_state_path)
+    if not isinstance(state, dict):
+        return None
+    artifacts = state.get("artifacts")
+    if not isinstance(artifacts, dict):
+        return None
+    profile = artifacts.get("profile")
+    if not isinstance(profile, dict):
+        return None
+
+    mlp = profile.get("mlp")
+    if isinstance(mlp, dict) and mlp:
+        return dict(mlp)
+
+    overrides = profile.get("overrides")
+    if not isinstance(overrides, list):
+        return None
+
+    profile_method = _extract_override_value(overrides, key="profiling.mlp.profile_method")
+    if profile_method is None:
+        return None
+
+    out: dict[str, Any] = {
+        "requested_profile_method": str(profile_method),
+        "profile_method": str(profile_method),
+    }
+    validation_mode = _extract_override_value(overrides, key="profiling.mlp.validation.mode")
+    if validation_mode is not None:
+        out["validation_mode"] = str(validation_mode)
+    small_input_threshold = _extract_override_value(
+        overrides, key="profiling.mlp.validation.small_input_threshold"
+    )
+    if small_input_threshold is not None:
+        out["small_input_threshold"] = int(small_input_threshold)
+    zero_heavy_limit = _extract_override_value(overrides, key="profiling.mlp.validation.zero_heavy_limit")
+    if zero_heavy_limit is not None:
+        out["zero_heavy_limit"] = float(zero_heavy_limit)
+    fallback_enabled = _extract_override_value(overrides, key="profiling.mlp.fallback.enabled")
+    if fallback_enabled is not None:
+        out["fallback_enabled"] = str(fallback_enabled).lower().strip() in {"1", "true", "yes", "y", "on"}
+    fallback_method = _extract_override_value(overrides, key="profiling.mlp.fallback.method")
+    if fallback_method is not None:
+        out["fallback_method"] = str(fallback_method)
+    return out
+
+
 def _load_trace_csv_summary(*, run_dir: Path) -> dict[str, Any]:
     """Return a small summary of the canonical trace (counts + token maxima)."""
     from gpu_simulate_test.io import read_csv
@@ -338,6 +408,11 @@ def write_paper_fidelity_style_report(
             return "unknown"
         return "match" if a == b else "MISMATCH"
 
+    def _fmt_bool(value: object) -> str:
+        if isinstance(value, bool):
+            return "true" if value else "false"
+        return str(value)
+
     profiling_root = profiling_root.expanduser().resolve()
     cpu_overheads_csv = (
         profiling_root
@@ -354,6 +429,8 @@ def write_paper_fidelity_style_report(
     else:
         cpu_overheads_status = "skipped"
 
+    mlp_selection = _load_profile_mlp_selection(run_dir=run_dir)
+
     # Summary.md
     lines: list[str] = []
     lines.append(f"# Sim-vs-Real Report: {run_dir.name}")
@@ -369,6 +446,43 @@ def write_paper_fidelity_style_report(
     lines.append(f"  - modeling: `{'enabled' if include_cpu_overhead else 'disabled'}`")
     lines.append(f"  - csv: `{cpu_overheads_csv}`")
     lines.append(f"  - status: `{cpu_overheads_status}`")
+    lines.append("- mlp:")
+    if mlp_selection is None:
+        lines.append("  - profile_method: `unknown`")
+        lines.append("  - WARNING: MLP profiling selection was not recorded; re-run `vidur-cli svr profile`.")
+    else:
+        requested_method = mlp_selection.get("requested_profile_method")
+        profile_method = mlp_selection.get("profile_method") or requested_method or "unknown"
+        if requested_method is not None and requested_method != profile_method:
+            lines.append(f"  - profile_method: `{profile_method}` (fallback from `{requested_method}`)")
+        else:
+            lines.append(f"  - profile_method: `{profile_method}`")
+
+        validation_mode = mlp_selection.get("validation_mode")
+        small_input_threshold = mlp_selection.get("small_input_threshold")
+        zero_heavy_limit = mlp_selection.get("zero_heavy_limit")
+        if validation_mode is not None or small_input_threshold is not None or zero_heavy_limit is not None:
+            parts: list[str] = []
+            if validation_mode is not None:
+                parts.append(f"mode={validation_mode}")
+            if small_input_threshold is not None:
+                parts.append(f"small_input_threshold={small_input_threshold}")
+            if zero_heavy_limit is not None:
+                parts.append(f"zero_heavy_limit={zero_heavy_limit}")
+            lines.append(f"  - validation: `{' '.join(parts)}`")
+
+        fallback_enabled = mlp_selection.get("fallback_enabled")
+        fallback_method = mlp_selection.get("fallback_method")
+        fallback_used = mlp_selection.get("fallback_used")
+        parts = []
+        if fallback_enabled is not None:
+            parts.append(f"enabled={_fmt_bool(fallback_enabled)}")
+        if fallback_method is not None:
+            parts.append(f"method={fallback_method}")
+        if fallback_used is not None:
+            parts.append(f"used={_fmt_bool(fallback_used)}")
+        if parts:
+            lines.append(f"  - fallback: `{' '.join(parts)}`")
     lines.append("")
 
     lines.append("## Config (apple-to-apple)")
@@ -446,6 +560,7 @@ def write_paper_fidelity_style_report(
                     "cpu_overheads_csv": str(cpu_overheads_csv),
                     "status": cpu_overheads_status,
                 },
+                "mlp": mlp_selection,
             },
             "config": {
                 "model_id": model_id,

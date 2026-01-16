@@ -223,13 +223,31 @@ def run_profile(
             include_cpu_overhead=bool(include_cpu_overhead),
             model_ref=model_ref,
         )
-        _ = run_vidur_profiling(inputs, repo_root=resources.repo_root.value)
+        result = run_vidur_profiling(inputs, repo_root=resources.repo_root.value)
+
+        mlp_summary: dict[str, Any] = {
+            "requested_profile_method": str(mlp_profile_method),
+            "profile_method": str(result.extra.get("mlp_profile_method", mlp_profile_method)),
+            "validation_mode": str(mlp_validation_mode),
+            "small_input_threshold": int(mlp_small_input_threshold),
+            "zero_heavy_limit": float(mlp_zero_heavy_limit),
+            "fallback_enabled": bool(mlp_fallback_enabled),
+            "fallback_method": str(mlp_fallback_method),
+            "fallback_used": bool(
+                (result.extra.get("mlp_fallback") or {}).get("used", False)
+                if isinstance(result.extra.get("mlp_fallback"), dict)
+                else False
+            ),
+        }
+        if "mlp_validation" in result.extra:
+            mlp_summary["validation"] = result.extra["mlp_validation"]
 
         _update_run_state_profile_ok(
             run_dir=run_dir,
             profiling_root=out_dir,
             include_cpu_overhead=bool(include_cpu_overhead),
             overrides=overrides,
+            mlp=mlp_summary,
         )
         return out_dir.resolve()
 
@@ -693,16 +711,20 @@ def _update_run_state_profile_ok(
     profiling_root: Path,
     include_cpu_overhead: bool,
     overrides: list[str],
+    mlp: dict[str, Any] | None = None,
 ) -> None:
     state = load_run_state(run_dir=run_dir)
     artifacts = dict(state.get("artifacts") or {})
-    artifacts["profile"] = {
+    payload: dict[str, Any] = {
         "profiling_root": str(profiling_root.resolve()),
         "include_cpu_overhead": bool(include_cpu_overhead),
         "status": "ok",
         "ended_at": utcnow_iso(),
         "overrides": list(overrides),
     }
+    if mlp is not None:
+        payload["mlp"] = mlp
+    artifacts["profile"] = payload
     state["artifacts"] = artifacts
     save_run_state(run_dir=run_dir, run_state=state)
 
