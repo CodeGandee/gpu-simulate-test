@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MLP validation result (embedded)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["csv_path", "mode", "row_count", "column_count", "time_column_count", "missing_cells_total"],
+  "properties": {
+    "csv_path": { "type": "string" },
+    "mode": { "type": "string", "enum": ["strict", "non_strict"] },
+    "row_count": { "type": "integer", "minimum": 0 },
+    "column_count": { "type": "integer", "minimum": 0 },
+    "time_column_count": { "type": "integer", "minimum": 0 },
+    "missing_cells_total": { "type": "integer", "minimum": 0 },
+    "missing_columns": { "type": "array", "items": { "type": "string" } },
+    "zero_heavy_columns": { "type": "array", "items": { "type": "string" } },
+    "thresholds": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "small_input_threshold": { "type": "integer", "minimum": 0 },
+        "zero_heavy_limit": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "warnings": { "type": "array", "items": { "type": "string" } }
+  }
+}
+

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Profiling meta subset (compatibility + provenance)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schema_version", "run_id", "git_commit", "git_dirty", "env", "params"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "run_id": { "type": "string" },
+    "git_commit": { "type": "string" },
+    "git_dirty": { "type": "boolean" },
+    "env": { "type": "object", "additionalProperties": true },
+    "params": { "type": ["object", "null"], "additionalProperties": true },
+    "profiling_outputs": { "type": "object", "additionalProperties": true },
+    "extra": { "type": "object", "additionalProperties": true }
+  }
+}
+
