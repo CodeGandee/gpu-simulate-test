@@ -20,12 +20,22 @@ def _write_dummy_csv(path: Path) -> None:
     path.write_text("col\n", encoding="utf-8")
 
 
+def _write_dummy_mlp_csv(path: Path) -> None:
+    """Write a minimal valid MLP CSV that passes strict validation."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "num_tokens,time_stats.op.min,time_stats.op.max,time_stats.op.mean,time_stats.op.median\n"
+        "128,1.0,1.0,1.0,1.0\n",
+        encoding="utf-8",
+    )
+
+
 def test_validate_profiling_root_tp1_pp1(tmp_path: Path) -> None:
     model_id = "meta-llama/Llama-2-7b-hf"
     device = "a100"
     network_device = "a100_pairwise_nvlink"
 
-    _write_dummy_csv(tmp_path / "data" / "profiling" / "compute" / device / model_id / "mlp.csv")
+    _write_dummy_mlp_csv(tmp_path / "data" / "profiling" / "compute" / device / model_id / "mlp.csv")
     _write_dummy_csv(tmp_path / "data" / "profiling" / "compute" / device / model_id / "attention.csv")
 
     layout = ProfilingRootLayout(
@@ -45,7 +55,7 @@ def test_validate_profiling_root_requires_network_for_tp_gt_1(tmp_path: Path) ->
     device = "a100"
     network_device = "a100_pairwise_nvlink"
 
-    _write_dummy_csv(tmp_path / "data" / "profiling" / "compute" / device / model_id / "mlp.csv")
+    _write_dummy_mlp_csv(tmp_path / "data" / "profiling" / "compute" / device / model_id / "mlp.csv")
     _write_dummy_csv(tmp_path / "data" / "profiling" / "compute" / device / model_id / "attention.csv")
 
     layout = ProfilingRootLayout(
@@ -67,7 +77,7 @@ def test_validate_profiling_root_requires_cpu_overheads_when_enabled(tmp_path: P
     device = "a100"
     network_device = "a100_pairwise_nvlink"
 
-    _write_dummy_csv(tmp_path / "data" / "profiling" / "compute" / device / model_id / "mlp.csv")
+    _write_dummy_mlp_csv(tmp_path / "data" / "profiling" / "compute" / device / model_id / "mlp.csv")
     _write_dummy_csv(tmp_path / "data" / "profiling" / "compute" / device / model_id / "attention.csv")
 
     layout = ProfilingRootLayout(

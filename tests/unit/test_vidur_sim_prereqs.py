@@ -32,7 +32,11 @@ def test_validate_profiling_root_ok(tmp_path: Path) -> None:
     base = tmp_path / "data" / "profiling"
     (base / "compute" / "a100" / "Qwen" / "Qwen3-0.6B").mkdir(parents=True)
 
-    (base / "compute" / "a100" / "Qwen" / "Qwen3-0.6B" / "mlp.csv").write_text("x\n", encoding="utf-8")
+    (base / "compute" / "a100" / "Qwen" / "Qwen3-0.6B" / "mlp.csv").write_text(
+        "num_tokens,time_stats.op.min,time_stats.op.max,time_stats.op.mean,time_stats.op.median\n"
+        "128,1.0,1.0,1.0,1.0\n",
+        encoding="utf-8",
+    )
     (base / "compute" / "a100" / "Qwen" / "Qwen3-0.6B" / "attention.csv").write_text("x\n", encoding="utf-8")
 
     layout = ProfilingRootLayout(

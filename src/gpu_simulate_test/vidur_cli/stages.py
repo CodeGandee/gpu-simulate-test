@@ -17,6 +17,8 @@ import shutil
 from pathlib import Path
 from typing import Any, Mapping
 
+from omegaconf import OmegaConf
+
 from gpu_simulate_test.io import utcnow_iso
 from gpu_simulate_test.vidur_cli.errors import UserFacingError
 from gpu_simulate_test.vidur_cli.real_runner import run_token_length_replay
@@ -178,11 +180,46 @@ def run_profile(
         hardware_id = str(cfg.hardware.hardware_id)
         _maybe_register_vidur_model(model_key=str((state.get("presets") or {}).get("model")), cfg=cfg)
 
+        mlp_profile_method_val = OmegaConf.select(cfg, "profiling.mlp.profile_method")
+        if mlp_profile_method_val is None:
+            raise UserFacingError(
+                "profiling.mlp.profile_method is required (no default).",
+                hint="Pass an explicit override, e.g. profiling.mlp.profile_method=cuda_event",
+            )
+        mlp_profile_method = str(mlp_profile_method_val).strip()
+
+        mlp_validation_mode_val = OmegaConf.select(cfg, "profiling.mlp.validation.mode")
+        mlp_validation_mode = str(mlp_validation_mode_val or "strict").lower().strip()
+        if mlp_validation_mode not in {"strict", "non_strict"}:
+            raise UserFacingError(
+                f"profiling.mlp.validation.mode must be 'strict' or 'non_strict' (got {mlp_validation_mode!r})."
+            )
+
+        mlp_small_input_threshold_val = OmegaConf.select(
+            cfg, "profiling.mlp.validation.small_input_threshold"
+        )
+        mlp_small_input_threshold = int(mlp_small_input_threshold_val or 128)
+
+        mlp_zero_heavy_limit_val = OmegaConf.select(cfg, "profiling.mlp.validation.zero_heavy_limit")
+        mlp_zero_heavy_limit = float(mlp_zero_heavy_limit_val or 0.01)
+
+        mlp_fallback_enabled_val = OmegaConf.select(cfg, "profiling.mlp.fallback.enabled")
+        mlp_fallback_enabled = bool(mlp_fallback_enabled_val or False)
+
+        mlp_fallback_method_val = OmegaConf.select(cfg, "profiling.mlp.fallback.method")
+        mlp_fallback_method = str(mlp_fallback_method_val or "cuda_event").strip()
+
         out_dir.mkdir(parents=True, exist_ok=True)
         inputs = VidurProfileInputs(
             model_id=model_id,
             hardware_id=hardware_id,
             profiling_root=out_dir,
+            mlp_profile_method=mlp_profile_method,
+            mlp_validation_mode=mlp_validation_mode,  # type: ignore[arg-type]
+            mlp_small_input_threshold=mlp_small_input_threshold,
+            mlp_zero_heavy_limit=mlp_zero_heavy_limit,
+            mlp_fallback_enabled=mlp_fallback_enabled,
+            mlp_fallback_method=mlp_fallback_method,
             include_cpu_overhead=bool(include_cpu_overhead),
             model_ref=model_ref,
         )
@@ -260,12 +297,28 @@ def run_sim(
 
             max_tokens = int(getattr(cfg.backend, "max_tokens"))
 
+        mlp_validation_mode_val = OmegaConf.select(cfg, "vidur.validation.mlp.mode")
+        mlp_validation_mode = str(mlp_validation_mode_val or "strict").lower().strip()
+        if mlp_validation_mode not in {"strict", "non_strict"}:
+            raise UserFacingError(
+                f"vidur.validation.mlp.mode must be 'strict' or 'non_strict' (got {mlp_validation_mode!r})."
+            )
+
+        mlp_small_input_threshold_val = OmegaConf.select(cfg, "vidur.validation.mlp.small_input_threshold")
+        mlp_small_input_threshold = int(mlp_small_input_threshold_val or 128)
+
+        mlp_zero_heavy_limit_val = OmegaConf.select(cfg, "vidur.validation.mlp.zero_heavy_limit")
+        mlp_zero_heavy_limit = float(mlp_zero_heavy_limit_val or 0.01)
+
         out_dir.mkdir(parents=True, exist_ok=True)
         inputs = VidurSimInputs(
             workload_dir=run_dir / "trace",
             profiling_root=profile.profiling_root,
             model_id=model_id,
             device=hardware_id,
+            mlp_validation_mode=mlp_validation_mode,
+            mlp_small_input_threshold=mlp_small_input_threshold,
+            mlp_zero_heavy_limit=mlp_zero_heavy_limit,
             max_tokens=int(max_tokens),
             skip_cpu_overhead_modeling=not bool(profile.include_cpu_overhead),
             scheduler_chunk_size=scheduler_chunk_size,

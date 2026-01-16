@@ -84,11 +84,43 @@ def run_vidur_profiling_bundle(cfg: DictConfig, *, repo_root: Path) -> Path:
         else "strict"
     )
 
+    mlp_profile_method_val = OmegaConf.select(cfg, "profiling.mlp.profile_method")
+    if mlp_profile_method_val is None:
+        raise ValueError("profiling.mlp.profile_method is required (no default).")
+    mlp_profile_method = str(mlp_profile_method_val).strip()
+
+    mlp_validation_mode_val = OmegaConf.select(cfg, "profiling.mlp.validation.mode")
+    mlp_validation_mode = str(mlp_validation_mode_val or "strict").lower().strip()
+    if mlp_validation_mode not in {"strict", "non_strict"}:
+        raise ValueError(
+            f"profiling.mlp.validation.mode must be 'strict' or 'non_strict' (got {mlp_validation_mode!r})."
+        )
+
+    mlp_small_input_threshold_val = OmegaConf.select(
+        cfg, "profiling.mlp.validation.small_input_threshold"
+    )
+    mlp_small_input_threshold = int(mlp_small_input_threshold_val or 128)
+
+    mlp_zero_heavy_limit_val = OmegaConf.select(cfg, "profiling.mlp.validation.zero_heavy_limit")
+    mlp_zero_heavy_limit = float(mlp_zero_heavy_limit_val or 0.01)
+
+    mlp_fallback_enabled_val = OmegaConf.select(cfg, "profiling.mlp.fallback.enabled")
+    mlp_fallback_enabled = bool(mlp_fallback_enabled_val or False)
+
+    mlp_fallback_method_val = OmegaConf.select(cfg, "profiling.mlp.fallback.method")
+    mlp_fallback_method = str(mlp_fallback_method_val or "cuda_event").strip()
+
     vidur_result = run_vidur_profiling(
         VidurProfileInputs(
             model_id=model_id,
             hardware_id=hardware_id,
             profiling_root=profiling_root,
+            mlp_profile_method=mlp_profile_method,
+            mlp_validation_mode=mlp_validation_mode,  # type: ignore[arg-type]
+            mlp_small_input_threshold=mlp_small_input_threshold,
+            mlp_zero_heavy_limit=mlp_zero_heavy_limit,
+            mlp_fallback_enabled=mlp_fallback_enabled,
+            mlp_fallback_method=mlp_fallback_method,
             network_device=network_device,
             num_gpus=int(cfg.profiling.num_gpus),
             tensor_parallel_size=int(cfg.profiling.tensor_parallel_size),
@@ -132,6 +164,9 @@ def run_vidur_profiling_bundle(cfg: DictConfig, *, repo_root: Path) -> Path:
             "attention": vidur_result.attention_cmd,
             "cpu_overhead": vidur_result.cpu_overhead_cmd,
         },
+        "mlp_profile_method": vidur_result.extra.get("mlp_profile_method"),
+        "mlp_fallback": vidur_result.extra.get("mlp_fallback"),
+        "mlp_validation": vidur_result.extra.get("mlp_validation"),
         "profiling_outputs": {
             "mlp_csv": str(vidur_result.mlp_csv.resolve()),
             "attention_csv": str(vidur_result.attention_csv.resolve()),
@@ -141,6 +176,7 @@ def run_vidur_profiling_bundle(cfg: DictConfig, *, repo_root: Path) -> Path:
             else None,
             "cpu_overhead_profiled": bool(vidur_result.cpu_overhead_profiled),
         },
+        "extra": vidur_result.extra,
     }
 
     write_json(profiling_root / "profiling_meta.json", meta)

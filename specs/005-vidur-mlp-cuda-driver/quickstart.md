@@ -39,7 +39,13 @@ Examples (values shown are illustrative; adjust to your scenario):
 
 - Vidur profiling bundle export:
   - `cd /data1/huangzhe/code/gpu-simulate-test`
-  - `pixi run vidur-profiling-bundle output.dir=/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_bundle profiling.mlp.profile_method=record_function`
+  - `pixi run vidur-profiling-bundle output.dir=/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_bundle profiling.mlp.profile_method=cuda_event`
+  - (Optional: exercise record-function attribution)
+    - `pixi run vidur-profiling-bundle output.dir=/data1/huangzhe/code/gpu-simulate-test/tmp/vidur_bundle profiling.mlp.profile_method=record_function`
+
+Note: some hosts require `GPU_SIMULATE_TEST_ENABLE_VIDUR_ATTENTION_COMPAT=1` for attention profiling
+compatibility (applied via `src/sitecustomize.py`). The convenience script `pixi run vidur-profiling`
+enables this by default.
 
 ## 3) Configure validation strictness and fallback
 
@@ -63,4 +69,3 @@ It should include:
 - resolved run configuration (`params`)
 - profiling commands and output paths
 - embedded MLP validation summary
-

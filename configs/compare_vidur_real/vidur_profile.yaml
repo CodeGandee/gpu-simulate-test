@@ -11,6 +11,19 @@ paths:
 output:
   run_id: ${stable_id:vidur_profile,${model.model_id},${hardware.hardware_id}}
 
+profiling:
+  mlp:
+    # REQUIRED (no default): record_function | cuda_event | kineto | perf_counter (Vidur choices)
+    profile_method: ???
+    validation:
+      # strict (default) | non_strict
+      mode: strict
+      small_input_threshold: 128
+      zero_heavy_limit: 0.01
+    fallback:
+      enabled: false
+      method: cuda_event
+
 hydra:
   run:
     dir: ${vidur.profiling.root}

@@ -18,6 +18,7 @@ def main() -> None:
     parser.add_argument("--scheduler-name", type=str, default="sarathi-serve")
     parser.add_argument("--max-tokens", type=int, default=256)
     parser.add_argument("--num-gpus", type=int, default=1)
+    parser.add_argument("--mlp-profile-method", type=str, default="cuda_event")
     parser.add_argument("--attention-mode", type=str, default="both", choices=["decode", "prefill", "both"])
     parser.add_argument("--max-batch-size", type=int, default=1)
     args = parser.parse_args()
@@ -43,6 +44,7 @@ def main() -> None:
         f"hardware.hardware_id={args.hardware_id}",
         f"profiling.max_tokens={args.max_tokens}",
         f"profiling.num_gpus={args.num_gpus}",
+        f"profiling.mlp.profile_method={args.mlp_profile_method}",
         f"profiling.attention.profile_mode={args.attention_mode}",
         f"profiling.attention.max_batch_size={args.max_batch_size}",
     ]

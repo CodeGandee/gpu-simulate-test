@@ -43,9 +43,9 @@ description: "Task list for implementing reliable Vidur MLP profiling for driver
 
 **Purpose**: Ensure the repo environment and submodules match the feature’s assumptions.
 
-- [ ] T001 Initialize required submodules via `git submodule update --init --recursive` (see `.gitmodules`)
-- [ ] T002 Materialize the Pixi environment with `pixi install` (inputs: `pyproject.toml`, `pixi.lock`)
-- [ ] T003 Refresh Codex agent context after finalizing docs via `.specify/scripts/bash/update-agent-context.sh` (script: `.specify/scripts/bash/update-agent-context.sh`)
+- [X] T001 Initialize required submodules via `git submodule update --init --recursive` (see `.gitmodules`)
+- [X] T002 Materialize the Pixi environment with `pixi install` (inputs: `pyproject.toml`, `pixi.lock`)
+- [X] T003 Refresh Codex agent context after finalizing docs via `.specify/scripts/bash/update-agent-context.sh` (script: `.specify/scripts/bash/update-agent-context.sh`)
 
 ---
 
@@ -55,16 +55,16 @@ description: "Task list for implementing reliable Vidur MLP profiling for driver
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T004 Add required `profiling.mlp.profile_method` + default validation/fallback knobs to `configs/vidur_profiling/bundle.yaml`
-- [ ] T005 [P] Add required `profiling.mlp.profile_method` + default validation/fallback knobs to `configs/paper_fidelity/profile.yaml`
-- [ ] T006 [P] Add required `profiling.mlp.profile_method` + default validation/fallback knobs to `configs/compare_vidur_real/vidur_profile.yaml`
-- [ ] T007 [P] Add consumer-side defaults for `vidur.validation.mlp.*` (mode + thresholds) to `configs/compare_vidur_real/vidur/default.yaml`
-- [ ] T008 Update `VidurProfileInputs` to require explicit MLP method selection + carry validation/fallback settings in `src/gpu_simulate_test/vidur_ext/profile_runner.py`
-- [ ] T009 Use `VidurProfileInputs.mlp_profile_method` to pass `--profile_method ...` explicitly into the MLP profiler subprocess in `src/gpu_simulate_test/vidur_ext/profile_runner.py`
-- [ ] T010 Update `vidur-profiling-bundle` config parsing to read `profiling.mlp.*` and pass into `VidurProfileInputs` in `src/gpu_simulate_test/vidur_ext/profiling_bundle.py`
-- [ ] T011 [P] Update `paper-fidelity profile` config parsing to read `profiling.mlp.*` and pass into `VidurProfileInputs` in `src/gpu_simulate_test/paper_fidelity/profiling.py`
-- [ ] T012 [P] Update `vidur-cli svr profile` to read `profiling.mlp.*` and pass into `VidurProfileInputs` in `src/gpu_simulate_test/vidur_cli/stages.py`
-- [ ] T013 [P] Update `vidur-profile` CLI wiring to pass `profiling.mlp.profile_method` into `VidurProfileInputs` in `src/gpu_simulate_test/cli/vidur_profile.py`
+- [X] T004 Add required `profiling.mlp.profile_method` + default validation/fallback knobs to `configs/vidur_profiling/bundle.yaml`
+- [X] T005 [P] Add required `profiling.mlp.profile_method` + default validation/fallback knobs to `configs/paper_fidelity/profile.yaml`
+- [X] T006 [P] Add required `profiling.mlp.profile_method` + default validation/fallback knobs to `configs/compare_vidur_real/vidur_profile.yaml`
+- [X] T007 [P] Add consumer-side defaults for `vidur.validation.mlp.*` (mode + thresholds) to `configs/compare_vidur_real/vidur/default.yaml`
+- [X] T008 Update `VidurProfileInputs` to require explicit MLP method selection + carry validation/fallback settings in `src/gpu_simulate_test/vidur_ext/profile_runner.py`
+- [X] T009 Use `VidurProfileInputs.mlp_profile_method` to pass `--profile_method ...` explicitly into the MLP profiler subprocess in `src/gpu_simulate_test/vidur_ext/profile_runner.py`
+- [X] T010 Update `vidur-profiling-bundle` config parsing to read `profiling.mlp.*` and pass into `VidurProfileInputs` in `src/gpu_simulate_test/vidur_ext/profiling_bundle.py`
+- [X] T011 [P] Update `paper-fidelity profile` config parsing to read `profiling.mlp.*` and pass into `VidurProfileInputs` in `src/gpu_simulate_test/paper_fidelity/profiling.py`
+- [X] T012 [P] Update `vidur-cli svr profile` to read `profiling.mlp.*` and pass into `VidurProfileInputs` in `src/gpu_simulate_test/vidur_cli/stages.py`
+- [X] T013 [P] Update `vidur-profile` CLI wiring to pass `profiling.mlp.profile_method` into `VidurProfileInputs` in `src/gpu_simulate_test/cli/vidur_profile.py`
 
 **Checkpoint**: Foundation ready — user story implementation can now begin.
 
@@ -78,10 +78,10 @@ description: "Task list for implementing reliable Vidur MLP profiling for driver
 
 ### Implementation for User Story 1
 
-- [ ] T014 [P] [US1] Implement correlation-based `RecordFunctionTracerV2` supporting `cuda_runtime` + `cuda_driver` launches in `src/gpu_simulate_test/vidur_ext/record_function_tracer_v2.py`
-- [ ] T015 [P] [US1] Monkey-patch `vidur.profiling.mlp.mlp_wrapper.RecordFunctionTracer` to `RecordFunctionTracerV2` when `--profile_method record_function` is selected in `src/gpu_simulate_test/vidur_ext/vidur_profiling_mlp_main.py`
-- [ ] T016 [US1] Remove blanket NaN→0 staging for `time_stats.*` columns (stop `fillna(0.0)` masking) in `src/gpu_simulate_test/vidur_ext/profile_runner.py`
-- [ ] T017 [US1] Manually profile a known driver-launch workload in strict mode and confirm staged `mlp.csv` has no missing core targets (commands: `specs/005-vidur-mlp-cuda-driver/quickstart.md`)
+- [X] T014 [P] [US1] Implement correlation-based `RecordFunctionTracerV2` supporting `cuda_runtime` + `cuda_driver` launches in `src/gpu_simulate_test/vidur_ext/record_function_tracer_v2.py`
+- [X] T015 [P] [US1] Monkey-patch `vidur.profiling.mlp.mlp_wrapper.RecordFunctionTracer` to `RecordFunctionTracerV2` when `--profile_method record_function` is selected in `src/gpu_simulate_test/vidur_ext/vidur_profiling_mlp_main.py`
+- [X] T016 [US1] Remove blanket NaN→0 staging for `time_stats.*` columns (stop `fillna(0.0)` masking) in `src/gpu_simulate_test/vidur_ext/profile_runner.py`
+- [X] T017 [US1] Manually profile a known driver-launch workload in strict mode and confirm staged `mlp.csv` has no missing core targets (commands: `specs/005-vidur-mlp-cuda-driver/quickstart.md`)
 
 **Checkpoint**: User Story 1 is functional: record-function profiling produces complete timings for driver-launched kernels.
 
@@ -95,17 +95,17 @@ description: "Task list for implementing reliable Vidur MLP profiling for driver
 
 ### Implementation for User Story 2
 
-- [ ] T018 [P] [US2] Implement `validate_mlp_csv` + `MlpValidationResult` (missing cells, missing columns, zero-heavy detection, strict/non-strict) in `src/gpu_simulate_test/vidur_ext/mlp_validation.py`
-- [ ] T019 [US2] Enforce MLP validation during staging (strict by default; missing always fails; zero-heavy fails/warns per mode) with remediation messages in `src/gpu_simulate_test/vidur_ext/profile_runner.py`
-- [ ] T020 [US2] Implement opt-in automatic fallback rerun on validation failure (`fallback.enabled`, `fallback.method`) and record the final method used in `src/gpu_simulate_test/vidur_ext/profile_runner.py`
-- [ ] T021 [US2] Apply the same staging validation when compute profiling is skipped due to existing outputs (validate existing `mlp.csv` before returning) in `src/gpu_simulate_test/vidur_ext/profile_runner.py`
-- [ ] T022 [P] [US2] Embed `mlp_validation` + method/fallback provenance into `profiling_meta.json` and reconcile with `specs/005-vidur-mlp-cuda-driver/contracts/*.schema.json` in `src/gpu_simulate_test/vidur_ext/profiling_bundle.py`
-- [ ] T023 [P] [US2] Embed `mlp_validation` + method/fallback provenance into paper-fidelity `profiling_meta.json` in `src/gpu_simulate_test/paper_fidelity/profiling.py`
-- [ ] T024 [US2] Enforce consumption-side MLP validation (strict fail vs non-strict warn) in `src/gpu_simulate_test/vidur_ext/profiling_root.py`
-- [ ] T025 [US2] Extend `ProfilingRootLayout` with MLP validation settings (mode + thresholds) in `src/gpu_simulate_test/vidur_ext/profiling_root.py`
-- [ ] T026 [US2] Add MLP validation settings to `VidurSimInputs` and pass through to `ProfilingRootLayout` in `src/gpu_simulate_test/vidur_ext/sim_runner.py`
-- [ ] T027 [P] [US2] Thread consumer validation config (`vidur.validation.mlp.*`) into `VidurSimInputs` in `src/gpu_simulate_test/cli/vidur_sim.py`
-- [ ] T028 [P] [US2] Thread consumer validation config (`vidur.validation.mlp.*`) into `VidurSimInputs` for `vidur-cli svr sim` in `src/gpu_simulate_test/vidur_cli/stages.py`
+- [X] T018 [P] [US2] Implement `validate_mlp_csv` + `MlpValidationResult` (missing cells, missing columns, zero-heavy detection, strict/non-strict) in `src/gpu_simulate_test/vidur_ext/mlp_validation.py`
+- [X] T019 [US2] Enforce MLP validation during staging (strict by default; missing always fails; zero-heavy fails/warns per mode) with remediation messages in `src/gpu_simulate_test/vidur_ext/profile_runner.py`
+- [X] T020 [US2] Implement opt-in automatic fallback rerun on validation failure (`fallback.enabled`, `fallback.method`) and record the final method used in `src/gpu_simulate_test/vidur_ext/profile_runner.py`
+- [X] T021 [US2] Apply the same staging validation when compute profiling is skipped due to existing outputs (validate existing `mlp.csv` before returning) in `src/gpu_simulate_test/vidur_ext/profile_runner.py`
+- [X] T022 [P] [US2] Embed `mlp_validation` + method/fallback provenance into `profiling_meta.json` and reconcile with `specs/005-vidur-mlp-cuda-driver/contracts/*.schema.json` in `src/gpu_simulate_test/vidur_ext/profiling_bundle.py`
+- [X] T023 [P] [US2] Embed `mlp_validation` + method/fallback provenance into paper-fidelity `profiling_meta.json` in `src/gpu_simulate_test/paper_fidelity/profiling.py`
+- [X] T024 [US2] Enforce consumption-side MLP validation (strict fail vs non-strict warn) in `src/gpu_simulate_test/vidur_ext/profiling_root.py`
+- [X] T025 [US2] Extend `ProfilingRootLayout` with MLP validation settings (mode + thresholds) in `src/gpu_simulate_test/vidur_ext/profiling_root.py`
+- [X] T026 [US2] Add MLP validation settings to `VidurSimInputs` and pass through to `ProfilingRootLayout` in `src/gpu_simulate_test/vidur_ext/sim_runner.py`
+- [X] T027 [P] [US2] Thread consumer validation config (`vidur.validation.mlp.*`) into `VidurSimInputs` in `src/gpu_simulate_test/cli/vidur_sim.py`
+- [X] T028 [P] [US2] Thread consumer validation config (`vidur.validation.mlp.*`) into `VidurSimInputs` for `vidur-cli svr sim` in `src/gpu_simulate_test/vidur_cli/stages.py`
 
 **Checkpoint**: Bad profiling roots fail fast (or warn in non-strict) at both staging and consumption, with clear remediation (including fallback guidance).
 
@@ -119,10 +119,10 @@ description: "Task list for implementing reliable Vidur MLP profiling for driver
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T029 [P] [US3] Add unit tests for `RecordFunctionTracerV2` covering runtime + driver launch paths with synthetic traces in `tests/unit/test_vidur_record_function_tracer_v2.py`
-- [ ] T030 [P] [US3] Add unit tests for `validate_mlp_csv` (missing cells, missing columns, zero-heavy strict vs non-strict) in `tests/unit/test_mlp_validation.py`
-- [ ] T031 [P] [US3] Add unit tests ensuring `validate_profiling_root` enforces MLP validation (strict fails; non-strict warns) in `tests/unit/test_profiling_root_mlp_validation.py`
-- [ ] T032 [US3] Run the unit test suite in Pixi (`pixi run pytest -q`) and ensure new tests pass (tests live under `tests/unit/`)
+- [X] T029 [P] [US3] Add unit tests for `RecordFunctionTracerV2` covering runtime + driver launch paths with synthetic traces in `tests/unit/test_vidur_record_function_tracer_v2.py`
+- [X] T030 [P] [US3] Add unit tests for `validate_mlp_csv` (missing cells, missing columns, zero-heavy strict vs non-strict) in `tests/unit/test_mlp_validation.py`
+- [X] T031 [P] [US3] Add unit tests ensuring `validate_profiling_root` enforces MLP validation (strict fails; non-strict warns) in `tests/unit/test_profiling_root_mlp_validation.py`
+- [X] T032 [US3] Run the unit test suite in Pixi (`pixi run pytest -q`) and ensure new tests pass (tests live under `tests/unit/`)
 
 **Checkpoint**: Regression coverage exists for both attribution and validation logic.
 
@@ -132,12 +132,12 @@ description: "Task list for implementing reliable Vidur MLP profiling for driver
 
 **Purpose**: Update repo workflows and documentation impacted by explicit method selection and validation.
 
-- [ ] T033 [P] Update manual smoke test to pass explicit `profiling.mlp.profile_method` overrides in `tests/manual/test_vidur_profiling_bundle_smoke.py`
-- [ ] T034 [P] Update manual smoke test to pass explicit `profiling.mlp.profile_method` overrides in `tests/manual/test_vidur_profile_smoke.py`
-- [ ] T035 [P] Update manual smoke test to pass explicit `profiling.mlp.profile_method` overrides in `tests/manual/test_paper_fidelity_profile_smoke.py`
-- [ ] T036 [P] Update the profiling bundle helper script to pass explicit `profiling.mlp.profile_method` (and optional fallback knobs) in `scripts/run_vidur_profiling_llama2_7b.sh`
-- [ ] T037 Update the known-issue writeup with fix status + new remediation guidance in `context/issues/known/issue-vidur-mlp-profiling-misses-cuda-driver-kernels.md`
-- [ ] T038 Re-run the workflow examples and refresh any gotchas in `specs/005-vidur-mlp-cuda-driver/quickstart.md`
+- [X] T033 [P] Update manual smoke test to pass explicit `profiling.mlp.profile_method` overrides in `tests/manual/test_vidur_profiling_bundle_smoke.py`
+- [X] T034 [P] Update manual smoke test to pass explicit `profiling.mlp.profile_method` overrides in `tests/manual/test_vidur_profile_smoke.py`
+- [X] T035 [P] Update manual smoke test to pass explicit `profiling.mlp.profile_method` overrides in `tests/manual/test_paper_fidelity_profile_smoke.py`
+- [X] T036 [P] Update the profiling bundle helper script to pass explicit `profiling.mlp.profile_method` (and optional fallback knobs) in `scripts/run_vidur_profiling_llama2_7b.sh`
+- [X] T037 Update the known-issue writeup with fix status + new remediation guidance in `context/issues/known/issue-vidur-mlp-profiling-misses-cuda-driver-kernels.md`
+- [X] T038 Re-run the workflow examples and refresh any gotchas in `specs/005-vidur-mlp-cuda-driver/quickstart.md`
 
 ---
 

@@ -12,6 +12,9 @@ class ProfilingRootLayout:
     network_device: str = "a100_pairwise_nvlink"
     tensor_parallel_size: int = 1
     num_pipeline_stages: int = 1
+    mlp_validation_mode: str = "strict"
+    mlp_small_input_threshold: int = 128
+    mlp_zero_heavy_limit: float = 0.01
     # Vidur's config uses the negative form: `skip_cpu_overhead_modeling`.
     skip_cpu_overhead_modeling: bool = True
     # Guardrails for fidelity runs. `strict` rejects placeholder-like CPU overhead CSVs.
@@ -57,6 +60,21 @@ def validate_profiling_root(layout: ProfilingRootLayout) -> None:
     if missing:
         msg = "Missing profiling inputs:\n" + "\n".join([f"- {p}" for p in missing])
         raise FileNotFoundError(msg)
+
+    from gpu_simulate_test.vidur_ext.mlp_validation import validate_mlp_csv
+
+    mlp_csv = _compute_dir(layout) / "mlp.csv"
+    result = validate_mlp_csv(
+        mlp_csv,
+        mode=str(layout.mlp_validation_mode).lower().strip() or "strict",  # type: ignore[arg-type]
+        small_input_threshold=int(layout.mlp_small_input_threshold),
+        zero_heavy_limit=float(layout.mlp_zero_heavy_limit),
+    )
+    if result.warnings:
+        import warnings
+
+        for warning in result.warnings:
+            warnings.warn(warning)
 
     if not layout.skip_cpu_overhead_modeling:
         from gpu_simulate_test.vidur_ext.cpu_overhead_validation import validate_cpu_overheads_csv

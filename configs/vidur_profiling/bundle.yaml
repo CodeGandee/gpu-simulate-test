@@ -26,6 +26,18 @@ profiling:
   tensor_parallel_size: 1
   max_tokens: 4096
 
+  mlp:
+    # REQUIRED (no default): record_function | cuda_event | kineto | perf_counter (Vidur choices)
+    profile_method: ???
+    validation:
+      # strict (default) | non_strict
+      mode: strict
+      small_input_threshold: 128
+      zero_heavy_limit: 0.01
+    fallback:
+      enabled: false
+      method: cuda_event
+
   # Keep the exported bundle compute-only for TP=1/PP=1 experiments.
   include_network: false
 

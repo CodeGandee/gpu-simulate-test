@@ -46,6 +46,9 @@ class VidurSimInputs:
     network_device: str = "a100_pairwise_nvlink"
     tensor_parallel_size: int = 1
     num_pipeline_stages: int = 1
+    mlp_validation_mode: str = "strict"
+    mlp_small_input_threshold: int = 128
+    mlp_zero_heavy_limit: float = 0.01
     seed: int = 42
     max_tokens: int = 4096
     # Vidur's interface uses the negative form.
@@ -179,6 +182,9 @@ def run_vidur_sim(inputs: VidurSimInputs, *, out_dir: Path, run_meta: dict) -> N
         network_device=inputs.network_device,
         tensor_parallel_size=inputs.tensor_parallel_size,
         num_pipeline_stages=inputs.num_pipeline_stages,
+        mlp_validation_mode=str(inputs.mlp_validation_mode),
+        mlp_small_input_threshold=int(inputs.mlp_small_input_threshold),
+        mlp_zero_heavy_limit=float(inputs.mlp_zero_heavy_limit),
         skip_cpu_overhead_modeling=bool(inputs.skip_cpu_overhead_modeling),
         cpu_overhead_validation=str(inputs.cpu_overhead_validation),
     )
@@ -409,6 +415,9 @@ class VidurPaperFidelitySimInputs:
     network_device: str = "a100_pairwise_nvlink"
     tensor_parallel_size: int = 1
     num_pipeline_stages: int = 1
+    mlp_validation_mode: str = "strict"
+    mlp_small_input_threshold: int = 128
+    mlp_zero_heavy_limit: float = 0.01
     seed: int = 42
     max_tokens: int = 4096
     # Vidur's interface uses the negative form.
@@ -454,6 +463,9 @@ def run_vidur_paper_fidelity_sim(
         network_device=inputs.network_device,
         tensor_parallel_size=inputs.tensor_parallel_size,
         num_pipeline_stages=inputs.num_pipeline_stages,
+        mlp_validation_mode=str(inputs.mlp_validation_mode),
+        mlp_small_input_threshold=int(inputs.mlp_small_input_threshold),
+        mlp_zero_heavy_limit=float(inputs.mlp_zero_heavy_limit),
         skip_cpu_overhead_modeling=bool(inputs.skip_cpu_overhead_modeling),
         cpu_overhead_validation=str(inputs.cpu_overhead_validation),
     )

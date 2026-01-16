@@ -8,6 +8,22 @@ def _enabled() -> bool:
     return value in {"1", "true", "yes", "on"}
 
 
+def _mlp_record_function_tracer_v2_enabled() -> bool:
+    value = os.environ.get(
+        "GPU_SIMULATE_TEST_ENABLE_VIDUR_MLP_RECORD_FUNCTION_TRACER_V2", ""
+    ).strip().lower()
+    return value in {"1", "true", "yes", "on"}
+
+
+def _patch_vidur_mlp_record_function_tracer_v2() -> None:
+    from gpu_simulate_test.vidur_ext.record_function_tracer_v2 import RecordFunctionTracerV2
+    import vidur.profiling.mlp.mlp_wrapper as mlp_wrapper
+    import vidur.profiling.utils.record_function_tracer as tracer_module
+
+    mlp_wrapper.RecordFunctionTracer = RecordFunctionTracerV2  # type: ignore[assignment]
+    tracer_module.RecordFunctionTracer = RecordFunctionTracerV2  # type: ignore[assignment]
+
+
 def _patch_vidur_attention_backend() -> None:
     from sarathi.config import CacheConfig
     from sarathi.types import AttentionBackend
@@ -91,6 +107,16 @@ if _enabled():
         raise RuntimeError(
             "Failed to apply Vidur/Sarathi attention profiling compatibility patch. "
             "Unset GPU_SIMULATE_TEST_ENABLE_VIDUR_ATTENTION_COMPAT to disable, or fix the underlying error."
+        ) from e
+
+if _mlp_record_function_tracer_v2_enabled():
+    try:
+        _patch_vidur_mlp_record_function_tracer_v2()
+    except Exception as e:
+        raise RuntimeError(
+            "Failed to apply Vidur MLP record-function tracer patch. "
+            "Unset GPU_SIMULATE_TEST_ENABLE_VIDUR_MLP_RECORD_FUNCTION_TRACER_V2 to disable, "
+            "or fix the underlying error."
         ) from e
 
 # Always apply safe runtime guardrails when possible.

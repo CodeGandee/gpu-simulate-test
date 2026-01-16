@@ -51,11 +51,27 @@ def main(cfg: DictConfig) -> None:
         "hydra": {"config_path": "configs/compare_vidur_real", "config_name": "vidur_sim"},
     }
 
+    mlp_validation_mode_val = OmegaConf.select(cfg, "vidur.validation.mlp.mode")
+    mlp_validation_mode = str(mlp_validation_mode_val or "strict").lower().strip()
+    if mlp_validation_mode not in {"strict", "non_strict"}:
+        raise ValueError(
+            f"vidur.validation.mlp.mode must be 'strict' or 'non_strict' (got {mlp_validation_mode!r})."
+        )
+
+    mlp_small_input_threshold_val = OmegaConf.select(cfg, "vidur.validation.mlp.small_input_threshold")
+    mlp_small_input_threshold = int(mlp_small_input_threshold_val or 128)
+
+    mlp_zero_heavy_limit_val = OmegaConf.select(cfg, "vidur.validation.mlp.zero_heavy_limit")
+    mlp_zero_heavy_limit = float(mlp_zero_heavy_limit_val or 0.01)
+
     inputs = VidurSimInputs(
         workload_dir=workload_dir,
         profiling_root=profiling_root,
         model_id=str(cfg.model.model_id),
         device=str(cfg.hardware.hardware_id),
+        mlp_validation_mode=mlp_validation_mode,
+        mlp_small_input_threshold=mlp_small_input_threshold,
+        mlp_zero_heavy_limit=mlp_zero_heavy_limit,
     )
     run_vidur_sim(inputs, out_dir=out_dir, run_meta=run_meta)
     print(str(out_dir))

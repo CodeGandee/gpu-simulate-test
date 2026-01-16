@@ -13,7 +13,9 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
+
+MlpValidationMode = Literal["strict", "non_strict"]
 
 
 @dataclass(frozen=True)
@@ -39,6 +41,23 @@ class VidurProfileInputs:
     staging_root
         Optional directory for large intermediate profiler outputs; defaults to
         `<profiling_root>/_staging` when omitted.
+    mlp_profile_method
+        REQUIRED. Profiling method passed to Vidur's MLP profiler (no hidden defaults).
+        Examples: `record_function`, `cuda_event`.
+    mlp_validation_mode
+        Validation mode to apply when staging `mlp.csv`: `strict` (default) fails on missing
+        values and zero-heavy signals; `non_strict` fails on missing values but only warns on
+        zero-heavy signals.
+    mlp_small_input_threshold
+        Token count threshold below which exact zeros are tolerated in `mlp.csv`.
+    mlp_zero_heavy_limit
+        Fraction of exact zeros above which a column is flagged as "zero-heavy" for rows where
+        `num_tokens >= mlp_small_input_threshold`.
+    mlp_fallback_enabled
+        Whether to automatically retry MLP profiling with `mlp_fallback_method` when validation
+        fails.
+    mlp_fallback_method
+        Alternate profiling method to try when `mlp_fallback_enabled` is set.
     include_network
         Whether to stage Vidur network profiling CSVs into the profiling root when available.
     include_cpu_overhead
@@ -70,6 +89,12 @@ class VidurProfileInputs:
     model_id: str
     hardware_id: str
     profiling_root: Path
+    mlp_profile_method: str
+    mlp_validation_mode: MlpValidationMode = "strict"
+    mlp_small_input_threshold: int = 128
+    mlp_zero_heavy_limit: float = 0.01
+    mlp_fallback_enabled: bool = False
+    mlp_fallback_method: str = "cuda_event"
     network_device: str = "a100_pairwise_nvlink"
     num_gpus: int = 1
     tensor_parallel_size: int = 1
@@ -293,12 +318,79 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
             / "cpu_overheads.csv"
         )
 
+    from gpu_simulate_test.vidur_ext.mlp_validation import MlpCsvValidationError, validate_mlp_csv
+
+    def _validate_staged_mlp() -> dict[str, Any]:
+        result = validate_mlp_csv(
+            mlp_dst,
+            mode=str(inputs.mlp_validation_mode).lower().strip() or "strict",  # type: ignore[arg-type]
+            small_input_threshold=int(inputs.mlp_small_input_threshold),
+            zero_heavy_limit=float(inputs.mlp_zero_heavy_limit),
+        )
+        if result.warnings:
+            import warnings
+
+            for warning in result.warnings:
+                warnings.warn(warning)
+        return result.as_jsonable()
+
+    def _run_and_stage_mlp(*, profile_method: str) -> list[str]:
+        import pandas as pd
+
+        cmd = [
+            sys.executable,
+            "-m",
+            "gpu_simulate_test.vidur_ext.vidur_profiling_mlp_main",
+            "--num_gpus",
+            str(int(inputs.num_gpus)),
+            "--num_tensor_parallel_workers",
+            str(int(inputs.tensor_parallel_size)),
+            "--models",
+            inputs.model_id,
+            "--output_dir",
+            str(staging),
+            "--max_tokens",
+            str(int(inputs.max_tokens)),
+            "--profile_method",
+            str(profile_method),
+        ]
+        subprocess.check_call(cmd, cwd=repo_root)
+
+        mlp_latest = _latest_dir(staging / "mlp")
+        mlp_src = mlp_latest / inputs.model_id / "mlp.csv"
+        compute_dst_dir.mkdir(parents=True, exist_ok=True)
+
+        mlp_df = pd.read_csv(mlp_src).drop_duplicates()
+        mlp_df.to_csv(mlp_dst, index=False)
+        return cmd
+
     compute_ready = mlp_dst.exists() and attn_dst.exists()
     cpu_ready = (not inputs.include_cpu_overhead) or (
         cpu_overheads_dst is not None and cpu_overheads_dst.exists()
     )
     if compute_ready and cpu_ready:
-        extra: dict[str, Any] = {"skipped": True}
+        mlp_cmd: list[str] = []
+        extra: dict[str, Any] = {
+            "skipped": True,
+            "mlp_profile_method": str(inputs.mlp_profile_method),
+            "mlp_fallback": {
+                "enabled": bool(inputs.mlp_fallback_enabled),
+                "used": False,
+                "method": str(inputs.mlp_fallback_method),
+            },
+        }
+
+        try:
+            extra["mlp_validation"] = _validate_staged_mlp()
+        except MlpCsvValidationError as e:
+            extra["mlp_validation"] = e.result.as_jsonable()
+            if not inputs.mlp_fallback_enabled:
+                raise
+            mlp_cmd = _run_and_stage_mlp(profile_method=str(inputs.mlp_fallback_method))
+            extra["mlp_profile_method"] = str(inputs.mlp_fallback_method)
+            extra["mlp_fallback"]["used"] = True
+            extra["mlp_validation"] = _validate_staged_mlp()
+
         if inputs.include_cpu_overhead and cpu_overheads_dst is not None and cpu_overheads_dst.exists():
             from gpu_simulate_test.vidur_ext.cpu_overhead_validation import validate_cpu_overheads_csv
 
@@ -317,7 +409,7 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
             attention_profiled=False,
             cpu_overheads_csv=cpu_overheads_dst if inputs.include_cpu_overhead else None,
             cpu_overhead_profiled=False,
-            mlp_cmd=[],
+            mlp_cmd=mlp_cmd,
             attention_cmd=[],
             cpu_overhead_cmd=[],
             extra=extra,
@@ -330,21 +422,14 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
     import pandas as pd
 
     if not compute_ready:
-        mlp_cmd = [
-            sys.executable,
-            "-m",
-            "gpu_simulate_test.vidur_ext.vidur_profiling_mlp_main",
-            "--num_gpus",
-            str(int(inputs.num_gpus)),
-            "--num_tensor_parallel_workers",
-            str(int(inputs.tensor_parallel_size)),
-            "--models",
-            inputs.model_id,
-            "--output_dir",
-            str(staging),
-            "--max_tokens",
-            str(int(inputs.max_tokens)),
-        ]
+        extra["mlp_profile_method"] = str(inputs.mlp_profile_method)
+        extra["mlp_fallback"] = {
+            "enabled": bool(inputs.mlp_fallback_enabled),
+            "used": False,
+            "method": str(inputs.mlp_fallback_method),
+        }
+
+        mlp_cmd = _run_and_stage_mlp(profile_method=str(inputs.mlp_profile_method))
         attn_cmd = [
             sys.executable,
             "-m",
@@ -380,7 +465,6 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
         elif mode == "prefill":
             attn_cmd.append("--profile_only_prefill")
 
-        subprocess.check_call(mlp_cmd, cwd=repo_root)
         attn_exc: subprocess.CalledProcessError | None = None
         try:
             subprocess.check_call(attn_cmd, cwd=repo_root)
@@ -388,15 +472,6 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
         except subprocess.CalledProcessError as e:
             attention_ok = False
             attn_exc = e
-
-        mlp_latest = _latest_dir(staging / "mlp")
-        mlp_src = mlp_latest / inputs.model_id / "mlp.csv"
-        compute_dst_dir.mkdir(parents=True, exist_ok=True)
-
-        mlp_df = pd.read_csv(mlp_src).drop_duplicates()
-        time_cols = [c for c in mlp_df.columns if c.startswith("time_stats.")]
-        mlp_df[time_cols] = mlp_df[time_cols].fillna(0.0)
-        mlp_df.to_csv(mlp_dst, index=False)
 
         if attention_ok:
             attn_latest = _latest_dir(staging / "attention")
@@ -419,8 +494,26 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
                 block_size=int(inputs.attention_block_size),
             )
             extra["attention_fallback_template"] = str(template)
+
+        try:
+            extra["mlp_validation"] = _validate_staged_mlp()
+        except MlpCsvValidationError as e:
+            extra["mlp_validation"] = e.result.as_jsonable()
+            if not inputs.mlp_fallback_enabled:
+                raise
+            mlp_cmd = _run_and_stage_mlp(profile_method=str(inputs.mlp_fallback_method))
+            extra["mlp_profile_method"] = str(inputs.mlp_fallback_method)
+            extra["mlp_fallback"]["used"] = True
+            extra["mlp_validation"] = _validate_staged_mlp()
     else:
         extra["skipped_compute"] = True
+        extra["mlp_profile_method"] = str(inputs.mlp_profile_method)
+        extra["mlp_fallback"] = {
+            "enabled": bool(inputs.mlp_fallback_enabled),
+            "used": False,
+            "method": str(inputs.mlp_fallback_method),
+        }
+        extra["mlp_validation"] = _validate_staged_mlp()
 
     cpu_overhead_cmd: list[str] = []
     cpu_overhead_profiled = False

@@ -2,3 +2,8 @@ model_key: qwen3_0_6b
 profiling:
   root: ${paths.tmp_root}/vidur_profiling/${hardware.hardware_id}/${vidur.model_key}
 
+validation:
+  mlp:
+    mode: strict
+    small_input_threshold: 128
+    zero_heavy_limit: 0.01

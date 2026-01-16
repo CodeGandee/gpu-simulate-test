@@ -1,6 +1,6 @@
 # Issue: Vidur MLP compute profiling misses CUDA driver-launched kernels (record_function) → 0s in `mlp.csv`
 
-**Status**: Known
+**Status**: Fixed for new profiling roots (existing roots may still contain placeholder 0.0s)
 **Date**: 2026-01-16
 **Last updated**: 2026-01-16
 **Priority**: High (fidelity risk; silent underprediction)
@@ -9,9 +9,18 @@
 
 Some host profiling roots contain **0.0 timings** for compute ops in `mlp.csv` (e.g., `time_stats.attn_post_proj.{min,max,mean,median}=0`).
 
-These are **not real “0 ms” kernels**. They originate from **missing per-op timing samples** in Vidur’s `record_function`-based profiler, then being **filled to 0.0 during staging** so the downstream sklearn trainer does not crash on NaNs.
+These are **not real “0 ms” kernels**. They originate from **missing per-op timing samples** in Vidur’s `record_function`-based profiler; historically those NaNs were **filled to 0.0 during staging**, masking the issue and biasing downstream training/simulation.
 
 Because Vidur sim trains per-op timing predictors from `mlp.csv`, these 0s can cause the simulator to **systematically underpredict** compute time (and therefore latency / queueing).
+
+## Fix status (2026-01-16)
+
+Implemented in `005-vidur-mlp-cuda-driver`:
+
+1. **Attribution fix (record_function)**: use a correlation-based tracer that counts both `cuda_runtime` and `cuda_driver` launch paths to attribute correlated `kernel` time back to `vidur_*` user-annotation regions.
+2. **No more silent NaN → 0 staging**: staging validates `mlp.csv` and fails fast (strict by default) instead of masking missing values.
+3. **Opt-in automatic fallback**: on validation failure, users can retry MLP profiling with an alternate method (e.g., `cuda_event`).
+4. **Consumption validation**: consumers validate `mlp.csv` when loading a profiling root (strict fail vs non-strict warn), controlled by `vidur.validation.mlp.*`.
 
 ## Where this shows up
 
@@ -101,11 +110,12 @@ Example symptom seen during inspection:
 
 - `num_tokens=3872` had `time_stats.attn_post_proj.*` cells as empty strings (`''`).
 
-During staging into the profiling root, our wrapper code turns missing values into 0.0:
+Historically, our staging wrapper masked the issue by filling missing `time_stats.*` cells to `0.0`.
+This avoided downstream training crashes on NaNs, but silently converted “missing measurement” into
+“0 ms”.
 
-- `src/gpu_simulate_test/vidur_ext/profile_runner.py:398` does `mlp_df[time_cols] = mlp_df[time_cols].fillna(0.0)`.
-
-This avoids sklearn training failures on NaNs, but silently converts “missing measurement” into “0 ms”.
+With `005-vidur-mlp-cuda-driver`, this behavior is removed: staging validates `mlp.csv` and fails
+fast (strict by default), with an opt-in automatic fallback rerun.
 
 ## Root cause
 
@@ -133,19 +143,17 @@ If missing measurements are staged as 0.0:
 2) Simulation will underpredict batch compute time.
 3) Underpredicted compute time can also reduce simulated queueing/scheduling delays, amplifying error in sim-vs-real reports.
 
-## Mitigations (today)
+## Mitigations (for existing profiling roots)
 
-- Prefer a profiling method that does not depend on `record_function` correlation (e.g., CUDA events) for MLP profiling.
-- Add validation when consuming a profiling root: flag or fail if key `time_stats.*.median` columns contain many zeros at non-trivial token counts.
-- Re-profile on a known-good host and compare fingerprints; avoid mixing profiling roots when diagnosing fidelity.
+- Re-profile using an explicit MLP method override (e.g., `profiling.mlp.profile_method=cuda_event`).
+- If a run fails validation, enable opt-in fallback: `profiling.mlp.fallback.enabled=true profiling.mlp.fallback.method=cuda_event`.
+- If a consumer fails on load, the error message should include the affected columns and remediation actions.
 
-## Proposed fixes (code)
+## Fix implemented (code)
 
-1) **Fix attribution in Vidur’s record_function tracer**:
-   - count kernel time from correlated `cat == "kernel"` events for both `cuda_runtime` and `cuda_driver` launches.
-2) **Stop turning NaNs into 0.0 silently**:
-   - either drop those rows for affected ops during training, or fail profiling with acknowledging “missing measurement” explicitly.
-3) **Expose a knob in our profiling wrapper** to run Vidur MLP profiling with `--profile_method cuda_event` (or similar), and record the method in `profiling_meta.json` for provenance.
+1) **Record-function attribution**: correlation-based tracer counts both `cuda_runtime` and `cuda_driver` launch paths and attributes correlated `kernel` time to `vidur_*` regions.
+2) **Fail fast instead of masking**: staging validates `mlp.csv` (missing always fails; zero-heavy fails in strict, warns in non-strict).
+3) **Provenance**: profiling meta records the selected method, fallback usage, and validation summary.
 
 ## Implementation plan
 

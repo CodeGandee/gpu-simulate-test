@@ -26,6 +26,7 @@ def main() -> None:
     parser.add_argument("--network-device", type=str, default="a100_pairwise_nvlink")
     parser.add_argument("--max-tokens", type=int, default=256)
     parser.add_argument("--num-gpus", type=int, default=1)
+    parser.add_argument("--mlp-profile-method", type=str, default="cuda_event")
     parser.add_argument("--include-cpu-overhead", action="store_true")
     parser.add_argument("--cpu-overhead-max-batch-size", type=int, default=16)
     args = parser.parse_args()
@@ -39,6 +40,7 @@ def main() -> None:
         args.scenario,
         f"profiling.max_tokens={args.max_tokens}",
         f"profiling.num_gpus={args.num_gpus}",
+        f"profiling.mlp.profile_method={args.mlp_profile_method}",
     ]
     if args.include_cpu_overhead:
         cmd.append("--include-cpu-overhead")

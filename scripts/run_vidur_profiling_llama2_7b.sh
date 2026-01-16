@@ -20,7 +20,18 @@ export CUDA_VISIBLE_DEVICES
 : "${GPU_SIMULATE_TEST_ENABLE_VIDUR_ATTENTION_COMPAT:=1}"
 export GPU_SIMULATE_TEST_ENABLE_VIDUR_ATTENTION_COMPAT
 
+# MLP profiling method selection is REQUIRED (no hidden defaults). Use CUDA events by default for
+# stability; override to `record_function` to exercise record-function attribution.
+: "${GSIM_VIDUR_MLP_PROFILE_METHOD:=cuda_event}"
+
+# Optional: automatically retry with a fallback method when validation fails.
+: "${GSIM_VIDUR_MLP_FALLBACK_ENABLED:=false}"
+: "${GSIM_VIDUR_MLP_FALLBACK_METHOD:=cuda_event}"
+
 python -m gpu_simulate_test.cli.vidur_profiling_bundle \
   "output.dir=${output_dir}" \
   "output.model_slug=llama2-7b" \
-  "output.scheduler_name=sarathi-serve"
+  "output.scheduler_name=sarathi-serve" \
+  "profiling.mlp.profile_method=${GSIM_VIDUR_MLP_PROFILE_METHOD}" \
+  "profiling.mlp.fallback.enabled=${GSIM_VIDUR_MLP_FALLBACK_ENABLED}" \
+  "profiling.mlp.fallback.method=${GSIM_VIDUR_MLP_FALLBACK_METHOD}"

@@ -12,6 +12,19 @@ profiling:
   num_gpus: 1
   max_tokens: ${scenario.trace_source.max_tokens}
   tensor_parallel_size: ${scenario.vidur.tensor_parallel_size}
+
+  mlp:
+    # REQUIRED (no default): record_function | cuda_event | kineto | perf_counter (Vidur choices)
+    profile_method: ???
+    validation:
+      # strict (default) | non_strict
+      mode: strict
+      small_input_threshold: 128
+      zero_heavy_limit: 0.01
+    fallback:
+      enabled: false
+      method: cuda_event
+
   # Default: include CPU overhead microbenchmarks (sim-vs-real parity).
   # Disable only for debugging or when CPU overhead is intentionally excluded.
   include_cpu_overhead: true

@@ -15,6 +15,7 @@ def main() -> None:
     parser.add_argument("--model-id", type=str, default="Qwen/Qwen3-0.6B")
     parser.add_argument("--profiling-root", type=Path, required=True)
     parser.add_argument("--hardware-id", type=str, default="a100")
+    parser.add_argument("--mlp-profile-method", type=str, default="cuda_event")
     args = parser.parse_args()
 
     cmd = [
@@ -24,6 +25,7 @@ def main() -> None:
         f"model.model_id={args.model_id}",
         f"hardware.hardware_id={args.hardware_id}",
         f"vidur.profiling.root={args.profiling_root}",
+        f"profiling.mlp.profile_method={args.mlp_profile_method}",
     ]
     out = subprocess.check_output(cmd, cwd=_repo_root()).decode("utf-8").strip().splitlines()
     root = Path(out[-1]).resolve()
@@ -37,4 +39,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
