@@ -14,7 +14,11 @@ profiling:
   tensor_parallel_size: ${scenario.vidur.tensor_parallel_size}
 
   mlp:
-    # REQUIRED (no default): record_function | cuda_event | kineto | perf_counter (Vidur choices)
+    # REQUIRED (no default). How Vidur measures per-op time for MLP profiling:
+    # - cuda_event: CUDA events around ops (recommended; stable GPU-time measurement).
+    # - record_function: torch.profiler record_function trace attribution (higher overhead; uses kernel correlation).
+    # - kineto: torch.profiler (Kineto) trace aggregation (high overhead; useful for debugging/investigation).
+    # - perf_counter: time.perf_counter wall-clock with cuda synchronize (coarse; includes sync/launch overhead).
     profile_method: ???
     validation:
       # strict (default) | non_strict
