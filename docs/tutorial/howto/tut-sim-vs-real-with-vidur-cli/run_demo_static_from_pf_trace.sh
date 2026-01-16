@@ -2,7 +2,20 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
+REPO_ROOT="$(
+  git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || true
+)"
+if [[ -z "$REPO_ROOT" ]]; then
+  REPO_ROOT="$SCRIPT_DIR"
+  while [[ "$REPO_ROOT" != "/" && ! -f "$REPO_ROOT/pyproject.toml" ]]; do
+    REPO_ROOT="$(dirname "$REPO_ROOT")"
+  done
+  if [[ ! -f "$REPO_ROOT/pyproject.toml" ]]; then
+    echo "could not determine repo root (expected pyproject.toml above $SCRIPT_DIR)" >&2
+    exit 1
+  fi
+fi
 
 REFRESH_EXPECTED_REPORT="0"
 if [[ "${1:-}" == "--refresh-expected-report" ]]; then
