@@ -174,6 +174,24 @@ If you are consuming an existing profiling root:
 - If the root was produced before this fix, consumption in strict mode may fail and point at missing/zero-heavy columns.
   Re-profile with `profiling.mlp.profile_method=cuda_event` (or enable fallback) to produce a new root.
 
+## Q&A
+
+### Q: If I use `profiling.mlp.profile_method=record_function`, how does the code handle missing values later?
+
+Missing timing values are treated as a **hard validation error** (they are no longer silently coerced to `0.0`).
+
+- **During profiling-root creation** (staging):
+  - After `mlp.csv` is staged, `validate_mlp_csv(...)` checks that core timing targets
+    `time_stats.*.{min,max,mean,median}` have **0 missing cells**.
+  - If any are missing, the run fails fast with an actionable error (`MlpCsvValidationError`).
+  - `profiling.mlp.validation.mode=non_strict` only changes how **zero-heavy** columns are handled; missing values
+    still fail in both modes.
+  - If `profiling.mlp.fallback.enabled=true`, the wrapper automatically reruns MLP profiling using
+    `profiling.mlp.fallback.method` (typically `cuda_event`), then restages and revalidates.
+- **During consumption** (sim/report):
+  - When a profiling root is loaded, `validate_profiling_root(...)` applies the same missing-value check (controlled by
+    `vidur.validation.mlp.*`), so bad historical roots get rejected in strict mode.
+
 ## Fix implemented (code)
 
 1) **Record-function attribution**: correlation-based tracer counts both `cuda_runtime` and `cuda_driver` launch paths and attributes correlated `kernel` time to `vidur_*` regions.
