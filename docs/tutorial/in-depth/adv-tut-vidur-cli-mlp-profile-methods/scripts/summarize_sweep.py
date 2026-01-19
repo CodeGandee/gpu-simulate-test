@@ -68,7 +68,7 @@ def _parse_mlp_block(summary_text: str) -> tuple[str, str, str]:
             in_mlp = False
         if not in_mlp:
             continue
-        if "profile_method:" in line:
+        if line.strip().startswith("- profile_method:"):
             mlp_profile_method = line.split("`", 2)[1] if "`" in line else line.strip()
         if "validation:" in line:
             mlp_validation = line.split("`", 2)[1] if "`" in line else line.strip()

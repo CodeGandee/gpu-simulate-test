@@ -1,4 +1,4 @@
-# Profile method sweep (example)
+# Profile method sweep (vidur_cli_mlp_profile_method_sweep_20260119T113945Z_563447)
 
 ## Runs
 | method | run_dir |
@@ -12,11 +12,11 @@
 ## Percent error (selected metrics)
 | method | exec+pree p50 | exec+pree p95 | e2e p50 | e2e p95 |
 |--------|--------------:|--------------:|--------:|--------:|
-| cuda_event | 36.36% | 39.38% | 39.28% | 39.05% |
-| record_function | 10.13% | 15.15% | 12.50% | 12.49% |
-| record_function_org | N/A | N/A | N/A | N/A |
-| kineto | 12.73% | 18.93% | 14.64% | 14.86% |
-| perf_counter | 45.12% | 55.96% | 48.45% | 47.16% |
+| cuda_event | 42.35% | 37.62% | 38.31% | 40.20% |
+| record_function | 14.25% | 13.98% | 12.96% | 14.41% |
+| record_function_org | 16.41% | 14.89% | 15.21% | 16.10% |
+| kineto | 21.03% | 18.55% | 18.48% | 19.75% |
+| perf_counter | 47.66% | 46.71% | 45.08% | 47.27% |
 
 ## Full score table
 See `comparison_scores.csv`
