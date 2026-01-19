@@ -173,3 +173,29 @@ Alternative (higher fidelity, more work):
 - Patch/monkey-patch the Vidur training loop to do per-target filtering, e.g. drop NaNs only for the current
   `target_col` before calling `.fit()`. This keeps more rows but requires changing (or carefully patching) upstream
   Vidur behavior.
+
+### Q: What are possible remedies for the “one NaN forces removing entire row” tradeoff?
+
+Options (roughly from “most correct” to “most convenient”):
+
+1. **Per-target NaN handling in the trainer (recommended if we accept patching Vidur behavior)**  
+   Modify/patch the training loop so that for each `target_col` it trains on `df.dropna(subset=[target_col, *feature_cols])`.
+   This keeps rows for other targets intact and avoids throwing away data that is only missing for one op. This can be
+   done by patching:
+   - `extern/tracked/vidur/vidur/execution_time_predictor/sklearn_execution_time_predictor.py` (upstream), or
+   - a local wrapper/monkey-patch applied before constructing the predictor (preferred for this repo).
+
+2. **Fill missing targets from a fallback profiler run (mixed-method merge)**  
+   If `record_function` produces NaNs for some `num_tokens`, rerun profiling with `cuda_event` (or another method) and
+   fill only the missing cells, producing a “complete” dataset without dropping rows. This preserves coverage but mixes
+   measurement methods; it should be recorded in provenance and may affect fidelity.
+
+3. **Impute missing targets (explicitly “synthetic” values)**  
+   Fill NaNs using interpolation or model-based imputation (e.g., fit on non-NaN rows, predict missing). This can keep a
+   full grid but can silently bias simulation if used without clear reporting; it should be opt-in and always recorded.
+
+Notes:
+
+- scikit-learn does **not** “ignore NaNs in `y`”; missing targets must be dropped or imputed before calling `.fit()`.
+- If we avoid patching Vidur and insist on a single sanitized `mlp.csv` used for all targets, dropping rows that contain
+  NaNs in any required target column is the simplest way to guarantee the training won’t crash.
