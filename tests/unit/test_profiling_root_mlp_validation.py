@@ -126,3 +126,36 @@ def test_validate_profiling_root_missing_values_drop_override_allows_in_strict(t
     )
     with pytest.warns(UserWarning):
         validate_profiling_root(layout)
+
+
+def test_validate_profiling_root_returns_mlp_result_when_cpu_overhead_enabled(tmp_path: Path) -> None:
+    model_id = "test/model"
+    df = pd.DataFrame(
+        {
+            "num_tokens": [256, 512],
+            "time_stats.op.min": [1.0, 2.0],
+            "time_stats.op.max": [1.0, 2.0],
+            "time_stats.op.mean": [1.0, 2.0],
+            "time_stats.op.median": [1.0, 2.0],
+        }
+    )
+    _write_minimal_root(root=tmp_path, model_id=model_id, mlp_df=df)
+
+    cpu_dir = tmp_path / "data" / "profiling" / "cpu_overhead" / "a100_pairwise_nvlink" / model_id
+    cpu_dir.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(
+        {
+            "model_name": [model_id],
+            "batch_size": [1],
+            "tensor_parallel_degree": [1],
+        }
+    ).to_csv(cpu_dir / "cpu_overheads.csv", index=False)
+
+    layout = ProfilingRootLayout(
+        profiling_root=tmp_path,
+        device="a100",
+        model_id=model_id,
+        skip_cpu_overhead_modeling=False,
+    )
+    result = validate_profiling_root(layout)
+    assert result.csv_path.name == "mlp.csv"

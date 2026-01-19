@@ -72,18 +72,18 @@ def validate_profiling_root(layout: ProfilingRootLayout) -> MlpValidationResult:
         raise FileNotFoundError(msg)
 
     mlp_csv = _compute_dir(layout) / "mlp.csv"
-    result = validate_mlp_csv(
+    mlp_result = validate_mlp_csv(
         mlp_csv,
         mode=str(layout.mlp_validation_mode).lower().strip() or "strict",  # type: ignore[arg-type]
         nan_policy=str(layout.mlp_nan_policy).lower().strip() or "auto",  # type: ignore[arg-type]
         small_input_threshold=int(layout.mlp_small_input_threshold),
         zero_heavy_limit=float(layout.mlp_zero_heavy_limit),
     )
-    if result.warnings:
+    if mlp_result.warnings:
         import warnings
 
-        for warning in result.warnings:
-                warnings.warn(warning)
+        for warning in mlp_result.warnings:
+            warnings.warn(warning)
 
     if not layout.skip_cpu_overhead_modeling:
         from gpu_simulate_test.vidur_ext.cpu_overhead_validation import validate_cpu_overheads_csv
@@ -91,16 +91,16 @@ def validate_profiling_root(layout: ProfilingRootLayout) -> MlpValidationResult:
         csv_path = _cpu_overhead_dir(layout) / "cpu_overheads.csv"
         # This will raise in strict mode for empty/invalid/placeholder-like CSVs. In warn/off modes
         # it still raises for empty/invalid CSVs, but may allow placeholder-like inputs.
-        result = validate_cpu_overheads_csv(
+        cpu_result = validate_cpu_overheads_csv(
             csv_path,
             mode=str(layout.cpu_overhead_validation).lower().strip() or "strict",  # type: ignore[arg-type]
             expected_model_id=str(layout.model_id),
             expected_tensor_parallel_degree=int(layout.tensor_parallel_size),
         )
-        if result.warnings:
+        if cpu_result.warnings:
             import warnings
 
-            for warning in result.warnings:
+            for warning in cpu_result.warnings:
                 warnings.warn(warning)
 
-    return result
+    return mlp_result
