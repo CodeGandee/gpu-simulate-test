@@ -15,6 +15,14 @@ record_function,prefill_time_execution_plus_preemption_normalized,p50,0.00124986
 record_function,prefill_time_execution_plus_preemption_normalized,p95,0.00135042,0.00128239,5.30%
 record_function,decode_time_execution_plus_preemption_normalized,p50,0.018579,0.0168892,10.01%
 record_function,decode_time_execution_plus_preemption_normalized,p95,0.0189064,0.0182938,3.35%
+record_function_org,request_execution_plus_preemption_time_normalized,p50,N/A,N/A,N/A
+record_function_org,request_execution_plus_preemption_time_normalized,p95,N/A,N/A,N/A
+record_function_org,request_e2e_time_normalized,p50,N/A,N/A,N/A
+record_function_org,request_e2e_time_normalized,p95,N/A,N/A,N/A
+record_function_org,prefill_time_execution_plus_preemption_normalized,p50,N/A,N/A,N/A
+record_function_org,prefill_time_execution_plus_preemption_normalized,p95,N/A,N/A,N/A
+record_function_org,decode_time_execution_plus_preemption_normalized,p50,N/A,N/A,N/A
+record_function_org,decode_time_execution_plus_preemption_normalized,p95,N/A,N/A,N/A
 kineto,request_execution_plus_preemption_time_normalized,p50,0.0402562,0.0357118,12.73%
 kineto,request_execution_plus_preemption_time_normalized,p95,0.0852231,0.0716597,18.93%
 kineto,request_e2e_time_normalized,p50,0.533318,0.465215,14.64%
@@ -31,4 +39,3 @@ perf_counter,prefill_time_execution_plus_preemption_normalized,p50,0.0016415,0.0
 perf_counter,prefill_time_execution_plus_preemption_normalized,p95,0.00179289,0.00129375,38.58%
 perf_counter,decode_time_execution_plus_preemption_normalized,p50,0.0253748,0.0169704,49.51%
 perf_counter,decode_time_execution_plus_preemption_normalized,p95,0.0257169,0.0183886,39.86%
-

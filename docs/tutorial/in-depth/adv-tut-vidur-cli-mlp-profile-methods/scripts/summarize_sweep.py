@@ -7,6 +7,7 @@ Expected input layout (produced by run_sweep_static_profile_methods.sh):
     <sweep_dir>/
       cuda_event_summary.md
       record_function_summary.md
+      record_function_org_summary.md
       kineto_summary.md
       perf_counter_summary.md
       cuda_event_run_dir.txt
@@ -39,8 +40,8 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument(
         "--methods",
         nargs="+",
-        default=["cuda_event", "record_function", "kineto", "perf_counter"],
-        help="Methods to summarize (defaults to all 4 Vidur choices).",
+        default=["cuda_event", "record_function", "record_function_org", "kineto", "perf_counter"],
+        help="Methods to summarize (defaults to the full tutorial sweep).",
     )
     return p.parse_args()
 
@@ -213,4 +214,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

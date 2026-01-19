@@ -2,7 +2,7 @@
 
 This tutorial helps answer: *“Why does sim-vs-real change so much when I change Vidur’s MLP profiling method?”*
 
-You will run the exact same `vidur-cli` **static** sim-vs-real pipeline four times, varying only:
+You will run the exact same `vidur-cli` **static** sim-vs-real pipeline five times, varying only:
 
 ```yaml
 profiling:
@@ -14,7 +14,8 @@ Notes:
 
 - `profiling.mlp.profile_method` is required (no hidden defaults).
 - Missing (NaN) timing targets in `mlp.csv` are handled by `profiling.mlp.validation.nan_policy=auto|reject|drop` (default `auto`).
-- The default sweep runner (`run_sweep_static_profile_methods.sh`) exercises the 4 Vidur-native methods (`cuda_event`, `record_function`, `kineto`, `perf_counter`). `record_function_org` is a repo-only debug mode and is not included in the default sweep list.
+- The sweep runner includes the 4 Vidur-native methods plus `record_function_org` (repo-only alias for upstream tracer behavior).
+  - Because upstream `record_function` can miss driver-launched kernels, the sweep runs `record_function_org` with `nan_policy=drop` for both profiling and sim consumption.
 
 and then compare the final report score tables.
 
@@ -36,7 +37,7 @@ Where it lives in Vidur:
 - `vidur.profiling.common.cuda_timer.CudaTimer` implements `cuda_event`, `kineto`, and `perf_counter` timing inside
   the model, feeding `vidur.profiling.common.timer_stats_store.TimerStatsStore`.
 
-Vidur supports four methods:
+Vidur supports four methods (plus one repo-only alias):
 
 - `cuda_event` (timer-based): records a CUDA start/end event around each operation and reports `elapsed_time` (GPU time
   on the stream; excludes forced synchronizations).
@@ -49,6 +50,7 @@ Vidur supports four methods:
   `cuda_time_total` from profiler events (high overhead; slow).
 - `perf_counter` (timer-based): uses `time.perf_counter()` with `torch.cuda.synchronize()` before/after each op (simple
   but coarse; tends to overestimate due to sync/launch overhead).
+- `record_function_org` (repo-only alias): runs upstream Vidur’s `record_function` tracer behavior (no local patching).
 
 > **Warning (upstream vs this repo): `record_function` tracing**
 >
@@ -183,6 +185,7 @@ Open the copied summaries under `<SWEEP_DIR>/`:
 
 - `<SWEEP_DIR>/cuda_event_summary.md`
 - `<SWEEP_DIR>/record_function_summary.md`
+- `<SWEEP_DIR>/record_function_org_summary.md`
 - `<SWEEP_DIR>/kineto_summary.md`
 - `<SWEEP_DIR>/perf_counter_summary.md`
 
@@ -192,7 +195,7 @@ Expected result:
 ```text
 - mlp:
   - profile_method: `cuda_event`
-  - validation: `mode=strict small_input_threshold=128 zero_heavy_limit=0.01`
+  - validation: `mode=strict nan_policy=auto small_input_threshold=128 zero_heavy_limit=0.01`
   - fallback: `enabled=false method=cuda_event used=false`
 ```
 

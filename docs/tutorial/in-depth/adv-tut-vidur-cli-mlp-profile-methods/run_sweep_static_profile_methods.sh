@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Sweep Vidur MLP profiling methods for the `vidur-cli` static sim-vs-real tutorial.
 #
-# Runs 4 end-to-end pipelines (one per MLP profile_method):
+# Runs 5 end-to-end pipelines (one per MLP profile_method):
 #   init-run → trace(import) → profile → sim → real → report
 #
 # Outputs are written under a fresh directory in `<repo>/tmp/`.
@@ -80,11 +80,20 @@ echo "GSIM_CUDA_VISIBLE_DEVICES=$GSIM_CUDA_VISIBLE_DEVICES"
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 echo "SWEEP_DIR=$SWEEP_DIR"
 
-METHODS=(cuda_event record_function kineto perf_counter)
+METHODS=(cuda_event record_function record_function_org kineto perf_counter)
 
 for METHOD in "${METHODS[@]}"; do
   echo ""
   echo "=== Running profile_method=$METHOD ==="
+
+  PROFILE_NAN_POLICY="auto"
+  SIM_NAN_POLICY="auto"
+  if [[ "$METHOD" == "record_function_org" ]]; then
+    # Upstream record_function can miss driver-launched kernels (causing NaNs in mlp.csv). Keep the run
+    # going so we can compare outcomes, but make the policy explicit in the report.
+    PROFILE_NAN_POLICY="drop"
+    SIM_NAN_POLICY="drop"
+  fi
 
   # Ray + Vidur profiling uses a Singleton TimerStatsStore; make sure we don't reuse a previous session.
   pixi run ray stop --force >/dev/null 2>&1 || true
@@ -109,9 +118,11 @@ for METHOD in "${METHODS[@]}"; do
     pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR" \
       "profiling.mlp.profile_method=${METHOD}" \
       "profiling.mlp.fallback.enabled=false" \
-      "profiling.mlp.fallback.method=cuda_event"
+      "profiling.mlp.fallback.method=cuda_event" \
+      "profiling.mlp.validation.nan_policy=${PROFILE_NAN_POLICY}"
 
-    pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr sim --run-dir "$RUN_DIR"
+    pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr sim --run-dir "$RUN_DIR" \
+      "vidur.validation.mlp.nan_policy=${SIM_NAN_POLICY}"
     pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr real --run-dir "$RUN_DIR"
 
     SUMMARY_MD="$(pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr report --run-dir "$RUN_DIR")"
@@ -145,4 +156,3 @@ fi
 echo ""
 echo "done: $SWEEP_DIR"
 echo "comparison: $SWEEP_DIR/comparison.md"
-
