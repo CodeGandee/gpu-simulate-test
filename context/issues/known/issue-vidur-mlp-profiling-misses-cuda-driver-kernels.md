@@ -1,8 +1,8 @@
 # Issue: Vidur MLP compute profiling misses CUDA driver-launched kernels (record_function) → 0s in `mlp.csv`
 
-**Status**: Fixed for new profiling roots (existing roots may still contain placeholder 0.0s)
+**Status**: Resolved in `main` for new profiling roots (existing roots may still contain placeholder 0.0s)
 **Date**: 2026-01-16
-**Last updated**: 2026-01-16
+**Last updated**: 2026-01-19
 **Priority**: High (fidelity risk; silent underprediction)
 
 ## Summary
@@ -21,6 +21,15 @@ Implemented in `005-vidur-mlp-cuda-driver`:
 2. **No more silent NaN → 0 staging**: staging validates `mlp.csv` and fails fast (strict by default) instead of masking missing values.
 3. **Opt-in automatic fallback**: on validation failure, users can retry MLP profiling with an alternate method (e.g., `cuda_event`).
 4. **Consumption validation**: consumers validate `mlp.csv` when loading a profiling root (strict fail vs non-strict warn), controlled by `vidur.validation.mlp.*`.
+
+Code pointers (current implementation):
+
+- Tracer: `src/gpu_simulate_test/vidur_ext/record_function_tracer_v2.py`
+  - Correlates `cat=cuda_runtime` and `cat=cuda_driver` launches to `cat=kernel` execution events.
+- MLP profiler wrapper patch: `src/gpu_simulate_test/vidur_ext/vidur_profiling_mlp_main.py`
+  - Uses the v2 tracer when `profiling.mlp.profile_method=record_function`.
+- Staging validation + optional fallback: `src/gpu_simulate_test/vidur_ext/profile_runner.py`
+- Consumer validation: `src/gpu_simulate_test/vidur_ext/profiling_root.py`
 
 ## Where this shows up
 
@@ -148,6 +157,22 @@ If missing measurements are staged as 0.0:
 - Re-profile using an explicit MLP method override (e.g., `profiling.mlp.profile_method=cuda_event`).
 - If a run fails validation, enable opt-in fallback: `profiling.mlp.fallback.enabled=true profiling.mlp.fallback.method=cuda_event`.
 - If a consumer fails on load, the error message should include the affected columns and remediation actions.
+
+## How to verify you are no longer affected
+
+If you are generating a new profiling root:
+
+- Ensure the run uses an explicit method selection (required now): `profiling.mlp.profile_method=...`.
+- Ensure `mlp.csv` passed strict validation (the run would fail otherwise).
+- Check the report/metadata includes the resolved MLP settings:
+  - `mlp.profile_method`
+  - `mlp.validation.*`
+  - `mlp.fallback.*` (and whether fallback was used)
+
+If you are consuming an existing profiling root:
+
+- If the root was produced before this fix, consumption in strict mode may fail and point at missing/zero-heavy columns.
+  Re-profile with `profiling.mlp.profile_method=cuda_event` (or enable fallback) to produce a new root.
 
 ## Fix implemented (code)
 
