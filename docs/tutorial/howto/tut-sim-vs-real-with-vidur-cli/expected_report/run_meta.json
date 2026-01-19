@@ -58,9 +58,27 @@
       "fallback_enabled": false,
       "fallback_method": "cuda_event",
       "fallback_used": false,
+      "nan_policy": "auto",
       "profile_method": "record_function",
       "requested_profile_method": "record_function",
       "small_input_threshold": 128,
+      "validation": {
+        "column_count": 123,
+        "csv_path": "<RUN_DIR>/profile/data/profiling/compute/a100/meta-llama/Llama-2-7b-hf/mlp.csv",
+        "missing_cells_total": 0,
+        "missing_columns": [],
+        "mode": "strict",
+        "nan_policy": "auto",
+        "nan_policy_effective": "reject",
+        "row_count": 261,
+        "thresholds": {
+          "small_input_threshold": 128,
+          "zero_heavy_limit": 0.01
+        },
+        "time_column_count": 80,
+        "warnings": [],
+        "zero_heavy_columns": []
+      },
       "validation_mode": "strict",
       "zero_heavy_limit": 0.01
     },

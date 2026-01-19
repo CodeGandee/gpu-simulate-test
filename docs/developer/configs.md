@@ -110,6 +110,17 @@ CUDA_VISIBLE_DEVICES=0 pixi run real-bench \
 pixi run vidur-sim \
   vidur.profiling.root=tmp/vidur_profiling/a100/qwen3_0_6b \
   workload.workload_dir=tmp/workloads/<workload_id>
+
+# MLP profiling method selection is required (no hidden defaults).
+pixi run vidur-profile \
+  vidur.profiling.root=tmp/vidur_profiling/a100/qwen3_0_6b \
+  profiling.mlp.profile_method=cuda_event
+
+# Best-effort consumption of legacy profiling roots with missing (NaN) MLP timings:
+pixi run vidur-sim \
+  vidur.profiling.root=tmp/vidur_profiling/a100/qwen3_0_6b \
+  workload.workload_dir=tmp/workloads/<workload_id> \
+  vidur.validation.mlp.nan_policy=drop
 ```
 
 Paper fidelity overrides:

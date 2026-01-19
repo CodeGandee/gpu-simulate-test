@@ -60,6 +60,11 @@ The standardized outputs match the real run schema:
 
 Important: Vidur’s simulator produces request-level metrics and the wrapper derives a token timeline from them. For details, see `src/gpu_simulate_test/vidur_ext/sim_runner.py`.
 
+MLP validation note:
+
+- `run_meta.json` includes an `mlp_validation` summary for the consumed `mlp.csv` (mode, nan_policy, missing/zero-heavy stats).
+- If the effective policy is `drop` (e.g., `vidur.validation.mlp.nan_policy=drop`), `run_meta.json` also includes `mlp_nan_drop` with per-op dropped-row counts used during sklearn training.
+
 ### Comparison report (`tmp/comparisons/<comparison_id>/`)
 
 - `summary.md`: quick read (p50/p90/p99 tables)
@@ -124,3 +129,4 @@ Notes:
   - static: `<scenario.name>`
   - dynamic: `<scenario.name>_dynamic_<scale>`
 - Canonical sim/real CSVs live under `tmp/paper_fidelity/runs/<scenario.name>/{sim,real}/request_metrics.csv`. Reports also snapshot these CSVs under `inputs/` for reproducibility/portability.
+- `tmp/paper_fidelity/runs/<scenario.name>/sim/run_meta.json` includes `mlp_validation` (and `mlp_nan_drop` when enabled) for the consumed profiling root.

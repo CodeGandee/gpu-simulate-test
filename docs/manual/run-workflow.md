@@ -52,8 +52,14 @@ Outputs:
 pixi run vidur-profile \
   model=qwen3_0_6b \
   hardware=a100 \
-  vidur.profiling.root=tmp/vidur_profiling/a100/qwen3_0_6b
+  vidur.profiling.root=tmp/vidur_profiling/a100/qwen3_0_6b \
+  profiling.mlp.profile_method=cuda_event
 ```
+
+Notes:
+
+- `profiling.mlp.profile_method` is required (no hidden defaults). To reproduce Vidur’s historical default behavior, set `profiling.mlp.profile_method=record_function`.
+- If `mlp.csv` contains missing (NaN) core timing targets, the default policy is to fail fast. For best-effort runs, set `profiling.mlp.validation.nan_policy=drop` (and ensure consumers also allow drop; see next step).
 
 ### 4) Run Vidur simulation
 
@@ -72,6 +78,17 @@ Outputs:
 - `tmp/vidur_runs/<run_id>/run_meta.json`
 
 Note: `vidur-sim` is **CPU-side simulation** driven by the profiling bundle; it does not execute end-to-end GPU inference.
+
+Optional: best-effort consumption of legacy profiling roots with missing (NaN) MLP timings:
+
+```bash
+pixi run vidur-sim \
+  model=qwen3_0_6b \
+  hardware=a100 \
+  vidur.profiling.root=tmp/vidur_profiling/a100/qwen3_0_6b \
+  workload.workload_dir=tmp/workloads/<workload_id> \
+  vidur.validation.mlp.nan_policy=drop
+```
 
 ### 5) Compare one real run vs one sim run
 

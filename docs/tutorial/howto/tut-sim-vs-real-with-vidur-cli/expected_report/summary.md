@@ -12,8 +12,11 @@
   - status: `ok`
 - mlp:
   - profile_method: `record_function`
-  - validation: `mode=strict small_input_threshold=128 zero_heavy_limit=0.01`
+  - validation: `mode=strict nan_policy=auto small_input_threshold=128 zero_heavy_limit=0.01`
   - fallback: `enabled=false method=cuda_event used=false`
+- mlp_consumer:
+  - nan_policy: `reject` (nan_policy=`auto` mode=`strict`)
+  - nan_drop: `disabled`
 
 ## Config (apple-to-apple)
 - model_id: `meta-llama/Llama-2-7b-hf`

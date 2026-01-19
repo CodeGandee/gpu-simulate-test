@@ -122,6 +122,15 @@ export GSIM_VIDUR_MLP_PROFILE_METHOD="${GSIM_VIDUR_MLP_PROFILE_METHOD:-record_fu
 export GSIM_VIDUR_MLP_FALLBACK_ENABLED="${GSIM_VIDUR_MLP_FALLBACK_ENABLED:-false}"
 export GSIM_VIDUR_MLP_FALLBACK_METHOD="${GSIM_VIDUR_MLP_FALLBACK_METHOD:-cuda_event}"
 
+# Missing-value handling for staged `mlp.csv`:
+# - auto (default): strict => reject; non_strict => drop (per-target) during consumption.
+# - reject: always fail on NaNs.
+# - drop: allow NaNs (consumers must handle them).
+export GSIM_VIDUR_MLP_NAN_POLICY="${GSIM_VIDUR_MLP_NAN_POLICY:-auto}"
+
+# Missing-value handling when consuming a profiling root in `svr sim`.
+export GSIM_VIDUR_SIM_MLP_NAN_POLICY="${GSIM_VIDUR_SIM_MLP_NAN_POLICY:-auto}"
+
 # 1) Create a fresh run directory with the chosen presets.
 RUN_DIR="$(
   pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr init-run \
@@ -136,10 +145,12 @@ pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr trace --run-dir "$RUN_DIR" --import-
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR" \
   "profiling.mlp.profile_method=${GSIM_VIDUR_MLP_PROFILE_METHOD}" \
   "profiling.mlp.fallback.enabled=${GSIM_VIDUR_MLP_FALLBACK_ENABLED}" \
-  "profiling.mlp.fallback.method=${GSIM_VIDUR_MLP_FALLBACK_METHOD}"
+  "profiling.mlp.fallback.method=${GSIM_VIDUR_MLP_FALLBACK_METHOD}" \
+  "profiling.mlp.validation.nan_policy=${GSIM_VIDUR_MLP_NAN_POLICY}"
 
 # 4) Run the Vidur simulation using the imported trace + the freshly generated profiling bundle.
-pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr sim --run-dir "$RUN_DIR"
+pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr sim --run-dir "$RUN_DIR" \
+  "vidur.validation.mlp.nan_policy=${GSIM_VIDUR_SIM_MLP_NAN_POLICY}"
 
 # 5) Run the real replay (Sarathi) using the SAME trace, so sim-vs-real is comparable.
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr real --run-dir "$RUN_DIR"

@@ -10,6 +10,11 @@ profiling:
     profile_method: <one of: cuda_event | record_function | kineto | perf_counter>
 ```
 
+Notes:
+
+- `profiling.mlp.profile_method` is required (no hidden defaults).
+- Missing (NaN) timing targets in `mlp.csv` are handled by `profiling.mlp.validation.nan_policy=auto|reject|drop` (default `auto`).
+
 and then compare the final report score tables.
 
 All run artifacts go under `tmp/` (gitignored). This tutorial directory only tracks **small, essential** inputs and a

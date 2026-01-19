@@ -80,6 +80,17 @@ For a full sweep + discussion, see:
 
 - `docs/tutorial/in-depth/adv-tut-vidur-cli-mlp-profile-methods/`
 
+### NaN handling (`nan_policy`)
+
+Some profiling methods (historically `record_function` before the driver-kernel attribution fix) can produce missing (NaN) timing targets in `mlp.csv`. This repo supports an explicit policy for how to handle missing cells:
+
+- Profiling (staging): `profiling.mlp.validation.nan_policy=auto|reject|drop`
+  - `auto` (default): strict ⇒ reject; non_strict ⇒ drop during consumption
+  - `reject`: always fail fast on NaNs
+  - `drop`: allow NaNs (consumers drop missing samples per target before sklearn training)
+- Consumption (sim): `vidur.validation.mlp.nan_policy=auto|reject|drop`
+  - When the effective policy is `drop`, the simulator enables a local per-target dropna patch and records a drop summary in `sim/run_meta.json`.
+
 ## Implementation Idea
 
 `vidur-cli` is a **resumable pipeline** anchored on a single `<run_dir>`:
