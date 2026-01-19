@@ -148,3 +148,28 @@ sequenceDiagram
       - when to use `drop` (best-effort runs / legacy roots)
       - tradeoffs (reduced training data; potential accuracy impact)
       - recommended remediation (`cuda_event` profiling / fallback) for high-fidelity runs
+
+## Q&A
+
+### Q: Do we have to drop an entire row if some value is NaN, or can we treat each target column independently?
+
+We do **not** fundamentally have to drop whole rows; we could treat each target column independently.
+
+The main reason “drop whole row” is attractive is that Vidur’s sklearn predictor trains *many* per-op models from a
+single `mlp.csv`-derived dataframe, and scikit-learn `.fit()` does not accept NaNs in the target array `y`.
+
+Concretely:
+
+- Vidur loads one `compute_df` from `mlp.csv` and then iterates model names, training each model with:
+  - `X = df[["num_tokens"]]`
+  - `y = df[f"time_stats.{model_name}.median"]`
+  - `GridSearchCV.fit(X, y)` (fails if `y` contains NaNs)
+
+So if we want to avoid patching Vidur and instead provide a single “sanitized” `mlp.csv` that is safe for *all* models,
+the simplest guarantee is to drop rows that contain NaNs in any required target column.
+
+Alternative (higher fidelity, more work):
+
+- Patch/monkey-patch the Vidur training loop to do per-target filtering, e.g. drop NaNs only for the current
+  `target_col` before calling `.fit()`. This keeps more rows but requires changing (or carefully patching) upstream
+  Vidur behavior.
