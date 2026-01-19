@@ -45,6 +45,8 @@ class VidurProfileInputs:
     mlp_profile_method
         REQUIRED. Profiling method passed to Vidur's MLP profiler (no hidden defaults).
         Examples: `record_function`, `cuda_event`.
+        Repo-specific: `record_function_org` matches upstream Vidur's tracer behavior (no local patching),
+        while still invoking Vidur with `record_function`.
     mlp_validation_mode
         Validation mode to apply when staging `mlp.csv` for zero-heavy checks:
         - `strict` (default) fails on zero-heavy signals.
@@ -217,6 +219,14 @@ def _pick_attention_template(*, repo_root: Path, hardware_id: str) -> Path:
     raise FileNotFoundError(f"No attention.csv template found for hardware_id={hardware_id} under {candidates[0].parents[5]}")
 
 
+def _vidur_profile_method(*, requested_profile_method: str) -> str:
+    """Map wrapper-level MLP profiling method names to Vidur-native values."""
+    normalized = str(requested_profile_method).strip().lower()
+    if normalized == "record_function_org":
+        return "record_function"
+    return str(requested_profile_method)
+
+
 def _write_attention_fallback(
     *,
     template_csv: Path,
@@ -382,6 +392,9 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
         extra: dict[str, Any] = {
             "skipped": True,
             "mlp_profile_method": str(inputs.mlp_profile_method),
+            "mlp_vidur_profile_method": _vidur_profile_method(
+                requested_profile_method=str(inputs.mlp_profile_method)
+            ),
             "mlp_fallback": {
                 "enabled": bool(inputs.mlp_fallback_enabled),
                 "used": False,
@@ -397,6 +410,9 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
                 raise
             mlp_cmd = _run_and_stage_mlp(profile_method=str(inputs.mlp_fallback_method))
             extra["mlp_profile_method"] = str(inputs.mlp_fallback_method)
+            extra["mlp_vidur_profile_method"] = _vidur_profile_method(
+                requested_profile_method=str(inputs.mlp_fallback_method)
+            )
             extra["mlp_fallback"]["used"] = True
             extra["mlp_validation"] = _validate_staged_mlp()
 
@@ -432,6 +448,9 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
 
     if not compute_ready:
         extra["mlp_profile_method"] = str(inputs.mlp_profile_method)
+        extra["mlp_vidur_profile_method"] = _vidur_profile_method(
+            requested_profile_method=str(inputs.mlp_profile_method)
+        )
         extra["mlp_fallback"] = {
             "enabled": bool(inputs.mlp_fallback_enabled),
             "used": False,
@@ -512,11 +531,17 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
                 raise
             mlp_cmd = _run_and_stage_mlp(profile_method=str(inputs.mlp_fallback_method))
             extra["mlp_profile_method"] = str(inputs.mlp_fallback_method)
+            extra["mlp_vidur_profile_method"] = _vidur_profile_method(
+                requested_profile_method=str(inputs.mlp_fallback_method)
+            )
             extra["mlp_fallback"]["used"] = True
             extra["mlp_validation"] = _validate_staged_mlp()
     else:
         extra["skipped_compute"] = True
         extra["mlp_profile_method"] = str(inputs.mlp_profile_method)
+        extra["mlp_vidur_profile_method"] = _vidur_profile_method(
+            requested_profile_method=str(inputs.mlp_profile_method)
+        )
         extra["mlp_fallback"] = {
             "enabled": bool(inputs.mlp_fallback_enabled),
             "used": False,

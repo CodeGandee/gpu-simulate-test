@@ -494,6 +494,10 @@ def write_paper_fidelity_style_report(
         else:
             lines.append(f"  - profile_method: `{profile_method}`")
 
+        vidur_profile_method = mlp_selection.get("vidur_profile_method")
+        if isinstance(vidur_profile_method, str) and vidur_profile_method:
+            lines.append(f"  - vidur_profile_method: `{vidur_profile_method}`")
+
         validation_mode = mlp_selection.get("validation_mode")
         nan_policy = mlp_selection.get("nan_policy")
         small_input_threshold = mlp_selection.get("small_input_threshold")

@@ -5,7 +5,7 @@
 **Purpose**: Introduce a new MLP profiling method option (`record_function_org`) that matches upstream Vidur’s
 `record_function` tracer behavior exactly, while keeping this repo’s patched `record_function` (TracerV2) as the
 default for driver-launched kernel coverage.  
-**Status**: Draft  
+**Status**: Implemented  
 **Date**: 2026-01-19  
 **Dependencies**:
 - Upstream tracer: `extern/tracked/vidur/vidur/profiling/utils/record_function_tracer.py`
@@ -107,18 +107,17 @@ sequenceDiagram
 
 ## 4. TODOs (Implementation Steps)
 
-- [ ] **Define method name** Confirm final user-facing name: `record_function_org` (vs `record_function_upstream`).
-- [ ] **Rewrite argv for Vidur** In `vidur_profiling_mlp_main.py`, map `--profile_method record_function_org` to `record_function` before calling Vidur’s CLI parser, without applying the tracer patch.
-- [ ] **Provenance clarity** Record both `requested_profile_method` and `executed_profile_method` in:
+- [X] **Define method name** Confirm final user-facing name: `record_function_org` (vs `record_function_upstream`).
+- [X] **Rewrite argv for Vidur** In `vidur_profiling_mlp_main.py`, map `--profile_method record_function_org` to `record_function` before calling Vidur’s CLI parser, without applying the tracer patch.
+- [X] **Provenance clarity** Record both `requested_profile_method` and `executed_profile_method` in:
   - `vidur-cli` `run_state.json` (profile artifacts)
   - `profiling_meta.json` (bundle + paper-fidelity profiling)
   - compare workflow `run_meta.json` (vidur-profile)
-- [ ] **Validation / UX** If we enforce allowed values for `profiling.mlp.profile_method`, include `record_function_org` and emit a hint describing when to use it.
-- [ ] **Unit tests (CPU-only)** Add a unit test that stubs Vidur’s MLP `main` and asserts:
+- [X] **Validation / UX** If we enforce allowed values for `profiling.mlp.profile_method`, include `record_function_org` and emit a hint describing when to use it.
+- [X] **Unit tests (CPU-only)** Add a unit test that stubs Vidur’s MLP `main` and asserts:
   - `record_function` applies tracer patch (TracerV2),
   - `record_function_org` does not apply tracer patch and rewrites argv to `record_function`.
-- [ ] **Docs** Update tutorials and developer docs to:
+- [X] **Docs** Update tutorials and developer docs to:
   - warn about upstream `record_function` being `cuda_runtime`-only,
   - explain that this repo’s default `record_function` is patched,
   - recommend `record_function_org` as a debugging escape hatch when investigating discrepancies.
-

@@ -64,7 +64,7 @@ How do I produce **static** and **dynamic** sim-vs-real reports (Vidur sim vs re
 
 `vidur-cli svr profile` produces `mlp.csv`, which feeds Vidur’s execution-time predictors. The knob:
 
-`profiling.mlp.profile_method = cuda_event | record_function | kineto | perf_counter`
+`profiling.mlp.profile_method = cuda_event | record_function | record_function_org | kineto | perf_counter`
 
 controls how Vidur measures per-op time for MLP profiling. This tutorial defaults to `record_function` (historical
 Vidur default; and this repo fixed a driver-kernel attribution gap for it in `005-vidur-mlp-cuda-driver`).
@@ -85,7 +85,7 @@ Brief tradeoffs:
 > missing timings for driver-launched kernels.
 >
 > If you suspect discrepancies or timing artifacts introduced by the patched tracer, try
-> `profiling.mlp.profile_method=record_function_org` (planned) to match upstream Vidur behavior exactly.
+> `profiling.mlp.profile_method=record_function_org` to match upstream Vidur behavior exactly.
 
 For a full sweep + discussion, see:
 

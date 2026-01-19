@@ -34,6 +34,20 @@ def main(cfg: DictConfig) -> None:
     if mlp_profile_method_val is None:
         raise ValueError("profiling.mlp.profile_method is required (no default).")
     mlp_profile_method = str(mlp_profile_method_val).strip()
+    normalized_mlp_profile_method = mlp_profile_method.lower()
+    allowed_mlp_profile_methods = {
+        "cuda_event",
+        "record_function",
+        "record_function_org",
+        "kineto",
+        "perf_counter",
+    }
+    if normalized_mlp_profile_method not in allowed_mlp_profile_methods:
+        raise ValueError(
+            f"Unsupported profiling.mlp.profile_method={mlp_profile_method!r}. "
+            "Choose one of: cuda_event | record_function | record_function_org | kineto | perf_counter."
+        )
+    mlp_profile_method = normalized_mlp_profile_method
 
     mlp_validation_mode_val = OmegaConf.select(cfg, "profiling.mlp.validation.mode")
     mlp_validation_mode = str(mlp_validation_mode_val or "strict").lower().strip()

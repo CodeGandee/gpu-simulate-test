@@ -187,6 +187,23 @@ def run_profile(
                 hint="Pass an explicit override, e.g. profiling.mlp.profile_method=cuda_event",
             )
         mlp_profile_method = str(mlp_profile_method_val).strip()
+        normalized_mlp_profile_method = mlp_profile_method.lower()
+        allowed_mlp_profile_methods = {
+            "cuda_event",
+            "record_function",
+            "record_function_org",
+            "kineto",
+            "perf_counter",
+        }
+        if normalized_mlp_profile_method not in allowed_mlp_profile_methods:
+            raise UserFacingError(
+                f"Unsupported profiling.mlp.profile_method={mlp_profile_method!r}.",
+                hint=(
+                    "Choose one of: cuda_event | record_function | record_function_org | kineto | perf_counter. "
+                    "Note: record_function_org matches upstream Vidur tracer behavior (cuda_runtime-only)."
+                ),
+            )
+        mlp_profile_method = normalized_mlp_profile_method
 
         mlp_validation_mode_val = OmegaConf.select(cfg, "profiling.mlp.validation.mode")
         mlp_validation_mode = str(mlp_validation_mode_val or "strict").lower().strip()
@@ -249,6 +266,11 @@ def run_profile(
                 else False
             ),
         }
+        vidur_profile_method = result.extra.get("mlp_vidur_profile_method")
+        if isinstance(vidur_profile_method, str) and vidur_profile_method:
+            effective_method = str(mlp_summary.get("profile_method") or "")
+            if effective_method and vidur_profile_method != effective_method:
+                mlp_summary["vidur_profile_method"] = str(vidur_profile_method)
         if "mlp_validation" in result.extra:
             mlp_summary["validation"] = result.extra["mlp_validation"]
 

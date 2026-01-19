@@ -16,6 +16,40 @@ def _parse_profile_method(argv: list[str]) -> str | None:
     return None
 
 
+def _rewrite_profile_method_for_vidur(argv: list[str]) -> list[str]:
+    """Rewrite wrapper-only profile_method values to Vidur-native values.
+
+    This repo supports a wrapper-level alias `record_function_org` which means:
+    - use upstream Vidur's record_function tracer (no local patching)
+    - but pass `record_function` to Vidur (since that is what Vidur understands)
+    """
+    out: list[str] = []
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg == "--profile_method" and i + 1 < len(argv):
+            value = str(argv[i + 1])
+            normalized = value.strip().lower()
+            if normalized == "record_function_org":
+                out.extend([arg, "record_function"])
+            else:
+                out.extend([arg, value])
+            i += 2
+            continue
+        if arg.startswith("--profile_method="):
+            key, value = arg.split("=", 1)
+            normalized = value.strip().lower()
+            if normalized == "record_function_org":
+                out.append(f"{key}=record_function")
+            else:
+                out.append(arg)
+            i += 1
+            continue
+        out.append(arg)
+        i += 1
+    return out
+
+
 def _parse_models(argv: list[str]) -> list[str]:
     out: list[str] = []
     for idx, arg in enumerate(argv):
@@ -43,8 +77,8 @@ def _maybe_register_local_model_configs(*, repo_root: Path, argv: list[str]) -> 
         )
 
 
-def _maybe_patch_record_function_tracer(argv: list[str]) -> None:
-    method = (_parse_profile_method(argv) or "").strip().lower()
+def _maybe_patch_record_function_tracer(*, requested_profile_method: str) -> None:
+    method = requested_profile_method.strip().lower()
     if method != "record_function":
         return
 
@@ -70,9 +104,13 @@ def main() -> None:
     apply_cuda_visible_devices_from_gsim(repo_root=repo_root)
     patch_sarathi_preserve_cuda_visible_devices()
 
+    requested_profile_method = _parse_profile_method(sys.argv[1:]) or ""
+
     _maybe_register_local_model_configs(repo_root=repo_root, argv=sys.argv[1:])
 
-    _maybe_patch_record_function_tracer(sys.argv[1:])
+    _maybe_patch_record_function_tracer(requested_profile_method=requested_profile_method)
+
+    sys.argv[1:] = _rewrite_profile_method_for_vidur(sys.argv[1:])
 
     from vidur.profiling.mlp.main import main as vidur_mlp_main
 

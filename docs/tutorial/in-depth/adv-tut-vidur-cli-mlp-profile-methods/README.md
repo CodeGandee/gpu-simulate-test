@@ -7,13 +7,14 @@ You will run the exact same `vidur-cli` **static** sim-vs-real pipeline four tim
 ```yaml
 profiling:
   mlp:
-    profile_method: <one of: cuda_event | record_function | kineto | perf_counter>
+    profile_method: <one of: cuda_event | record_function | record_function_org | kineto | perf_counter>
 ```
 
 Notes:
 
 - `profiling.mlp.profile_method` is required (no hidden defaults).
 - Missing (NaN) timing targets in `mlp.csv` are handled by `profiling.mlp.validation.nan_policy=auto|reject|drop` (default `auto`).
+- The default sweep runner (`run_sweep_static_profile_methods.sh`) exercises the 4 Vidur-native methods (`cuda_event`, `record_function`, `kineto`, `perf_counter`). `record_function_org` is a repo-only debug mode and is not included in the default sweep list.
 
 and then compare the final report score tables.
 
@@ -55,7 +56,7 @@ Vidur supports four methods:
 > This repo’s `record_function` uses `RecordFunctionTracerV2` and also considers `cat=cuda_driver` launches.
 >
 > If you suspect discrepancies or timing artifacts introduced by the patched tracer, try
-> `profiling.mlp.profile_method=record_function_org` (planned) to match upstream Vidur behavior exactly.
+> `profiling.mlp.profile_method=record_function_org` to match upstream Vidur behavior exactly.
 
 ## Timing brackets (sequence diagrams)
 
