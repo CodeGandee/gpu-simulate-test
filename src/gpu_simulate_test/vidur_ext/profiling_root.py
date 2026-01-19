@@ -1,7 +1,16 @@
+"""
+Profiling-root layout and validation utilities.
+
+This module validates the existence and basic content of a Vidur-compatible profiling root
+directory before it is consumed by simulation or reporting pipelines.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+
+from gpu_simulate_test.vidur_ext.mlp_validation import MlpValidationResult, validate_mlp_csv
 
 
 @dataclass(frozen=True)
@@ -13,6 +22,7 @@ class ProfilingRootLayout:
     tensor_parallel_size: int = 1
     num_pipeline_stages: int = 1
     mlp_validation_mode: str = "strict"
+    mlp_nan_policy: str = "auto"
     mlp_small_input_threshold: int = 128
     mlp_zero_heavy_limit: float = 0.01
     # Vidur's config uses the negative form: `skip_cpu_overhead_modeling`.
@@ -40,7 +50,7 @@ def _cpu_overhead_dir(layout: ProfilingRootLayout) -> Path:
     )
 
 
-def validate_profiling_root(layout: ProfilingRootLayout) -> None:
+def validate_profiling_root(layout: ProfilingRootLayout) -> MlpValidationResult:
     if not layout.profiling_root.exists():
         raise FileNotFoundError(f"profiling_root does not exist: {layout.profiling_root}")
 
@@ -61,12 +71,11 @@ def validate_profiling_root(layout: ProfilingRootLayout) -> None:
         msg = "Missing profiling inputs:\n" + "\n".join([f"- {p}" for p in missing])
         raise FileNotFoundError(msg)
 
-    from gpu_simulate_test.vidur_ext.mlp_validation import validate_mlp_csv
-
     mlp_csv = _compute_dir(layout) / "mlp.csv"
     result = validate_mlp_csv(
         mlp_csv,
         mode=str(layout.mlp_validation_mode).lower().strip() or "strict",  # type: ignore[arg-type]
+        nan_policy=str(layout.mlp_nan_policy).lower().strip() or "auto",  # type: ignore[arg-type]
         small_input_threshold=int(layout.mlp_small_input_threshold),
         zero_heavy_limit=float(layout.mlp_zero_heavy_limit),
     )
@@ -74,7 +83,7 @@ def validate_profiling_root(layout: ProfilingRootLayout) -> None:
         import warnings
 
         for warning in result.warnings:
-            warnings.warn(warning)
+                warnings.warn(warning)
 
     if not layout.skip_cpu_overhead_modeling:
         from gpu_simulate_test.vidur_ext.cpu_overhead_validation import validate_cpu_overheads_csv
@@ -93,3 +102,5 @@ def validate_profiling_root(layout: ProfilingRootLayout) -> None:
 
             for warning in result.warnings:
                 warnings.warn(warning)
+
+    return result

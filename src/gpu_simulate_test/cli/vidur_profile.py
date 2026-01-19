@@ -42,6 +42,14 @@ def main(cfg: DictConfig) -> None:
             f"profiling.mlp.validation.mode must be 'strict' or 'non_strict' (got {mlp_validation_mode!r})."
         )
 
+    mlp_nan_policy_val = OmegaConf.select(cfg, "profiling.mlp.validation.nan_policy")
+    mlp_nan_policy = str(mlp_nan_policy_val or "auto").lower().strip()
+    if mlp_nan_policy not in {"auto", "reject", "drop"}:
+        raise ValueError(
+            "profiling.mlp.validation.nan_policy must be one of auto|reject|drop "
+            f"(got {mlp_nan_policy!r})."
+        )
+
     mlp_small_input_threshold_val = OmegaConf.select(cfg, "profiling.mlp.validation.small_input_threshold")
     mlp_small_input_threshold = int(mlp_small_input_threshold_val or 128)
 
@@ -60,6 +68,7 @@ def main(cfg: DictConfig) -> None:
         profiling_root=profiling_root,
         mlp_profile_method=mlp_profile_method,
         mlp_validation_mode=mlp_validation_mode,  # type: ignore[arg-type]
+        mlp_nan_policy=mlp_nan_policy,  # type: ignore[arg-type]
         mlp_small_input_threshold=mlp_small_input_threshold,
         mlp_zero_heavy_limit=mlp_zero_heavy_limit,
         mlp_fallback_enabled=mlp_fallback_enabled,

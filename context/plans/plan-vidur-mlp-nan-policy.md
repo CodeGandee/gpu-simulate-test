@@ -3,7 +3,7 @@
 ## HEADER
 
 **Purpose**: Add a configurable policy for handling missing (NaN) MLP timing targets so runs can either fail fast or proceed by dropping missing measurements per target during consumption (simulation/reporting) by patching Vidur’s sklearn trainer.  
-**Status**: Draft  
+**Status**: Implemented  
 **Date**: 2026-01-19  
 **Dependencies**:
 - `context/issues/known/issue-vidur-mlp-profiling-misses-cuda-driver-kernels.md`
@@ -125,27 +125,27 @@ sequenceDiagram
 
 ## 4. TODOs (Implementation Steps)
 
-- [ ] **Add config knobs** Add `profiling.mlp.validation.nan_policy` and `vidur.validation.mlp.nan_policy` to the Hydra
+- [X] **Add config knobs** Add `profiling.mlp.validation.nan_policy` and `vidur.validation.mlp.nan_policy` to the Hydra
       config files, defaulting to `auto`, with short docs and examples.
-- [ ] **Define policy enum** Add a small Literal/enum type for `nan_policy` (`auto|reject|drop`) and implement
+- [X] **Define policy enum** Add a small Literal/enum type for `nan_policy` (`auto|reject|drop`) and implement
       “effective policy” resolution based on `mode` when `auto` is selected.
-- [ ] **Update validator** Extend `validate_mlp_csv(...)` to accept `nan_policy` and:
+- [X] **Update validator** Extend `validate_mlp_csv(...)` to accept `nan_policy` and:
       - always treat missing required columns as fatal
       - in `reject`, raise on any missing cells
       - in `drop`, allow missing cells and return a result containing counts + warnings
-- [ ] **Implement trainer patch** Add a local monkey-patch/wrapper so Vidur’s sklearn training drops NaNs per target
+- [X] **Implement trainer patch** Add a local monkey-patch/wrapper so Vidur’s sklearn training drops NaNs per target
       column (instead of requiring whole-row drops across all targets).
-- [ ] **Wire staging behavior** Plumb `nan_policy` through `VidurProfileInputs` and staging provenance so profiling runs
+- [X] **Wire staging behavior** Plumb `nan_policy` through `VidurProfileInputs` and staging provenance so profiling runs
       record the intended policy and validation result.
-- [ ] **Wire consumption behavior** Plumb `nan_policy` through `ProfilingRootLayout`/`VidurSimInputs` and, when effective
+- [X] **Wire consumption behavior** Plumb `nan_policy` through `ProfilingRootLayout`/`VidurSimInputs` and, when effective
       policy is `drop`, enable the trainer patch before invoking Vidur so training can proceed.
-- [ ] **Report/provenance updates** Add `nan_policy` (effective) and a per-target “rows dropped” summary to final reports
+- [X] **Report/provenance updates** Add `nan_policy` (effective) and a per-target “rows dropped” summary to final reports
       and run meta.
-- [ ] **Unit tests** Add/update unit tests for:
+- [X] **Unit tests** Add/update unit tests for:
       - policy resolution (`auto` + strict/non_strict)
       - `reject` raising on missing cells
       - `drop` allowing missing cells and ensuring per-target training can proceed (no crash)
-- [ ] **Documentation** Update the known-issue doc (and relevant tutorials if needed) to explain:
+- [X] **Documentation** Update the known-issue doc (and relevant tutorials if needed) to explain:
       - when to use `drop` (best-effort runs / legacy roots)
       - tradeoffs (reduced per-target training data; potential accuracy impact)
       - recommended remediation (`cuda_event` profiling / fallback) for high-fidelity runs

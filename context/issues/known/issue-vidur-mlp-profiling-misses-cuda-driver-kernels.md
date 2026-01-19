@@ -18,7 +18,9 @@ Because Vidur sim trains per-op timing predictors from `mlp.csv`, these 0s can c
 Implemented in `005-vidur-mlp-cuda-driver`:
 
 1. **Attribution fix (record_function)**: use a correlation-based tracer that counts both `cuda_runtime` and `cuda_driver` launch paths to attribute correlated `kernel` time back to `vidur_*` user-annotation regions.
-2. **No more silent NaN → 0 staging**: staging validates `mlp.csv` and fails fast (strict by default) instead of masking missing values.
+2. **No more silent NaN → 0 staging**: staging validates `mlp.csv` instead of masking missing values by filling them to `0.0`.
+   - Default behavior remains fail-fast: strict + `nan_policy=auto` ⇒ reject NaNs.
+   - Best-effort behavior is opt-in: `nan_policy=drop` allows NaNs and requires consumers to drop missing samples per target during training.
 3. **Opt-in automatic fallback**: on validation failure, users can retry MLP profiling with an alternate method (e.g., `cuda_event`).
 4. **Consumption validation**: consumers validate `mlp.csv` when loading a profiling root (strict fail vs non-strict warn), controlled by `vidur.validation.mlp.*`.
 
@@ -157,6 +159,7 @@ If missing measurements are staged as 0.0:
 - Re-profile using an explicit MLP method override (e.g., `profiling.mlp.profile_method=cuda_event`).
 - If a run fails validation, enable opt-in fallback: `profiling.mlp.fallback.enabled=true profiling.mlp.fallback.method=cuda_event`.
 - If a consumer fails on load, the error message should include the affected columns and remediation actions.
+- For best-effort consumption of legacy roots with missing cells, set `vidur.validation.mlp.nan_policy=drop` (or `vidur.validation.mlp.mode=non_strict` with `nan_policy=auto`) to allow NaNs and drop missing samples per target during sklearn training. This trades fidelity for forward progress.
 
 ## How to verify you are no longer affected
 
@@ -178,19 +181,25 @@ If you are consuming an existing profiling root:
 
 ### Q: If I use `profiling.mlp.profile_method=record_function`, how does the code handle missing values later?
 
-Missing timing values are treated as a **hard validation error** (they are no longer silently coerced to `0.0`).
+Missing timing values are **not** silently coerced to `0.0` anymore. They are either rejected or allowed depending on the configured NaN policy.
 
 - **During profiling-root creation** (staging):
   - After `mlp.csv` is staged, `validate_mlp_csv(...)` checks that core timing targets
     `time_stats.*.{min,max,mean,median}` have **0 missing cells**.
-  - If any are missing, the run fails fast with an actionable error (`MlpCsvValidationError`).
-  - `profiling.mlp.validation.mode=non_strict` only changes how **zero-heavy** columns are handled; missing values
-    still fail in both modes.
+  - **Default** (`profiling.mlp.validation.nan_policy=auto`):
+    - `mode=strict` ⇒ reject NaNs (fail fast with an actionable error: `MlpCsvValidationError`)
+    - `mode=non_strict` ⇒ allow NaNs (they remain missing; consumers must drop missing samples per target)
+  - **Explicit overrides**:
+    - `nan_policy=reject` ⇒ always fail on NaNs (ignores strict/non-strict for NaN handling)
+    - `nan_policy=drop` ⇒ always allow NaNs (ignores strict/non-strict for NaN handling)
+  - `profiling.mlp.validation.mode` still controls how **zero-heavy** columns are handled (strict fails; non-strict warns).
   - If `profiling.mlp.fallback.enabled=true`, the wrapper automatically reruns MLP profiling using
     `profiling.mlp.fallback.method` (typically `cuda_event`), then restages and revalidates.
 - **During consumption** (sim/report):
-  - When a profiling root is loaded, `validate_profiling_root(...)` applies the same missing-value check (controlled by
-    `vidur.validation.mlp.*`), so bad historical roots get rejected in strict mode.
+  - When a profiling root is loaded, `validate_profiling_root(...)` applies the same validation policy (controlled by
+    `vidur.validation.mlp.*`).
+  - If the effective policy is `drop`, the consumer pipeline enables a local patch that drops NaNs **per target column**
+    during Vidur sklearn training so the simulator can proceed, and records a per-target drop summary in `sim/run_meta.json`.
 
 ## Fix implemented (code)
 

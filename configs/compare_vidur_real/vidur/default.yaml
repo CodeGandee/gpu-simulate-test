@@ -4,6 +4,13 @@ profiling:
 
 validation:
   mlp:
+    # How to handle missing (NaN) core timing targets when consuming a profiling root.
+    #
+    # - auto (default): strict => reject; non_strict => drop (per-target) during training.
+    # - reject: always reject NaNs (ignores strict/non_strict for NaN handling).
+    # - drop: allow NaNs and drop missing samples per target during training
+    #   (ignores strict/non_strict for NaN handling).
+    nan_policy: auto
     mode: strict
     small_input_threshold: 128
     zero_heavy_limit: 0.01

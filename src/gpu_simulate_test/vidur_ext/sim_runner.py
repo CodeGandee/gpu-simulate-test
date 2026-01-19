@@ -47,6 +47,7 @@ class VidurSimInputs:
     tensor_parallel_size: int = 1
     num_pipeline_stages: int = 1
     mlp_validation_mode: str = "strict"
+    mlp_nan_policy: str = "auto"
     mlp_small_input_threshold: int = 128
     mlp_zero_heavy_limit: float = 0.01
     seed: int = 42
@@ -183,12 +184,26 @@ def run_vidur_sim(inputs: VidurSimInputs, *, out_dir: Path, run_meta: dict) -> N
         tensor_parallel_size=inputs.tensor_parallel_size,
         num_pipeline_stages=inputs.num_pipeline_stages,
         mlp_validation_mode=str(inputs.mlp_validation_mode),
+        mlp_nan_policy=str(inputs.mlp_nan_policy),
         mlp_small_input_threshold=int(inputs.mlp_small_input_threshold),
         mlp_zero_heavy_limit=float(inputs.mlp_zero_heavy_limit),
         skip_cpu_overhead_modeling=bool(inputs.skip_cpu_overhead_modeling),
         cpu_overhead_validation=str(inputs.cpu_overhead_validation),
     )
-    validate_profiling_root(layout)
+    mlp_validation = validate_profiling_root(layout)
+    effective_nan_policy = str(mlp_validation.nan_policy_effective)
+
+    run_meta_out: dict[str, object] = dict(run_meta)
+    run_meta_out.setdefault("mlp_validation", mlp_validation.as_jsonable())
+    run_meta_out.setdefault(
+        "mlp_nan_drop",
+        {
+            "enabled": effective_nan_policy == "drop",
+            "nan_policy": str(mlp_validation.nan_policy),
+            "nan_policy_effective": effective_nan_policy,
+            "per_model": {},
+        },
+    )
 
     out_dir.mkdir(parents=True, exist_ok=True)
     trace_csv = _build_vidur_trace_csv(inputs, out_dir=out_dir)
@@ -260,9 +275,25 @@ def run_vidur_sim(inputs: VidurSimInputs, *, out_dir: Path, run_meta: dict) -> N
         metrics_config=metrics_cfg,
     )
 
-    simulator = Simulator(sim_cfg)
-    simulator.run()
-    simulator.metric_store.plot()
+    if effective_nan_policy == "drop":
+        from gpu_simulate_test.vidur_ext.vidur_sklearn_nan_patch import (
+            patch_vidur_sklearn_train_model_dropna,
+        )
+
+        nan_drop = run_meta_out.get("mlp_nan_drop")
+        if not isinstance(nan_drop, dict):
+            nan_drop = {"enabled": True, "per_model": {}}
+            run_meta_out["mlp_nan_drop"] = nan_drop
+        nan_drop["enabled"] = True
+
+        with patch_vidur_sklearn_train_model_dropna(summary=nan_drop):
+            simulator = Simulator(sim_cfg)
+            simulator.run()
+            simulator.metric_store.plot()
+    else:
+        simulator = Simulator(sim_cfg)
+        simulator.run()
+        simulator.metric_store.plot()
 
     raw_dir = Path(sim_cfg.metrics_config.output_dir)
     raw_request_metrics = raw_dir / "request_metrics.csv"
@@ -294,11 +325,10 @@ def run_vidur_sim(inputs: VidurSimInputs, *, out_dir: Path, run_meta: dict) -> N
         required_columns=["request_id", "token_index", "token_time_ns", "token_latency_ns"],
     )
 
-    run_meta = dict(run_meta)
-    run_meta.setdefault("ended_at", utcnow_iso())
-    run_meta.setdefault("vidur_raw_dir", str(raw_dir))
-    run_meta.setdefault("vidur_trace_csv", str(trace_csv))
-    write_json(out_dir / "run_meta.json", run_meta)
+    run_meta_out.setdefault("ended_at", utcnow_iso())
+    run_meta_out.setdefault("vidur_raw_dir", str(raw_dir))
+    run_meta_out.setdefault("vidur_trace_csv", str(trace_csv))
+    write_json(out_dir / "run_meta.json", run_meta_out)
 
 
 PAPER_FIDELITY_REQUIRED_VIDUR_COLUMNS = [
@@ -416,6 +446,7 @@ class VidurPaperFidelitySimInputs:
     tensor_parallel_size: int = 1
     num_pipeline_stages: int = 1
     mlp_validation_mode: str = "strict"
+    mlp_nan_policy: str = "auto"
     mlp_small_input_threshold: int = 128
     mlp_zero_heavy_limit: float = 0.01
     seed: int = 42
@@ -464,12 +495,25 @@ def run_vidur_paper_fidelity_sim(
         tensor_parallel_size=inputs.tensor_parallel_size,
         num_pipeline_stages=inputs.num_pipeline_stages,
         mlp_validation_mode=str(inputs.mlp_validation_mode),
+        mlp_nan_policy=str(inputs.mlp_nan_policy),
         mlp_small_input_threshold=int(inputs.mlp_small_input_threshold),
         mlp_zero_heavy_limit=float(inputs.mlp_zero_heavy_limit),
         skip_cpu_overhead_modeling=bool(inputs.skip_cpu_overhead_modeling),
         cpu_overhead_validation=str(inputs.cpu_overhead_validation),
     )
-    validate_profiling_root(layout)
+    mlp_validation = validate_profiling_root(layout)
+    effective_nan_policy = str(mlp_validation.nan_policy_effective)
+    run_meta_out: dict[str, object] = dict(run_meta)
+    run_meta_out.setdefault("mlp_validation", mlp_validation.as_jsonable())
+    run_meta_out.setdefault(
+        "mlp_nan_drop",
+        {
+            "enabled": effective_nan_policy == "drop",
+            "nan_policy": str(mlp_validation.nan_policy),
+            "nan_policy_effective": effective_nan_policy,
+            "per_model": {},
+        },
+    )
 
     out_dir.mkdir(parents=True, exist_ok=True)
     started_at = utcnow_iso()
@@ -551,9 +595,25 @@ def run_vidur_paper_fidelity_sim(
         metrics_config=metrics_cfg,
     )
 
-    simulator = Simulator(sim_cfg)
-    simulator.run()
-    simulator.metric_store.plot()
+    if effective_nan_policy == "drop":
+        from gpu_simulate_test.vidur_ext.vidur_sklearn_nan_patch import (
+            patch_vidur_sklearn_train_model_dropna,
+        )
+
+        nan_drop = run_meta_out.get("mlp_nan_drop")
+        if not isinstance(nan_drop, dict):
+            nan_drop = {"enabled": True, "per_model": {}}
+            run_meta_out["mlp_nan_drop"] = nan_drop
+        nan_drop["enabled"] = True
+
+        with patch_vidur_sklearn_train_model_dropna(summary=nan_drop):
+            simulator = Simulator(sim_cfg)
+            simulator.run()
+            simulator.metric_store.plot()
+    else:
+        simulator = Simulator(sim_cfg)
+        simulator.run()
+        simulator.metric_store.plot()
 
     raw_dir = Path(sim_cfg.metrics_config.output_dir)
     raw_request_metrics = raw_dir / "request_metrics.csv"
@@ -572,14 +632,13 @@ def run_vidur_paper_fidelity_sim(
         required_columns=["request_id", *PAPER_FIDELITY_REQUIRED_VIDUR_COLUMNS],
     )
 
-    meta = dict(run_meta)
-    meta.setdefault("schema_version", "v1")
-    meta.setdefault("run_type", "sim")
-    meta.setdefault("scenario_name", inputs.scenario_name)
-    meta.setdefault("started_at", started_at)
-    meta.setdefault("ended_at", utcnow_iso())
-    meta.setdefault("vidur_raw_dir", str(raw_dir.resolve()))
-    meta.setdefault("trace_csv", str(inputs.trace_csv.resolve()))
-    write_json(out_dir / "run_meta.json", meta)
+    run_meta_out.setdefault("schema_version", "v1")
+    run_meta_out.setdefault("run_type", "sim")
+    run_meta_out.setdefault("scenario_name", inputs.scenario_name)
+    run_meta_out.setdefault("started_at", started_at)
+    run_meta_out.setdefault("ended_at", utcnow_iso())
+    run_meta_out.setdefault("vidur_raw_dir", str(raw_dir.resolve()))
+    run_meta_out.setdefault("trace_csv", str(inputs.trace_csv.resolve()))
+    write_json(out_dir / "run_meta.json", run_meta_out)
 
     return out_dir / "request_metrics.csv"

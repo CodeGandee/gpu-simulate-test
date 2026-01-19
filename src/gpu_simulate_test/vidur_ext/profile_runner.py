@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 MlpValidationMode = Literal["strict", "non_strict"]
+MlpNanPolicy = Literal["auto", "reject", "drop"]
 
 
 @dataclass(frozen=True)
@@ -45,9 +46,15 @@ class VidurProfileInputs:
         REQUIRED. Profiling method passed to Vidur's MLP profiler (no hidden defaults).
         Examples: `record_function`, `cuda_event`.
     mlp_validation_mode
-        Validation mode to apply when staging `mlp.csv`: `strict` (default) fails on missing
-        values and zero-heavy signals; `non_strict` fails on missing values but only warns on
-        zero-heavy signals.
+        Validation mode to apply when staging `mlp.csv` for zero-heavy checks:
+        - `strict` (default) fails on zero-heavy signals.
+        - `non_strict` warns on zero-heavy signals.
+        Missing-value handling is controlled by `mlp_nan_policy`.
+    mlp_nan_policy
+        How to handle missing (NaN) core timing targets in `mlp.csv`.
+        - auto (default): strict => reject; non_strict => drop (per-target) during consumption.
+        - reject: always reject NaNs (ignores strict/non_strict for NaN handling).
+        - drop: allow NaNs (consumers must drop missing samples per target before training).
     mlp_small_input_threshold
         Token count threshold below which exact zeros are tolerated in `mlp.csv`.
     mlp_zero_heavy_limit
@@ -91,6 +98,7 @@ class VidurProfileInputs:
     profiling_root: Path
     mlp_profile_method: str
     mlp_validation_mode: MlpValidationMode = "strict"
+    mlp_nan_policy: MlpNanPolicy = "auto"
     mlp_small_input_threshold: int = 128
     mlp_zero_heavy_limit: float = 0.01
     mlp_fallback_enabled: bool = False
@@ -324,6 +332,7 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
         result = validate_mlp_csv(
             mlp_dst,
             mode=str(inputs.mlp_validation_mode).lower().strip() or "strict",  # type: ignore[arg-type]
+            nan_policy=str(inputs.mlp_nan_policy).lower().strip() or "auto",  # type: ignore[arg-type]
             small_input_threshold=int(inputs.mlp_small_input_threshold),
             zero_heavy_limit=float(inputs.mlp_zero_heavy_limit),
         )

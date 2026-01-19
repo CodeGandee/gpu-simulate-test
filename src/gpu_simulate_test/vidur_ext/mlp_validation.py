@@ -5,8 +5,15 @@ This module provides a lightweight validator for Vidur-style `mlp.csv` artifacts
 - Missing timing targets (any missing value in core `time_stats.*.{min,max,mean,median}` columns)
 - Suspiciously zero-heavy timing targets above a configured token threshold
 
-Validation can run in strict mode (fail on missing and zero-heavy) or non-strict mode (fail on
-missing, warn on zero-heavy).
+Missing-value handling is controlled by `nan_policy`:
+
+- `reject` fails on any missing core timing target cell (default when mode=strict + nan_policy=auto)
+- `drop` allows missing cells (consumers must drop missing samples per target before sklearn training)
+
+Zero-heavy handling is controlled by `mode`:
+
+- `strict` fails on zero-heavy signals
+- `non_strict` warns on zero-heavy signals
 """
 
 from __future__ import annotations
@@ -17,12 +24,16 @@ from typing import Any, Literal
 
 
 MlpValidationMode = Literal["strict", "non_strict"]
+MlpNanPolicy = Literal["auto", "reject", "drop"]
+MlpEffectiveNanPolicy = Literal["reject", "drop"]
 
 
 @dataclass(frozen=True)
 class MlpValidationResult:
     csv_path: Path
     mode: MlpValidationMode
+    nan_policy: MlpNanPolicy
+    nan_policy_effective: MlpEffectiveNanPolicy
     row_count: int
     column_count: int
     time_column_count: int
@@ -47,22 +58,37 @@ class MlpCsvValidationError(ValueError):
 _CORE_TIME_STATS: frozenset[str] = frozenset({"min", "max", "mean", "median"})
 
 
+def resolve_nan_policy(*, mode: MlpValidationMode, nan_policy: MlpNanPolicy) -> MlpEffectiveNanPolicy:
+    """Resolve the effective NaN policy based on mode and configuration."""
+    if nan_policy not in {"auto", "reject", "drop"}:
+        raise ValueError(f"Unsupported nan_policy: {nan_policy!r} (expected auto|reject|drop)")
+    if nan_policy == "auto":
+        return "reject" if mode == "strict" else "drop"
+    return "reject" if nan_policy == "reject" else "drop"
+
+
 def validate_mlp_csv(
     csv_path: Path,
     *,
     mode: MlpValidationMode = "strict",
+    nan_policy: MlpNanPolicy = "auto",
     small_input_threshold: int = 128,
     zero_heavy_limit: float = 0.01,
 ) -> MlpValidationResult:
     """Validate a staged Vidur-style MLP profiling CSV.
 
     Validation rules:
-    - Missing values (any core time_stats cell missing) always fail.
-    - Zero-heavy signals (many exact zeros above a token threshold) fail in strict mode and warn
-      in non-strict mode.
+    - Missing columns always fail.
+    - Missing cells (NaNs in core time_stats targets) are handled by `nan_policy`:
+      - reject: fail if any core cell is missing
+      - drop: allow missing cells and record warnings (consumers must handle NaNs)
+    - Zero-heavy signals (many exact zeros above a token threshold) fail in strict mode and warn in
+      non-strict mode.
     """
     if mode not in {"strict", "non_strict"}:
         raise ValueError(f"Unsupported MLP validation mode: {mode!r} (expected strict|non_strict)")
+
+    effective_nan_policy = resolve_nan_policy(mode=mode, nan_policy=nan_policy)
 
     if zero_heavy_limit < 0.0 or zero_heavy_limit > 1.0:
         raise ValueError(f"zero_heavy_limit must be within [0, 1] (got {zero_heavy_limit!r})")
@@ -123,6 +149,13 @@ def validate_mlp_csv(
         "zero_heavy_limit": float(zero_heavy_limit),
     }
 
+    if missing_cells_total > 0 and effective_nan_policy == "drop":
+        warnings.append(
+            "Missing (NaN) timing targets detected in mlp.csv. nan_policy=drop allows this, but "
+            "consumers must drop NaN samples per target before training. Consider rerunning with "
+            "`profiling.mlp.profile_method=cuda_event` (or enable fallback) for highest fidelity."
+        )
+
     if "num_tokens" in df.columns and time_cols:
         try:
             num_tokens = df["num_tokens"].astype(int)
@@ -148,6 +181,8 @@ def validate_mlp_csv(
     result = MlpValidationResult(
         csv_path=csv_path,
         mode=mode,
+        nan_policy=nan_policy,
+        nan_policy_effective=effective_nan_policy,
         row_count=int(len(df)),
         column_count=int(len(df.columns)),
         time_column_count=int(len(time_cols)),
@@ -158,7 +193,9 @@ def validate_mlp_csv(
         warnings=warnings,
     )
 
-    failed_missing = bool(missing_columns) or int(missing_cells_total) > 0
+    failed_missing = bool(missing_columns) or (
+        int(missing_cells_total) > 0 and effective_nan_policy == "reject"
+    )
     failed_zero_heavy = bool(zero_heavy_columns) and mode == "strict"
     if failed_missing or failed_zero_heavy:
         problems: list[str] = []
@@ -176,7 +213,7 @@ def validate_mlp_csv(
         )
         raise MlpCsvValidationError(
             "MLP profiling CSV failed validation. "
-            f"csv_path={csv_path} mode={mode} thresholds={thresholds} "
+            f"csv_path={csv_path} mode={mode} nan_policy={nan_policy} thresholds={thresholds} "
             + " ".join(problems)
             + f". {remediation}",
             result=result,

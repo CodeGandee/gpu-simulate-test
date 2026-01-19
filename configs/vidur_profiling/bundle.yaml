@@ -40,6 +40,13 @@ profiling:
     validation:
       # strict (default) | non_strict
       mode: strict
+      # How to handle missing (NaN) core timing targets in `mlp.csv`.
+      #
+      # - auto (default): strict => reject; non_strict => drop (per-target) during consumption.
+      # - reject: always reject NaNs (ignores strict/non_strict for NaN handling).
+      # - drop: allow NaNs and drop missing samples per target during consumption
+      #   (ignores strict/non_strict for NaN handling).
+      nan_policy: auto
       small_input_threshold: 128
       zero_heavy_limit: 0.01
     fallback:

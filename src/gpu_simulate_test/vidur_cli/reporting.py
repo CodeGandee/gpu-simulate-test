@@ -206,6 +206,9 @@ def _load_profile_mlp_selection(*, run_dir: Path) -> dict[str, Any] | None:
     validation_mode = _extract_override_value(overrides, key="profiling.mlp.validation.mode")
     if validation_mode is not None:
         out["validation_mode"] = str(validation_mode)
+    nan_policy = _extract_override_value(overrides, key="profiling.mlp.validation.nan_policy")
+    if nan_policy is not None:
+        out["nan_policy"] = str(nan_policy)
     small_input_threshold = _extract_override_value(
         overrides, key="profiling.mlp.validation.small_input_threshold"
     )
@@ -461,6 +464,8 @@ def write_paper_fidelity_style_report(
         cpu_overheads_status = "skipped"
 
     mlp_selection = _load_profile_mlp_selection(run_dir=run_dir)
+    sim_mlp_validation = sim_meta.get("mlp_validation") if isinstance(sim_meta.get("mlp_validation"), dict) else {}
+    sim_mlp_nan_drop = sim_meta.get("mlp_nan_drop") if isinstance(sim_meta.get("mlp_nan_drop"), dict) else {}
 
     # Summary.md
     lines: list[str] = []
@@ -490,12 +495,20 @@ def write_paper_fidelity_style_report(
             lines.append(f"  - profile_method: `{profile_method}`")
 
         validation_mode = mlp_selection.get("validation_mode")
+        nan_policy = mlp_selection.get("nan_policy")
         small_input_threshold = mlp_selection.get("small_input_threshold")
         zero_heavy_limit = mlp_selection.get("zero_heavy_limit")
-        if validation_mode is not None or small_input_threshold is not None or zero_heavy_limit is not None:
+        if (
+            validation_mode is not None
+            or nan_policy is not None
+            or small_input_threshold is not None
+            or zero_heavy_limit is not None
+        ):
             parts: list[str] = []
             if validation_mode is not None:
                 parts.append(f"mode={validation_mode}")
+            if nan_policy is not None:
+                parts.append(f"nan_policy={nan_policy}")
             if small_input_threshold is not None:
                 parts.append(f"small_input_threshold={small_input_threshold}")
             if zero_heavy_limit is not None:
@@ -514,6 +527,32 @@ def write_paper_fidelity_style_report(
             parts.append(f"used={_fmt_bool(fallback_used)}")
         if parts:
             lines.append(f"  - fallback: `{' '.join(parts)}`")
+
+    lines.append("- mlp_consumer:")
+    if sim_mlp_validation:
+        mode = sim_mlp_validation.get("mode") or "unknown"
+        nan_policy = sim_mlp_validation.get("nan_policy") or "unknown"
+        effective = sim_mlp_validation.get("nan_policy_effective") or "unknown"
+        lines.append(f"  - nan_policy: `{effective}` (nan_policy=`{nan_policy}` mode=`{mode}`)")
+    else:
+        lines.append("  - nan_policy: `unknown`")
+
+    if sim_mlp_nan_drop and bool(sim_mlp_nan_drop.get("enabled")):
+        per_model = sim_mlp_nan_drop.get("per_model") if isinstance(sim_mlp_nan_drop.get("per_model"), dict) else {}
+        dropped_total = 0
+        models_with_drops = 0
+        for stats in per_model.values():
+            if not isinstance(stats, dict):
+                continue
+            dropped = int(stats.get("rows_dropped") or 0)
+            dropped_total += dropped
+            if dropped > 0:
+                models_with_drops += 1
+        lines.append(
+            f"  - nan_drop: `enabled` models_with_drops=`{models_with_drops}` rows_dropped_total=`{dropped_total}`"
+        )
+    else:
+        lines.append("  - nan_drop: `disabled`")
     lines.append("")
 
     lines.append("## Config (apple-to-apple)")

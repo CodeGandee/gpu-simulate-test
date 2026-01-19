@@ -56,6 +56,14 @@ def main(cfg: DictConfig) -> None:
             f"vidur.validation.mlp.mode must be 'strict' or 'non_strict' (got {mlp_validation_mode!r})."
         )
 
+    mlp_nan_policy_val = OmegaConf.select(cfg, "vidur.validation.mlp.nan_policy")
+    mlp_nan_policy = str(mlp_nan_policy_val or "auto").lower().strip()
+    if mlp_nan_policy not in {"auto", "reject", "drop"}:
+        raise ValueError(
+            "vidur.validation.mlp.nan_policy must be one of auto|reject|drop "
+            f"(got {mlp_nan_policy!r})."
+        )
+
     mlp_small_input_threshold_val = OmegaConf.select(cfg, "vidur.validation.mlp.small_input_threshold")
     mlp_small_input_threshold = int(mlp_small_input_threshold_val or 128)
 
@@ -68,6 +76,7 @@ def main(cfg: DictConfig) -> None:
         model_id=model_id,
         device=str(cfg.hardware.hardware_id),
         mlp_validation_mode=mlp_validation_mode,
+        mlp_nan_policy=mlp_nan_policy,
         mlp_small_input_threshold=mlp_small_input_threshold,
         mlp_zero_heavy_limit=mlp_zero_heavy_limit,
     )
