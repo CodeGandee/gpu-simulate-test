@@ -159,6 +159,14 @@ RUN_DIR=$(
 echo "RUN_DIR=$RUN_DIR"
 ```
 
+About the run directory name:
+
+- The `w_default` part means you selected `workload=default` (workload preset key).
+- The `v_default` part means you selected `vidur=default` (Vidur preset key).
+- By default, `vidur-cli` allocates runs under `<workspace_root>/sim_vs_real/<run_tag>`, where `<run_tag>` includes the
+  selected preset keys and a UTC timestamp (filesystem-sanitized), e.g.
+  `m_llama2_7b+h_a100+b_sarathi+w_default+v_default+20260116T152031Z`.
+
 Note: `backend=transformers` is useful for a quick smoke test, but it will not match Vidur’s batching/scheduling behavior (so sim-vs-real comparisons can drift a lot). For paper-fidelity-like comparisons, use `backend=sarathi`.
 
 For `backend=sarathi`, the replay/scheduler parity knobs live in `configs/compare_vidur_real/backend/sarathi.yaml` (defaults: `chunk_size=16`, `max_num_seqs=16`).
