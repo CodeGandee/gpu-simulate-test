@@ -49,6 +49,14 @@ Vidur supports four methods:
 - `perf_counter` (timer-based): uses `time.perf_counter()` with `torch.cuda.synchronize()` before/after each op (simple
   but coarse; tends to overestimate due to sync/launch overhead).
 
+> **Warning (upstream vs this repo): `record_function` tracing**
+>
+> Upstream Vidur’s `record_function` tracer only considers `cat=cuda_runtime` launch events when attributing GPU time.
+> This repo’s `record_function` uses `RecordFunctionTracerV2` and also considers `cat=cuda_driver` launches.
+>
+> If you suspect discrepancies or timing artifacts introduced by the patched tracer, try
+> `profiling.mlp.profile_method=record_function_org` (planned) to match upstream Vidur behavior exactly.
+
 ## Timing brackets (sequence diagrams)
 
 These diagrams show the **measurement bracket** used for each method (what’s “inside the timer”) at a high level.

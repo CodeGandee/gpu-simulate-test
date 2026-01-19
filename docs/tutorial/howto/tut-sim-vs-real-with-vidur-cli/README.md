@@ -76,6 +76,17 @@ Brief tradeoffs:
 - `kineto`: torch.profiler (Kineto) aggregation (high overhead; slow; useful for deeper investigation).
 - `perf_counter`: wall-clock with CUDA sync (coarse; often overestimates due to sync/launch overhead).
 
+> **Warning (upstream vs this repo): `record_function` tracing**
+>
+> Upstream Vidur’s `record_function` tracer attributes GPU time by looking for `cat=cuda_runtime` events inside each
+> `cat=user_annotation` region, and then correlating them to a matching event by correlation id.
+>
+> This repo’s `record_function` uses `RecordFunctionTracerV2`, which also considers `cat=cuda_driver` launches to avoid
+> missing timings for driver-launched kernels.
+>
+> If you suspect discrepancies or timing artifacts introduced by the patched tracer, try
+> `profiling.mlp.profile_method=record_function_org` (planned) to match upstream Vidur behavior exactly.
+
 For a full sweep + discussion, see:
 
 - `docs/tutorial/in-depth/adv-tut-vidur-cli-mlp-profile-methods/`
