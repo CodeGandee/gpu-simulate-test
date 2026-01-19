@@ -114,7 +114,7 @@ echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 # - historically Vidur defaulted to record_function
 # - this repo fixed a record_function gap for CUDA *driver*-launched kernels (005-vidur-mlp-cuda-driver)
 #
-# Alternatives: `cuda_event` | `kineto` | `perf_counter`. See:
+# Alternatives: `cuda_event` | `record_function_org` | `kineto` | `perf_counter`. See:
 # - docs/tutorial/in-depth/adv-tut-vidur-cli-mlp-profile-methods/
 export GSIM_VIDUR_MLP_PROFILE_METHOD="${GSIM_VIDUR_MLP_PROFILE_METHOD:-record_function}"
 

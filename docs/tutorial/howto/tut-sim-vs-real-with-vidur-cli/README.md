@@ -72,6 +72,10 @@ Vidur default; and this repo fixed a driver-kernel attribution gap for it in `00
 Brief tradeoffs:
 
 - `record_function`: profiler trace attribution (higher overhead; can be sensitive to tracer/trace quirks).
+- `record_function_org`: upstream-matched `record_function` tracer behavior (repo-only alias; no local patching).
+  - Useful as a debugging escape hatch if you suspect the patched tracer is introducing artifacts.
+  - Caveat: upstream trace attribution is `cuda_runtime`-only and can miss driver-launched kernels; you may need
+    `profiling.mlp.validation.nan_policy=drop` (and `vidur.validation.mlp.nan_policy=drop`) to proceed.
 - `cuda_event`: CUDA events around ops (stable GPU-time measurement; usually recommended for profiling throughput).
 - `kineto`: torch.profiler (Kineto) aggregation (high overhead; slow; useful for deeper investigation).
 - `perf_counter`: wall-clock with CUDA sync (coarse; often overestimates due to sync/launch overhead).
