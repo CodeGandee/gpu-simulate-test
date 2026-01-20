@@ -116,7 +116,7 @@ class VidurProfileInputs:
     attention_block_size: int = 16
     attention_min_batch_size: int = 1
     attention_max_batch_size: int = 1
-    attention_profile_mode: str = "decode"
+    attention_profile_mode: str = "both"
     model_ref: Path | None = None
 
 

@@ -118,8 +118,9 @@ echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 # - docs/tutorial/in-depth/adv-tut-vidur-cli-mlp-profile-methods/
 export GSIM_VIDUR_MLP_PROFILE_METHOD="${GSIM_VIDUR_MLP_PROFILE_METHOD:-record_function}"
 
-# Optional: automatically retry with a fallback method when validation fails.
-export GSIM_VIDUR_MLP_FALLBACK_ENABLED="${GSIM_VIDUR_MLP_FALLBACK_ENABLED:-false}"
+# Automatically retry with a fallback method when validation fails.
+# Set `GSIM_VIDUR_MLP_FALLBACK_ENABLED=false` to disable.
+export GSIM_VIDUR_MLP_FALLBACK_ENABLED="${GSIM_VIDUR_MLP_FALLBACK_ENABLED:-true}"
 export GSIM_VIDUR_MLP_FALLBACK_METHOD="${GSIM_VIDUR_MLP_FALLBACK_METHOD:-cuda_event}"
 
 # Missing-value handling for staged `mlp.csv`:

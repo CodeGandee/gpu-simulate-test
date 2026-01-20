@@ -18,6 +18,7 @@ The script:
 - creates a fresh workspace under `<repo>/tmp/`
 - runs: `init-run → trace(import) → profile → sim → real → report`
 - uses `profiling.mlp.profile_method=record_function` by default (see “MLP profiling method” below)
+- enables MLP profiling fallback to `cuda_event` when validation fails (set `GSIM_VIDUR_MLP_FALLBACK_ENABLED=false` to disable)
 - prints the final report path (`<run_dir>/report/summary.md`)
 
 Tracked demo artifacts in this directory:
