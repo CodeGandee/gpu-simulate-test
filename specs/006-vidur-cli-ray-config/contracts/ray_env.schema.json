@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "vidur-cli ray.env config (v1)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["ray"],
+  "properties": {
+    "ray": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["env"],
+      "properties": {
+        "env": { "$ref": "#/$defs/ray_env" }
+      }
+    }
+  },
+  "$defs": {
+    "ray_env": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "RAY_DEFAULT_OBJECT_STORE_MAX_MEMORY_BYTES": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE": {
+          "type": ["boolean", "null"]
+        }
+      }
+    }
+  }
+}
+

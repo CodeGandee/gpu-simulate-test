@@ -54,6 +54,8 @@ No test suite is committed yet. If you add tests:
 - Filesystem (CSV/JSON/YAML/Markdown) under the resolved workspace root (004-vidur-cli)
 - Python 3.13 (Pixi env; repo supports `>=3.11`) + Pixi, PyTorch (CUDA build), Hydra/OmegaConf, pandas, Vidur (`/data1/huangzhe/code/gpu-simulate-test/extern/tracked/vidur`) (005-vidur-mlp-cuda-driver)
 - Filesystem artifacts (CSV/JSON/Markdown) under `/data1/huangzhe/code/gpu-simulate-test/tmp/` and `/data1/huangzhe/code/gpu-simulate-test/results/` (005-vidur-mlp-cuda-driver)
+- Python 3.13 (Pixi); project declares `requires-python >= 3.11` + `hydra-core`/OmegaConf (configs), `ray` (runtime), `vidur` + `sarathi` (submodules), `torch` (CUDA), `pytest` (006-vidur-cli-ray-config)
+- Filesystem artifacts under run directories (`tmp/`, `results/`, run_dir subfolders) (006-vidur-cli-ray-config)
 
 ## Recent Changes
 - 001-compare-vidur-real-timing: Added Python 3.13 (Pixi) + `pixi`, `torch==2.9.1+cu128`, `transformers`, `pandas`, `matplotlib`, Vidur (`extern/tracked/vidur` editable), Sarathi-Serve (`extern/tracked/sarathi-serve` editable)

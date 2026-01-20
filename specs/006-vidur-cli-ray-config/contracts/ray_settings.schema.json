@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "vidur-cli ray_settings.json (v1)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schema_version", "created_at", "stage", "settings"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "v1" },
+    "created_at": { "type": "string" },
+    "stage": { "type": "string", "minLength": 1 },
+    "settings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ray_setting" }
+    }
+  },
+  "$defs": {
+    "ray_source": {
+      "type": "string",
+      "enum": ["environment", "configuration", "default"]
+    },
+    "ray_setting": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["key", "effective_value", "source"],
+      "properties": {
+        "key": { "type": "string", "minLength": 1 },
+        "effective_value": { "type": ["string", "null"] },
+        "source": { "$ref": "#/$defs/ray_source" }
+      }
+    }
+  }
+}
+
