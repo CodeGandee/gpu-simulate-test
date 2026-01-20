@@ -13,7 +13,7 @@ profiling:
 Notes:
 
 - `profiling.mlp.profile_method` is required (no hidden defaults).
-- Missing (NaN) timing targets in `mlp.csv` are handled by `profiling.mlp.validation.nan_policy=auto|reject|drop` (default `auto`).
+- Missing (NaN) timing targets in `mlp.csv` are handled by `profiling.mlp.validation.nan_policy=auto|reject|drop|zero` (default `auto`).
 - The sweep runner includes the 4 Vidur-native methods plus `record_function_org` (repo-only alias for upstream tracer behavior).
   - Because upstream `record_function` can miss driver-launched kernels, the sweep runs `record_function_org` with `nan_policy=drop` for both profiling and sim consumption.
 

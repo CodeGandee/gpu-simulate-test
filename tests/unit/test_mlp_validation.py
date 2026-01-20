@@ -66,6 +66,25 @@ def test_validate_mlp_csv_nan_policy_override_drop_allows_in_strict(tmp_path: Pa
     assert result.warnings
 
 
+def test_validate_mlp_csv_nan_policy_override_zero_allows_in_strict(tmp_path: Path) -> None:
+    csv_path = tmp_path / "mlp_missing_zero.csv"
+    df = pd.DataFrame(
+        {
+            "num_tokens": [128, 256],
+            "time_stats.op.min": [1.0, 2.0],
+            "time_stats.op.max": [1.0, 2.0],
+            "time_stats.op.mean": [1.0, 2.0],
+            "time_stats.op.median": [None, 2.0],
+        }
+    )
+    df.to_csv(csv_path, index=False)
+
+    result = validate_mlp_csv(csv_path, mode="strict", nan_policy="zero")
+    assert result.missing_cells_total > 0
+    assert result.nan_policy_effective == "zero"
+    assert result.warnings
+
+
 def test_validate_mlp_csv_zero_heavy_strict_fails_non_strict_warns(tmp_path: Path) -> None:
     csv_path = tmp_path / "mlp_zero_heavy.csv"
     df = pd.DataFrame(

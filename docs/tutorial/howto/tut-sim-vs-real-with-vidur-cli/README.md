@@ -18,6 +18,10 @@ The script:
 - creates a fresh workspace under `<repo>/tmp/`
 - runs: `init-run → trace(import) → profile → sim → real → report`
 - uses `profiling.mlp.profile_method=record_function` by default (see “MLP profiling method” below)
+- uses `profiling.mlp.validation.mode=strict profiling.mlp.validation.nan_policy=zero profiling.mlp.fallback.enabled=false` by default
+- uses `vidur.validation.mlp.mode=strict vidur.validation.mlp.nan_policy=zero` by default
+- disables CPU overhead profiling by default (`GSIM_VIDUR_INCLUDE_CPU_OVERHEAD=true` to enable)
+- enables `GPU_SIMULATE_TEST_ENABLE_VIDUR_ATTENTION_COMPAT=1` by default for attention profiling on Sarathi hosts
 - prints the final report path (`<run_dir>/report/summary.md`)
 
 Tracked demo artifacts in this directory:
@@ -75,7 +79,7 @@ Brief tradeoffs:
 - `record_function_org`: upstream-matched `record_function` tracer behavior (repo-only alias; no local patching).
   - Useful as a debugging escape hatch if you suspect the patched tracer is introducing artifacts.
   - Caveat: upstream trace attribution is `cuda_runtime`-only and can miss driver-launched kernels; you may need
-    `profiling.mlp.validation.nan_policy=drop` (and `vidur.validation.mlp.nan_policy=drop`) to proceed.
+    `profiling.mlp.validation.nan_policy=drop` / `zero` (and `vidur.validation.mlp.nan_policy=drop` / `zero`) to proceed.
 - `cuda_event`: CUDA events around ops (stable GPU-time measurement; usually recommended for profiling throughput).
 - `kineto`: torch.profiler (Kineto) aggregation (high overhead; slow; useful for deeper investigation).
 - `perf_counter`: wall-clock with CUDA sync (coarse; often overestimates due to sync/launch overhead).
@@ -99,12 +103,18 @@ For a full sweep + discussion, see:
 
 Some profiling methods (historically `record_function` before the driver-kernel attribution fix) can produce missing (NaN) timing targets in `mlp.csv`. This repo supports an explicit policy for how to handle missing cells:
 
-- Profiling (staging): `profiling.mlp.validation.nan_policy=auto|reject|drop`
+- Profiling (staging): `profiling.mlp.validation.nan_policy=auto|reject|drop|zero`
   - `auto` (default): strict ⇒ reject; non_strict ⇒ drop during consumption
   - `reject`: always fail fast on NaNs
   - `drop`: allow NaNs (consumers drop missing samples per target before sklearn training)
-- Consumption (sim): `vidur.validation.mlp.nan_policy=auto|reject|drop`
+  - `zero`: allow NaNs (consumers fill missing targets with 0.0 per target before sklearn training)
+- Consumption (sim): `vidur.validation.mlp.nan_policy=auto|reject|drop|zero`
   - When the effective policy is `drop`, the simulator enables a local per-target dropna patch and records a drop summary in `sim/run_meta.json`.
+  - When the effective policy is `zero`, the simulator enables a local per-target fillna(0) patch and records a fill summary in `sim/run_meta.json`.
+
+For details (missing required columns vs missing cells, strict vs non_strict, and how fallback interacts), see:
+
+- `docs/manual/mlp-validation-and-fallback.md`
 
 ## Implementation Idea
 

@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 MlpValidationMode = Literal["strict", "non_strict"]
-MlpNanPolicy = Literal["auto", "reject", "drop"]
+MlpNanPolicy = Literal["auto", "reject", "drop", "zero"]
 
 
 @dataclass(frozen=True)
@@ -57,6 +57,7 @@ class VidurProfileInputs:
         - auto (default): strict => reject; non_strict => drop (per-target) during consumption.
         - reject: always reject NaNs (ignores strict/non_strict for NaN handling).
         - drop: allow NaNs (consumers must drop missing samples per target before training).
+        - zero: allow NaNs (consumers must fill missing targets with 0.0 per target before training).
     mlp_small_input_threshold
         Token count threshold below which exact zeros are tolerated in `mlp.csv`.
     mlp_zero_heavy_limit
@@ -118,7 +119,7 @@ class VidurProfileInputs:
     attention_block_size: int = 16
     attention_min_batch_size: int = 1
     attention_max_batch_size: int = 1
-    attention_profile_mode: str = "decode"
+    attention_profile_mode: str = "both"
     allow_attention_fallback: bool = True
     model_ref: Path | None = None
 

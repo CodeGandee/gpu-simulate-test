@@ -9,6 +9,7 @@ Missing-value handling is controlled by `nan_policy`:
 
 - `reject` fails on any missing core timing target cell (default when mode=strict + nan_policy=auto)
 - `drop` allows missing cells (consumers must drop missing samples per target before sklearn training)
+- `zero` allows missing cells (consumers must fill missing targets with 0.0 per target before sklearn training)
 
 Zero-heavy handling is controlled by `mode`:
 
@@ -24,8 +25,8 @@ from typing import Any, Literal
 
 
 MlpValidationMode = Literal["strict", "non_strict"]
-MlpNanPolicy = Literal["auto", "reject", "drop"]
-MlpEffectiveNanPolicy = Literal["reject", "drop"]
+MlpNanPolicy = Literal["auto", "reject", "drop", "zero"]
+MlpEffectiveNanPolicy = Literal["reject", "drop", "zero"]
 
 
 @dataclass(frozen=True)
@@ -60,10 +61,12 @@ _CORE_TIME_STATS: frozenset[str] = frozenset({"min", "max", "mean", "median"})
 
 def resolve_nan_policy(*, mode: MlpValidationMode, nan_policy: MlpNanPolicy) -> MlpEffectiveNanPolicy:
     """Resolve the effective NaN policy based on mode and configuration."""
-    if nan_policy not in {"auto", "reject", "drop"}:
-        raise ValueError(f"Unsupported nan_policy: {nan_policy!r} (expected auto|reject|drop)")
+    if nan_policy not in {"auto", "reject", "drop", "zero"}:
+        raise ValueError(f"Unsupported nan_policy: {nan_policy!r} (expected auto|reject|drop|zero)")
     if nan_policy == "auto":
         return "reject" if mode == "strict" else "drop"
+    if nan_policy == "zero":
+        return "zero"
     return "reject" if nan_policy == "reject" else "drop"
 
 
@@ -82,6 +85,7 @@ def validate_mlp_csv(
     - Missing cells (NaNs in core time_stats targets) are handled by `nan_policy`:
       - reject: fail if any core cell is missing
       - drop: allow missing cells and record warnings (consumers must handle NaNs)
+      - zero: allow missing cells and record warnings (consumers must fill missing targets with 0.0)
     - Zero-heavy signals (many exact zeros above a token threshold) fail in strict mode and warn in
       non-strict mode.
     """
@@ -153,6 +157,12 @@ def validate_mlp_csv(
         warnings.append(
             "Missing (NaN) timing targets detected in mlp.csv. nan_policy=drop allows this, but "
             "consumers must drop NaN samples per target before training. Consider rerunning with "
+            "`profiling.mlp.profile_method=cuda_event` (or enable fallback) for highest fidelity."
+        )
+    if missing_cells_total > 0 and effective_nan_policy == "zero":
+        warnings.append(
+            "Missing (NaN) timing targets detected in mlp.csv. nan_policy=zero allows this, but "
+            "consumers must fill NaN targets with 0.0 per target before training. Consider rerunning with "
             "`profiling.mlp.profile_method=cuda_event` (or enable fallback) for highest fidelity."
         )
 

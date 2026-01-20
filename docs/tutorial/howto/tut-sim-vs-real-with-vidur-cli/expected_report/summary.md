@@ -7,16 +7,17 @@
 ## Profiling
 - root: `<RUN_DIR>/profile`
 - cpu_overhead:
-  - modeling: `enabled`
+  - modeling: `disabled`
   - csv: `<RUN_DIR>/profile/data/profiling/cpu_overhead/a100_pairwise_nvlink/meta-llama/Llama-2-7b-hf/cpu_overheads.csv`
-  - status: `ok`
+  - status: `skipped`
 - mlp:
   - profile_method: `record_function`
-  - validation: `mode=strict nan_policy=auto small_input_threshold=128 zero_heavy_limit=0.01`
+  - validation: `mode=strict nan_policy=zero small_input_threshold=128 zero_heavy_limit=0.01`
   - fallback: `enabled=false method=cuda_event used=false`
 - mlp_consumer:
-  - nan_policy: `reject` (nan_policy=`auto` mode=`strict`)
+  - nan_policy: `zero` (nan_policy=`zero` mode=`strict`)
   - nan_drop: `disabled`
+  - nan_fill_zero: `enabled` models_with_fills=`<N>` cells_filled_total=`<N>`
 
 ## Config (apple-to-apple)
 - model_id: `meta-llama/Llama-2-7b-hf`
@@ -33,7 +34,7 @@
 - batch_size: sim=`16` real=`16` (match)
 - block_size (sim): `16`
 - watermark_blocks_fraction (sim): `0.01`
-- cpu_overhead_modeling (sim): `enabled`
+- cpu_overhead_modeling (sim): `disabled`
 
 ## Scores
 | Metric | Percentile | Sim | Real | Percent error |

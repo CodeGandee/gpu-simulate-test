@@ -31,3 +31,7 @@ Two workflows are supported:
 - Paper fidelity workflow (002):
   - Command (Pixi task): `paper-fidelity` (subcommands: `trace`, `repro`, `profile`, `score`)
   - Spec: `specs/002-reproduce-vidur-paper-fidelity/`
+
+## Related manuals
+
+- MLP validation, NaN policies, and profiling fallback: `docs/manual/mlp-validation-and-fallback.md`

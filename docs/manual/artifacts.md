@@ -64,6 +64,7 @@ MLP validation note:
 
 - `run_meta.json` includes an `mlp_validation` summary for the consumed `mlp.csv` (mode, nan_policy, missing/zero-heavy stats).
 - If the effective policy is `drop` (e.g., `vidur.validation.mlp.nan_policy=drop`), `run_meta.json` also includes `mlp_nan_drop` with per-op dropped-row counts used during sklearn training.
+- If the effective policy is `zero` (e.g., `vidur.validation.mlp.nan_policy=zero`), `run_meta.json` also includes `mlp_nan_fill_zero` with per-op filled-cell counts used during sklearn training.
 
 ### Comparison report (`tmp/comparisons/<comparison_id>/`)
 
@@ -129,4 +130,4 @@ Notes:
   - static: `<scenario.name>`
   - dynamic: `<scenario.name>_dynamic_<scale>`
 - Canonical sim/real CSVs live under `tmp/paper_fidelity/runs/<scenario.name>/{sim,real}/request_metrics.csv`. Reports also snapshot these CSVs under `inputs/` for reproducibility/portability.
-- `tmp/paper_fidelity/runs/<scenario.name>/sim/run_meta.json` includes `mlp_validation` (and `mlp_nan_drop` when enabled) for the consumed profiling root.
+- `tmp/paper_fidelity/runs/<scenario.name>/sim/run_meta.json` includes `mlp_validation` (and `mlp_nan_drop` / `mlp_nan_fill_zero` when enabled) for the consumed profiling root.

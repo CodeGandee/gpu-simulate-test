@@ -44,9 +44,11 @@ Two task checklists exist:
 - Entrypoint: `pixi run vidur-sim` → `src/gpu_simulate_test/cli/vidur_sim.py`
 - Modules:
   - profiling root layout + validation: `src/gpu_simulate_test/vidur_ext/profiling_root.py`
-    - MLP missing-value policy: `vidur.validation.mlp.nan_policy=auto|reject|drop`
+    - MLP missing-value policy: `vidur.validation.mlp.nan_policy=auto|reject|drop|zero`
   - sim runner wrapper + standardization: `src/gpu_simulate_test/vidur_ext/sim_runner.py`
     - when effective NaN policy is `drop`, enables per-target NaN drops during Vidur sklearn training:
+      `src/gpu_simulate_test/vidur_ext/vidur_sklearn_nan_patch.py`
+    - when effective NaN policy is `zero`, enables per-target NaN fills with `0.0` during Vidur sklearn training:
       `src/gpu_simulate_test/vidur_ext/vidur_sklearn_nan_patch.py`
 - Validation:
   - unit prereqs: `tests/unit/test_vidur_sim_prereqs.py`

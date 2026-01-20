@@ -58,9 +58,9 @@ def main(cfg: DictConfig) -> None:
 
     mlp_nan_policy_val = OmegaConf.select(cfg, "profiling.mlp.validation.nan_policy")
     mlp_nan_policy = str(mlp_nan_policy_val or "auto").lower().strip()
-    if mlp_nan_policy not in {"auto", "reject", "drop"}:
+    if mlp_nan_policy not in {"auto", "reject", "drop", "zero"}:
         raise ValueError(
-            "profiling.mlp.validation.nan_policy must be one of auto|reject|drop "
+            "profiling.mlp.validation.nan_policy must be one of auto|reject|drop|zero "
             f"(got {mlp_nan_policy!r})."
         )
 

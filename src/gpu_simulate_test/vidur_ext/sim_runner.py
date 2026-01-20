@@ -204,6 +204,24 @@ def run_vidur_sim(inputs: VidurSimInputs, *, out_dir: Path, run_meta: dict) -> N
             "per_model": {},
         },
     )
+    run_meta_out.setdefault(
+        "mlp_nan_fill_zero",
+        {
+            "enabled": effective_nan_policy == "zero",
+            "nan_policy": str(mlp_validation.nan_policy),
+            "nan_policy_effective": effective_nan_policy,
+            "per_model": {},
+        },
+    )
+    run_meta_out.setdefault(
+        "mlp_nan_fill_zero",
+        {
+            "enabled": effective_nan_policy == "zero",
+            "nan_policy": str(mlp_validation.nan_policy),
+            "nan_policy_effective": effective_nan_policy,
+            "per_model": {},
+        },
+    )
 
     out_dir.mkdir(parents=True, exist_ok=True)
     trace_csv = _build_vidur_trace_csv(inputs, out_dir=out_dir)
@@ -287,6 +305,21 @@ def run_vidur_sim(inputs: VidurSimInputs, *, out_dir: Path, run_meta: dict) -> N
         nan_drop["enabled"] = True
 
         with patch_vidur_sklearn_train_model_dropna(summary=nan_drop):
+            simulator = Simulator(sim_cfg)
+            simulator.run()
+            simulator.metric_store.plot()
+    elif effective_nan_policy == "zero":
+        from gpu_simulate_test.vidur_ext.vidur_sklearn_nan_patch import (
+            patch_vidur_sklearn_train_model_fillna_zero,
+        )
+
+        nan_fill_zero = run_meta_out.get("mlp_nan_fill_zero")
+        if not isinstance(nan_fill_zero, dict):
+            nan_fill_zero = {"enabled": True, "per_model": {}}
+            run_meta_out["mlp_nan_fill_zero"] = nan_fill_zero
+        nan_fill_zero["enabled"] = True
+
+        with patch_vidur_sklearn_train_model_fillna_zero(summary=nan_fill_zero):
             simulator = Simulator(sim_cfg)
             simulator.run()
             simulator.metric_store.plot()
@@ -607,6 +640,21 @@ def run_vidur_paper_fidelity_sim(
         nan_drop["enabled"] = True
 
         with patch_vidur_sklearn_train_model_dropna(summary=nan_drop):
+            simulator = Simulator(sim_cfg)
+            simulator.run()
+            simulator.metric_store.plot()
+    elif effective_nan_policy == "zero":
+        from gpu_simulate_test.vidur_ext.vidur_sklearn_nan_patch import (
+            patch_vidur_sklearn_train_model_fillna_zero,
+        )
+
+        nan_fill_zero = run_meta_out.get("mlp_nan_fill_zero")
+        if not isinstance(nan_fill_zero, dict):
+            nan_fill_zero = {"enabled": True, "per_model": {}}
+            run_meta_out["mlp_nan_fill_zero"] = nan_fill_zero
+        nan_fill_zero["enabled"] = True
+
+        with patch_vidur_sklearn_train_model_fillna_zero(summary=nan_fill_zero):
             simulator = Simulator(sim_cfg)
             simulator.run()
             simulator.metric_store.plot()

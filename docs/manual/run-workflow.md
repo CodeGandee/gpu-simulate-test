@@ -59,7 +59,7 @@ pixi run vidur-profile \
 Notes:
 
 - `profiling.mlp.profile_method` is required (no hidden defaults). To reproduce Vidur’s historical default behavior, set `profiling.mlp.profile_method=record_function`.
-- If `mlp.csv` contains missing (NaN) core timing targets, the default policy is to fail fast. For best-effort runs, set `profiling.mlp.validation.nan_policy=drop` (and ensure consumers also allow drop; see next step).
+- If `mlp.csv` contains missing (NaN) core timing targets, the default policy is to fail fast. For best-effort runs, set `profiling.mlp.validation.nan_policy=drop` or `zero` (and ensure consumers also allow it; see next step). For details on validation, NaN policies, and fallback, see `docs/manual/mlp-validation-and-fallback.md`.
 
 ### 4) Run Vidur simulation
 
@@ -88,6 +88,17 @@ pixi run vidur-sim \
   vidur.profiling.root=tmp/vidur_profiling/a100/qwen3_0_6b \
   workload.workload_dir=tmp/workloads/<workload_id> \
   vidur.validation.mlp.nan_policy=drop
+```
+
+Or, if you want to fill missing targets with `0.0` per target during training:
+
+```bash
+pixi run vidur-sim \
+  model=qwen3_0_6b \
+  hardware=a100 \
+  vidur.profiling.root=tmp/vidur_profiling/a100/qwen3_0_6b \
+  workload.workload_dir=tmp/workloads/<workload_id> \
+  vidur.validation.mlp.nan_policy=zero
 ```
 
 ### 5) Compare one real run vs one sim run
