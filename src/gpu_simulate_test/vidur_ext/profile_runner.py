@@ -73,9 +73,6 @@ class VidurProfileInputs:
         Whether to run Vidur's CPU overhead profiler and stage its CSV into the profiling root.
         Disabled by default to match the Vidur paper's evaluation practice (optimized serving stack
         to eliminate unnecessary CPU overheads).
-    compute_use_ray
-        Whether compute profiling is allowed to use Ray-backed Vidur entrypoints. When false,
-        profiling must not start Ray and should use a restricted in-process path (single-GPU only).
     cpu_overhead_max_batch_size
         Maximum batch size to profile in the CPU overhead profiler. Vidur profiles a fixed grid of
         batch sizes up to this value.
@@ -94,8 +91,6 @@ class VidurProfileInputs:
         Maximum decode batch size to profile in the attention profiler.
     attention_profile_mode
         Which phase(s) to profile in the attention profiler: `decode`, `prefill`, or `both`.
-    allow_attention_fallback
-        Whether to fall back to a packaged template `attention.csv` when attention profiling fails.
     """
 
     model_id: str
@@ -115,7 +110,6 @@ class VidurProfileInputs:
     staging_root: Path | None = None
     include_network: bool = True
     include_cpu_overhead: bool = False
-    compute_use_ray: bool = True
     cpu_overhead_max_batch_size: int = 128
     cpu_overhead_validation: str = "strict"
     attention_backend: str | None = None
@@ -123,7 +117,6 @@ class VidurProfileInputs:
     attention_min_batch_size: int = 1
     attention_max_batch_size: int = 1
     attention_profile_mode: str = "decode"
-    allow_attention_fallback: bool = True
     model_ref: Path | None = None
 
 
@@ -187,77 +180,12 @@ def _latest_dir(base: Path) -> Path:
     return max(candidates, key=lambda p: p.stat().st_mtime)
 
 
-def _pick_attention_template(*, repo_root: Path, hardware_id: str) -> Path:
-    """Select a packaged attention profiling template CSV for a given hardware id.
-
-    This is used as a fallback when the attention profiling entrypoint fails, so that the
-    simulator can still run with a minimal attention CSV that matches the target model.
-    """
-    candidates = [
-        repo_root
-        / "extern"
-        / "tracked"
-        / "vidur"
-        / "data"
-        / "profiling"
-        / "compute"
-        / hardware_id
-        / "microsoft"
-        / "phi-2"
-        / "attention.csv",
-        repo_root
-        / "extern"
-        / "tracked"
-        / "vidur"
-        / "data"
-        / "profiling"
-        / "compute"
-        / hardware_id
-        / "meta-llama"
-        / "Llama-2-7b-hf"
-        / "attention.csv",
-    ]
-    for p in candidates:
-        if p.exists():
-            return p
-    raise FileNotFoundError(f"No attention.csv template found for hardware_id={hardware_id} under {candidates[0].parents[5]}")
-
-
 def _vidur_profile_method(*, requested_profile_method: str) -> str:
     """Map wrapper-level MLP profiling method names to Vidur-native values."""
     normalized = str(requested_profile_method).strip().lower()
     if normalized == "record_function_org":
         return "record_function"
     return str(requested_profile_method)
-
-
-def _write_attention_fallback(
-    *,
-    template_csv: Path,
-    out_csv: Path,
-    model_id: str,
-    tensor_parallel_size: int,
-    block_size: int,
-) -> None:
-    """Write a minimal attention profiling CSV derived from a packaged template.
-
-    The template rows are adjusted to match the target model and tensor-parallel setting so that
-    Vidur's predictor can filter the rows correctly.
-    """
-    import pandas as pd
-    from vidur.config.model_config import BaseModelConfig
-
-    model_cfg = BaseModelConfig.create_from_name(model_id)
-    df = pd.read_csv(template_csv).drop_duplicates()
-
-    df["n_embd"] = int(model_cfg.embedding_dim)
-    df["n_q_head"] = int(model_cfg.num_q_heads)
-    df["n_kv_head"] = int(model_cfg.num_kv_heads)
-    df["block_size"] = int(block_size)
-    df["num_tensor_parallel_workers"] = int(tensor_parallel_size)
-
-    out_csv.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(out_csv, index=False)
 
 
 def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> VidurProfileResult:
@@ -289,8 +217,7 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
     )
 
     apply_cuda_visible_devices_from_gsim(repo_root=repo_root)
-    if inputs.compute_use_ray:
-        patch_sarathi_preserve_cuda_visible_devices()
+    patch_sarathi_preserve_cuda_visible_devices()
 
     try:
         import torch  # type: ignore
@@ -342,6 +269,7 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
         )
 
     from gpu_simulate_test.vidur_ext.mlp_validation import MlpCsvValidationError, validate_mlp_csv
+    from gpu_simulate_test.vidur_cli.errors import UserFacingError
 
     def _validate_staged_mlp() -> dict[str, Any]:
         result = validate_mlp_csv(
@@ -387,94 +315,6 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
         mlp_df = pd.read_csv(mlp_src).drop_duplicates()
         mlp_df.to_csv(mlp_dst, index=False)
         return cmd
-
-    def _run_and_stage_mlp_no_ray(*, profile_method: str) -> None:
-        import pandas as pd
-        from vidur.profiling.common.model_config import ModelConfig
-        from vidur.profiling.mlp.mlp_wrapper import MlpWrapper
-        from vidur.profiling.utils import get_num_tokens_to_profile
-
-        if int(inputs.num_gpus) != 1:
-            raise ValueError("no-Ray compute profiling requires num_gpus=1")
-        if int(inputs.tensor_parallel_size) != 1:
-            raise ValueError("no-Ray compute profiling requires tensor_parallel_size=1")
-
-        model_cfg = ModelConfig.from_model_name(str(inputs.model_id))
-        wrapper = MlpWrapper(
-            model_cfg,
-            num_tensor_parallel_workers=1,
-            profile_method=_vidur_profile_method(requested_profile_method=str(profile_method)),
-            rank=0,
-            output_dir=str(staging),
-        )
-
-        results = [wrapper.profile(int(n)) for n in get_num_tokens_to_profile(int(inputs.max_tokens))]
-        time_stats = [r.get("time_stats", {}) for r in results]
-        meta = [{k: v for k, v in r.items() if k != "time_stats"} for r in results]
-
-        df = pd.json_normalize(time_stats).add_prefix("time_stats.").join(pd.DataFrame(meta)).drop_duplicates()
-        compute_dst_dir.mkdir(parents=True, exist_ok=True)
-        df.to_csv(mlp_dst, index=False)
-
-    if not inputs.compute_use_ray:
-        if inputs.include_cpu_overhead:
-            raise ValueError("no-Ray compute profiling does not support include_cpu_overhead")
-
-        extra: dict[str, Any] = {
-            "no_ray_compute_profiling": True,
-            "mlp_profile_method": str(inputs.mlp_profile_method),
-            "mlp_vidur_profile_method": _vidur_profile_method(
-                requested_profile_method=str(inputs.mlp_profile_method)
-            ),
-            "mlp_fallback": {
-                "enabled": bool(inputs.mlp_fallback_enabled),
-                "used": False,
-                "method": str(inputs.mlp_fallback_method),
-            },
-        }
-
-        if not mlp_dst.exists():
-            _run_and_stage_mlp_no_ray(profile_method=str(inputs.mlp_profile_method))
-        else:
-            extra["skipped_compute"] = True
-
-        template = _pick_attention_template(repo_root=repo_root, hardware_id=inputs.hardware_id)
-        _write_attention_fallback(
-            template_csv=template,
-            out_csv=attn_dst,
-            model_id=inputs.model_id,
-            tensor_parallel_size=int(inputs.tensor_parallel_size),
-            block_size=int(inputs.attention_block_size),
-        )
-        extra["attention_fallback_template"] = str(template)
-
-        try:
-            extra["mlp_validation"] = _validate_staged_mlp()
-        except MlpCsvValidationError as e:
-            extra["mlp_validation"] = e.result.as_jsonable()
-            if not inputs.mlp_fallback_enabled:
-                raise
-            _run_and_stage_mlp_no_ray(profile_method=str(inputs.mlp_fallback_method))
-            extra["mlp_profile_method"] = str(inputs.mlp_fallback_method)
-            extra["mlp_vidur_profile_method"] = _vidur_profile_method(
-                requested_profile_method=str(inputs.mlp_fallback_method)
-            )
-            extra["mlp_fallback"]["used"] = True
-            extra["mlp_validation"] = _validate_staged_mlp()
-
-        return VidurProfileResult(
-            profiling_root=inputs.profiling_root,
-            staging_root=staging,
-            mlp_csv=mlp_dst,
-            attention_csv=attn_dst,
-            attention_profiled=False,
-            cpu_overheads_csv=None,
-            cpu_overhead_profiled=False,
-            mlp_cmd=[],
-            attention_cmd=[],
-            cpu_overhead_cmd=[],
-            extra=extra,
-        )
 
     compute_ready = mlp_dst.exists() and attn_dst.exists()
     cpu_ready = (not inputs.include_cpu_overhead) or (
@@ -586,35 +426,28 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
         elif mode == "prefill":
             attn_cmd.append("--profile_only_prefill")
 
-        attn_exc: subprocess.CalledProcessError | None = None
         try:
             subprocess.check_call(attn_cmd, cwd=repo_root)
-            attention_ok = True
         except subprocess.CalledProcessError as e:
-            attention_ok = False
-            attn_exc = e
+            raise UserFacingError(
+                "Attention profiling failed.",
+                hint=(
+                    "This repo does not fall back to a pre-baked attention.csv when attention profiling fails. "
+                    "Fix the underlying attention profiling failure and rerun `vidur-cli svr profile`."
+                ),
+                context={"cmd": attn_cmd, "returncode": int(e.returncode)},
+            ) from e
 
-        if attention_ok:
-            attn_latest = _latest_dir(staging / "attention")
-            attn_src = attn_latest / inputs.model_id / "attention.csv"
-            shutil.copy2(attn_src, attn_dst)
-            attention_profiled = True
-        elif not inputs.allow_attention_fallback:
-            raise attn_exc if attn_exc is not None else subprocess.CalledProcessError(
-                returncode=1, cmd=attn_cmd
+        attn_latest = _latest_dir(staging / "attention")
+        attn_src = attn_latest / inputs.model_id / "attention.csv"
+        if not attn_src.exists():
+            raise UserFacingError(
+                "Attention profiling completed but attention.csv was not found in the profiler outputs.",
+                hint="Inspect the staging directory and rerun profiling.",
+                context={"expected": str(attn_src), "staging_dir": str(staging)},
             )
-        else:
-            template = _pick_attention_template(
-                repo_root=repo_root, hardware_id=inputs.hardware_id
-            )
-            _write_attention_fallback(
-                template_csv=template,
-                out_csv=attn_dst,
-                model_id=inputs.model_id,
-                tensor_parallel_size=int(inputs.tensor_parallel_size),
-                block_size=int(inputs.attention_block_size),
-            )
-            extra["attention_fallback_template"] = str(template)
+        shutil.copy2(attn_src, attn_dst)
+        attention_profiled = True
 
         try:
             extra["mlp_validation"] = _validate_staged_mlp()

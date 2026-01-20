@@ -57,7 +57,6 @@ profiling:
   include_network: false
 
   # By default, fail if attention profiling cannot be measured on this host.
-  allow_attention_fallback: false
 
   cpu_overhead:
     # Optional. Disabled by default to match the Vidur paper's evaluation practice

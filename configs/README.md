@@ -32,5 +32,9 @@ Defaults are opt-in: the repo default config leaves these values `null`.
 
 - `profiling.compute.use_ray` (bool, default `true`)
 
-When `false`, compute profiling must not start Ray (single-GPU only) and will produce fallback outputs
-where required.
+Current status:
+
+- `profiling.compute.use_ray=false` is **not supported yet** and will fail fast.
+- Reason: in the tracked Vidur submodule, `--disable_ray` is currently a stub (the profiling scripts still
+  call `ray.remote(...)` / `ray.get(...)`), and this repo intentionally does **not** hide missing attention
+  profiling data by copying a pre-baked `attention.csv` template.

@@ -10,7 +10,7 @@ This is a human-run smoke checklist for disabling Ray in Vidur compute profiling
 - Ensure CUDA is available: `pixi run python -c "import torch; print(torch.cuda.is_available())"`
 - Optionally pin GPUs via `.env` (`GSIM_CUDA_VISIBLE_DEVICES=...`) per `context/instructions/prep-dev-env.md`
 
-## Smoke: `svr profile` without starting Ray
+## Smoke: expected failure
 
 From a scratch directory:
 
@@ -34,7 +34,7 @@ pgrep -fa raylet || true
 pgrep -fa plasma_store_server || true
 ```
 
-Run compute profiling with Ray disabled:
+Run compute profiling with Ray disabled (expected to fail fast):
 
 ```bash
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR" \
@@ -44,10 +44,8 @@ pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR" \
 
 Expected:
 
-- The command completes without starting Ray (no new `raylet`/`plasma_store_server` processes).
-- Compute outputs exist under `$RUN_DIR/profile/`:
-  - `data/profiling/compute/<hardware>/<model_id>/mlp.csv`
-  - `data/profiling/compute/<hardware>/<model_id>/attention.csv` (fallback template)
+- The command fails fast with a `UserFacingError` stating that `profiling.compute.use_ray=false` is not supported.
+- The error message/hint should mention that Vidur's `--disable_ray` flags are stubs in the tracked submodule.
 
 Optional: verify Ray processes after:
 
@@ -56,14 +54,9 @@ pgrep -fa raylet || true
 pgrep -fa plasma_store_server || true
 ```
 
-## Unsupported cases (should fail fast)
+## Why this fails
 
-No-Ray compute profiling currently rejects CPU overhead profiling:
-
-```bash
-set +e
-pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR" --include-cpu-overhead \
-  profiling.compute.use_ray=false \
-  profiling.mlp.profile_method=cuda_event
-set -e
-```
+In the tracked Vidur submodule, the profiling scripts define `--disable_ray` but do not use it; they still
+invoke Ray APIs (e.g., `ray.remote(...)` / `ray.get(...)`) which will start a local Ray runtime. This repo
+intentionally avoids hiding missing profiling data by copying a pre-baked `attention.csv` template, so the
+no-Ray option is disabled until Vidur implements real no-Ray profiling.

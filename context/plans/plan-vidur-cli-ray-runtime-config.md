@@ -29,6 +29,7 @@ Implemented via `specs/006-vidur-cli-ray-config/`:
 - Added `ray` config group (`configs/compare_vidur_real/ray/default.yaml`) with supported `ray.env.*` keys and precedence env > config > defaults.
 - `vidur-cli` stages emit an effective settings report to stderr and write `<run_dir>/<stage>/ray_settings.json` for Ray-using stages.
 - Added `profiling.compute.use_ray=false` to disable Ray in compute profiling (single-GPU only; cpu overhead profiling is rejected).
+- Note: `profiling.compute.use_ray=false` currently fails fast (Vidur's `--disable_ray` flags are stubs in the tracked submodule; this repo does not hide missing attention profiling data via template fallbacks).
 - Added unit tests: `tests/unit/test_ray_runtime_config.py`, `tests/unit/test_vidur_profile_no_ray.py`.
 
 See: `specs/006-vidur-cli-ray-config/plan.md` and `specs/006-vidur-cli-ray-config/tasks.md`.

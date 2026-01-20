@@ -13,17 +13,12 @@ from gpu_simulate_test.vidur_cli.errors import UserFacingError
 from gpu_simulate_test.vidur_cli.stages import _validate_no_ray_compute_profiling
 
 
-def test_no_ray_rejects_multi_gpu() -> None:
-    with pytest.raises(UserFacingError, match="single-GPU"):
-        _validate_no_ray_compute_profiling(num_gpus=2, tensor_parallel_size=1, include_cpu_overhead=False)
+def test_no_ray_is_not_supported() -> None:
+    with pytest.raises(UserFacingError, match="profiling\\.compute\\.use_ray=false"):
+        _validate_no_ray_compute_profiling(include_cpu_overhead=False)
 
 
-def test_no_ray_rejects_tensor_parallel() -> None:
-    with pytest.raises(UserFacingError, match="tensor parallel"):
-        _validate_no_ray_compute_profiling(num_gpus=1, tensor_parallel_size=2, include_cpu_overhead=False)
-
-
-def test_no_ray_rejects_cpu_overhead() -> None:
-    with pytest.raises(UserFacingError, match="cpu overhead"):
-        _validate_no_ray_compute_profiling(num_gpus=1, tensor_parallel_size=1, include_cpu_overhead=True)
-
+def test_no_ray_error_mentions_vidur_stub() -> None:
+    with pytest.raises(UserFacingError) as exc:
+        _validate_no_ray_compute_profiling(include_cpu_overhead=True)
+    assert "disable_ray" in (exc.value.hint or "")

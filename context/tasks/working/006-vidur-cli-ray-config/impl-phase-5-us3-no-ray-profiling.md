@@ -163,19 +163,17 @@ pixi run pytest tests/unit/test_vidur_profile_no_ray.py
 
 ## Implementation Summary
 
-US3 is complete (no-Ray compute profiling path + fail-fast gating + fallback outputs).
+US3 status: option exists, but no-Ray compute profiling is not supported (fails fast).
 
 ### What has been implemented
 
-- Added stage-level gating in `src/gpu_simulate_test/vidur_cli/stages.py`:
-  - Reads `profiling.compute.use_ray` (default `true`).
-  - When `false`, rejects unsupported configs (multi-GPU, tensor-parallel, cpu overhead) before profiling starts.
-- Extended `VidurProfileInputs` with `compute_use_ray: bool` and implemented the no-Ray path in `src/gpu_simulate_test/vidur_ext/profile_runner.py`:
-  - Runs MLP profiling sequentially in-process via Vidur `MlpWrapper` (single GPU only).
-  - Skips attention execution and always writes the fallback `attention.csv` via `_write_attention_fallback(...)`.
-  - Records provenance flags in `VidurProfileResult.extra` (`no_ray_compute_profiling`, `attention_fallback_template`, etc.).
-- Added unit tests for the gating helper: `tests/unit/test_vidur_profile_no_ray.py`.
-- Added manual smoke doc: `tests/manual/vidur_cli_no_ray_compute_profiling_smoke.md`.
+- Added a public config knob in `configs/compare_vidur_real/vidur_profile.yaml`:
+  - `profiling.compute.use_ray` (default `true`)
+- When set to `false`, `vidur-cli svr profile` fails fast with a `UserFacingError` explaining:
+  - Vidur's `--disable_ray` flags are stubs in the tracked submodule (profiling still uses Ray APIs).
+  - This repo intentionally does not hide missing attention profiling by copying a pre-baked `attention.csv`.
+- Added a unit test for the fail-fast behavior: `tests/unit/test_vidur_profile_no_ray.py`.
+- Updated the manual doc to describe expected failure: `tests/manual/vidur_cli_no_ray_compute_profiling_smoke.md`.
 
 ### How to verify
 
@@ -183,7 +181,3 @@ US3 is complete (no-Ray compute profiling path + fail-fast gating + fallback out
 cd <WORKSPACE_ROOT>
 pixi run pytest tests/unit/test_vidur_profile_no_ray.py
 ```
-
-For end-to-end stage smoke (GPU required), follow:
-
-- `tests/manual/vidur_cli_no_ray_compute_profiling_smoke.md`

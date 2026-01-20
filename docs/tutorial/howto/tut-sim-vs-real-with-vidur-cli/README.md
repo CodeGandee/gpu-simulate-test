@@ -60,6 +60,15 @@ How do I produce **static** and **dynamic** sim-vs-real reports (Vidur sim vs re
 - **Real backend import works (Sarathi backend):** `pixi run python -c "import sarathi; print('ok')"` succeeds.
 - **Host-matched profiling:** Run `vidur-cli svr profile` on this machine before `vidur-cli svr sim` (this is required for meaningful sim-vs-real comparisons).
 
+### Note: no-Ray profiling is not supported (yet)
+
+This tutorial requires running Vidur profiling that uses Ray. Although Vidur's profiling scripts define
+`--disable_ray`, in the tracked Vidur version that flag is currently a stub (parsed but not used), and
+the scripts still invoke Ray APIs which start a local Ray runtime.
+
+Accordingly, setting `profiling.compute.use_ray=false` will fail fast in this repo instead of silently
+substituting an `attention.csv` template.
+
 ### MLP profiling method (why it matters)
 
 `vidur-cli svr profile` produces `mlp.csv`, which feeds Vidur’s execution-time predictors. The knob:

@@ -75,14 +75,13 @@ The effective settings report should show the env value as the source.
 
 ## 5) Disable Ray for compute profiling (no-Ray mode)
 
-To disable Ray for Vidur compute profiling (initially single-GPU only):
+To request disabling Ray for Vidur compute profiling:
 
 ```bash
 pixi run vidur-cli svr profile --run-dir <run_dir> profiling.compute.use_ray=false
 ```
 
 Expected behavior:
-- The tool must not start Ray for compute profiling.
-- Outputs required by downstream steps (`mlp.csv`, `attention.csv`) are still produced (attention may use a fallback template).
-- Unsupported no-Ray configurations (e.g., multi-GPU) fail fast with an actionable error.
-- CPU overhead profiling is rejected when Ray is disabled.
+- Currently, this repo fails fast when `profiling.compute.use_ray=false`.
+- Reason: Vidur's `--disable_ray` flags are stubs in the tracked submodule (profiling still uses Ray APIs),
+  and this repo does not hide missing attention profiling data by copying a pre-baked `attention.csv`.

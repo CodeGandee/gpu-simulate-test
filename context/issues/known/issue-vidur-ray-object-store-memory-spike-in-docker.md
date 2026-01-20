@@ -144,7 +144,7 @@ This keeps Ray from trying to reserve a ~200GB tmpfs object store.
 
 ### 2) Disable Ray in Vidur compute profiling (single-GPU only)
 
-For low-footprint runs, `vidur-cli` supports disabling Ray for Vidur compute profiling:
+For low-footprint runs, you might expect to disable Ray for Vidur compute profiling:
 
 ```bash
 pixi run vidur-cli svr profile --run-dir <run_dir> \
@@ -152,9 +152,12 @@ pixi run vidur-cli svr profile --run-dir <run_dir> \
   profiling.mlp.profile_method=cuda_event
 ```
 
-Current limitations:
-- Single GPU only (no tensor-parallel).
-- CPU overhead profiling is rejected when Ray is disabled.
+Current status:
+
+- `profiling.compute.use_ray=false` is **not supported yet** and fails fast in this repo.
+- Reason: in the tracked Vidur submodule, the profiling scripts define `--disable_ray` but do not use it
+  (they still call `ray.remote(...)` / `ray.get(...)`), and this repo intentionally does not hide missing
+  attention profiling data by copying a pre-baked `attention.csv` template.
 
 ### 2.1) Status: implemented via feature `006-vidur-cli-ray-config`
 

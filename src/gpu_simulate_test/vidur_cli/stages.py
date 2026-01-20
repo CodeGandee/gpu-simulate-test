@@ -184,19 +184,16 @@ def run_profile(
         compute_use_ray = bool(True if compute_use_ray_val is None else compute_use_ray_val)
         if not compute_use_ray:
             _validate_no_ray_compute_profiling(
-                num_gpus=1,
-                tensor_parallel_size=1,
                 include_cpu_overhead=bool(include_cpu_overhead),
             )
 
         ray_settings_json: Path | None = None
-        if compute_use_ray:
-            cfg_ray_env = OmegaConf.select(cfg, "ray.env")
-            ray_settings = apply_ray_env_defaults(cfg_ray_env)
-            ray_settings_json = write_ray_settings_json(
-                out_dir / "ray_settings.json", stage="profile", settings=ray_settings
-            )
-            _print_ray_settings_report(stage="profile", settings=ray_settings)
+        cfg_ray_env = OmegaConf.select(cfg, "ray.env")
+        ray_settings = apply_ray_env_defaults(cfg_ray_env)
+        ray_settings_json = write_ray_settings_json(
+            out_dir / "ray_settings.json", stage="profile", settings=ray_settings
+        )
+        _print_ray_settings_report(stage="profile", settings=ray_settings)
 
         model_id = str(cfg.model.model_id)
         model_ref = Path(str(cfg.model.tokenizer_ref)).expanduser()
@@ -269,7 +266,6 @@ def run_profile(
             mlp_fallback_enabled=mlp_fallback_enabled,
             mlp_fallback_method=mlp_fallback_method,
             include_cpu_overhead=bool(include_cpu_overhead),
-            compute_use_ray=compute_use_ray,
             model_ref=model_ref,
         )
         result = run_vidur_profiling(inputs, repo_root=resources.repo_root.value)
@@ -869,30 +865,30 @@ def _print_ray_settings_report(*, stage: str, settings: list[RaySetting]) -> Non
 
 def _validate_no_ray_compute_profiling(
     *,
-    num_gpus: int,
-    tensor_parallel_size: int,
     include_cpu_overhead: bool,
 ) -> None:
-    """Validate the supported scope of no-Ray compute profiling."""
+    """Fail fast: no-Ray compute profiling is not supported (yet).
 
-    if int(num_gpus) != 1:
-        raise UserFacingError(
-            "No-Ray compute profiling currently supports single-GPU only.",
-            hint="Set profiling.compute.use_ray=true (default) or run with a single GPU.",
-            context={"num_gpus": int(num_gpus)},
-        )
-    if int(tensor_parallel_size) != 1:
-        raise UserFacingError(
-            "No-Ray compute profiling does not support tensor parallel execution.",
-            hint="Set profiling.compute.use_ray=true (default) or set tensor_parallel_size=1.",
-            context={"tensor_parallel_size": int(tensor_parallel_size)},
-        )
-    if bool(include_cpu_overhead):
-        raise UserFacingError(
-            "No-Ray compute profiling does not support cpu overhead profiling.",
-            hint="Disable CPU overhead profiling or set profiling.compute.use_ray=true (default).",
-            context={"include_cpu_overhead": bool(include_cpu_overhead)},
-        )
+    Vidur's profiling entrypoints define `--disable_ray`, but in the tracked Vidur version those
+    flags are currently parsed but not used, and the scripts still unconditionally invoke Ray APIs
+    (e.g., `ray.remote(...)` / `ray.get(...)`) which will start a local Ray runtime.
+
+    This repo intentionally does not hide missing profiling data by copying a pre-baked
+    `attention.csv` template when attention profiling cannot run without Ray.
+    """
+
+    _ = include_cpu_overhead
+    raise UserFacingError(
+        "profiling.compute.use_ray=false is not supported in this repo yet.",
+        hint=(
+            "Vidur's `--disable_ray` flags are currently stubs in the tracked Vidur submodule. "
+            "Set profiling.compute.use_ray=true (default)."
+        ),
+        context={
+            "vidur_mlp_main": "extern/tracked/vidur/vidur/profiling/mlp/main.py",
+            "vidur_attention_main": "extern/tracked/vidur/vidur/profiling/attention/main.py",
+        },
+    )
 
 
 def _update_run_state_report_ok(

@@ -14,7 +14,9 @@ output:
 
 profiling:
   compute:
-    # If false, compute profiling must not start Ray (single-GPU only).
+    # If false, this stage currently fails fast:
+    # - Vidur's `--disable_ray` flags are stubs in the tracked submodule (Ray APIs are still used).
+    # - This repo intentionally does not hide missing attention profiling data via template fallbacks.
     use_ray: true
   mlp:
     # REQUIRED (no default). How Vidur measures per-op time for MLP profiling:
