@@ -1,8 +1,9 @@
 # Issue: Vidur CPU overhead profiling is unstable (high run-to-run variance)
 
-**Status**: Known
+**Status**: Resolved (no longer tracked as a known issue)
 **Date**: 2026-01-15
-**Last updated**: 2026-01-15
+**Resolved**: 2026-01-20
+**Last updated**: 2026-01-20
 **Priority**: High (fidelity + reproducibility)
 
 ## Summary
@@ -14,6 +15,12 @@ Repeated runs of `vidur-cli svr profile` on the same host (same model/hardware) 
 - Compute profiling outputs are stable (attention is bit-identical; MLP drifts slightly)
 
 Because Vidur sim consumes these CPU overhead numbers, a `vidur-cli` sim-vs-real report (and any paper-fidelity run using a `vidur-cli` profiling root) can show noticeably different %errors depending on which profiling root is used.
+
+## Resolution
+
+As of 2026-01-20, we consider this resolved in the sense that it is no longer actively tracked as an ongoing repo
+limitation. If CPU overhead profiling reproducibility becomes a requirement again, reopen as a new issue with fresh
+measurements (Ray version, host load, and exact profiling command-line/env).
 
 ## Where this shows up
 

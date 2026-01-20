@@ -1,8 +1,9 @@
 # Issue: Vidur sim underpredicts Sarathi real (paper-fidelity LLaMA2-7B; CPU overhead profiling/modeling)
 
-**Status**: Known (guardrails implemented; needs re-run with real CPU overhead inputs)
+**Status**: Resolved (guardrails implemented; root cause was missing/placeholder CPU overhead inputs)
 **Date**: 2026-01-09
-**Last updated**: 2026-01-12
+**Resolved**: 2026-01-20
+**Last updated**: 2026-01-20
 **Priority**: High (Fidelity gap)
 
 ## Summary

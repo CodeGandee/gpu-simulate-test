@@ -1,8 +1,9 @@
 # Issue: Vidur MLP compute profiling misses CUDA driver-launched kernels (record_function) → 0s in `mlp.csv`
 
-**Status**: Resolved in `main` for new profiling roots (existing roots may still contain placeholder 0.0s)
+**Status**: Resolved in `main` (existing profiling roots may still contain placeholder 0.0s)
 **Date**: 2026-01-16
-**Last updated**: 2026-01-19
+**Resolved**: 2026-01-16
+**Last updated**: 2026-01-20
 **Priority**: High (fidelity risk; silent underprediction)
 
 ## Summary
