@@ -19,14 +19,13 @@ This file defines the public config surface for supported Ray settings.
 ```yaml
 # configs/compare_vidur_real/ray/default.yaml
 
-ray:
-  env:
-    # int bytes; null => no injection (Ray default)
-    RAY_DEFAULT_OBJECT_STORE_MAX_MEMORY_BYTES: null
-    # float in (0,1]; null => no injection (Ray default)
-    RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION: null
-    # bool; null => no injection (Ray default)
-    RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE: null
+env:
+  # int bytes; null => no injection (Ray default)
+  RAY_DEFAULT_OBJECT_STORE_MAX_MEMORY_BYTES: null
+  # float in (0,1]; null => no injection (Ray default)
+  RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION: null
+  # bool; null => no injection (Ray default)
+  RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE: null
 ```
 
 Notes:
