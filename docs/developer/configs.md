@@ -123,6 +123,8 @@ pixi run vidur-sim \
   vidur.validation.mlp.nan_policy=drop
 ```
 
+See `docs/manual/mlp-validation-and-fallback.md` for detailed behavior of `mode`, `nan_policy`, and `profiling.mlp.fallback.*` combinations.
+
 Paper fidelity overrides:
 
 ```bash

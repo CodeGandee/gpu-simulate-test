@@ -60,6 +60,7 @@ Notes:
 
 - `profiling.mlp.profile_method` is required (no hidden defaults). To reproduce Vidur’s historical default behavior, set `profiling.mlp.profile_method=record_function`.
 - If `mlp.csv` contains missing (NaN) core timing targets, the default policy is to fail fast. For best-effort runs, set `profiling.mlp.validation.nan_policy=drop` (and ensure consumers also allow drop; see next step).
+- See `docs/manual/mlp-validation-and-fallback.md` for a full matrix of validation/fallback combinations and why they behave that way.
 
 ### 4) Run Vidur simulation
 

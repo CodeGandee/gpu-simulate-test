@@ -116,6 +116,8 @@ Some profiling methods (historically `record_function` before the driver-kernel 
 - Consumption (sim): `vidur.validation.mlp.nan_policy=auto|reject|drop`
   - When the effective policy is `drop`, the simulator enables a local per-target dropna patch and records a drop summary in `sim/run_meta.json`.
 
+See `docs/manual/mlp-validation-and-fallback.md` for the full validation/fallback implication matrix (profiling vs consumption) and rationale.
+
 ## Implementation Idea
 
 `vidur-cli` is a **resumable pipeline** anchored on a single `<run_dir>`:
