@@ -35,6 +35,7 @@ Example (apply settings without any `export RAY_*`):
 
 ```bash
 pixi run vidur-cli svr profile --run-dir <run_dir> \
+  profiling.mlp.profile_method=cuda_event \
   ray.env.RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION=0.10 \
   ray.env.RAY_DEFAULT_OBJECT_STORE_MAX_MEMORY_BYTES=4000000000 \
   ray.env.RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE=true
@@ -84,4 +85,4 @@ Expected behavior:
 - The tool must not start Ray for compute profiling.
 - Outputs required by downstream steps (`mlp.csv`, `attention.csv`) are still produced (attention may use a fallback template).
 - Unsupported no-Ray configurations (e.g., multi-GPU) fail fast with an actionable error.
-
+- CPU overhead profiling is rejected when Ray is disabled.

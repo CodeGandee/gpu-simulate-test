@@ -14,12 +14,14 @@ from __future__ import annotations
 
 import json
 import shutil
+import sys
 from pathlib import Path
 from typing import Any, Mapping
 
 from omegaconf import OmegaConf
 
 from gpu_simulate_test.io import utcnow_iso
+from gpu_simulate_test.ray_runtime import RaySetting, apply_ray_env_defaults, write_ray_settings_json
 from gpu_simulate_test.vidur_cli.errors import UserFacingError
 from gpu_simulate_test.vidur_cli.real_runner import run_token_length_replay
 from gpu_simulate_test.vidur_cli.resources import ResourceMapV1, write_resources_json
@@ -158,6 +160,7 @@ def run_profile(
         artifacts = dict(run_state.get("artifacts") or {})
         artifacts["profile"] = {
             "profiling_root": str(out_dir.resolve()),
+            "ray_settings_json": str((out_dir / "ray_settings.json").resolve()),
             "include_cpu_overhead": bool(include_cpu_overhead),
             "status": "failed",
             "ended_at": ended_at,
@@ -175,6 +178,26 @@ def run_profile(
             resources=resources,
             overrides=overrides,
         )
+
+        out_dir.mkdir(parents=True, exist_ok=True)
+        compute_use_ray_val = OmegaConf.select(cfg, "profiling.compute.use_ray")
+        compute_use_ray = bool(True if compute_use_ray_val is None else compute_use_ray_val)
+        if not compute_use_ray:
+            _validate_no_ray_compute_profiling(
+                num_gpus=1,
+                tensor_parallel_size=1,
+                include_cpu_overhead=bool(include_cpu_overhead),
+            )
+
+        ray_settings_json: Path | None = None
+        if compute_use_ray:
+            cfg_ray_env = OmegaConf.select(cfg, "ray.env")
+            ray_settings = apply_ray_env_defaults(cfg_ray_env)
+            ray_settings_json = write_ray_settings_json(
+                out_dir / "ray_settings.json", stage="profile", settings=ray_settings
+            )
+            _print_ray_settings_report(stage="profile", settings=ray_settings)
+
         model_id = str(cfg.model.model_id)
         model_ref = Path(str(cfg.model.tokenizer_ref)).expanduser()
         hardware_id = str(cfg.hardware.hardware_id)
@@ -234,7 +257,6 @@ def run_profile(
         mlp_fallback_method_val = OmegaConf.select(cfg, "profiling.mlp.fallback.method")
         mlp_fallback_method = str(mlp_fallback_method_val or "cuda_event").strip()
 
-        out_dir.mkdir(parents=True, exist_ok=True)
         inputs = VidurProfileInputs(
             model_id=model_id,
             hardware_id=hardware_id,
@@ -247,6 +269,7 @@ def run_profile(
             mlp_fallback_enabled=mlp_fallback_enabled,
             mlp_fallback_method=mlp_fallback_method,
             include_cpu_overhead=bool(include_cpu_overhead),
+            compute_use_ray=compute_use_ray,
             model_ref=model_ref,
         )
         result = run_vidur_profiling(inputs, repo_root=resources.repo_root.value)
@@ -277,6 +300,7 @@ def run_profile(
         _update_run_state_profile_ok(
             run_dir=run_dir,
             profiling_root=out_dir,
+            ray_settings_json=ray_settings_json,
             include_cpu_overhead=bool(include_cpu_overhead),
             overrides=overrides,
             mlp=mlp_summary,
@@ -442,13 +466,16 @@ def run_real(
     def _on_error(run_state: dict[str, Any], ended_at: str) -> dict[str, Any]:
         backend_key = str((run_state.get("presets") or {}).get("backend", "unknown"))
         artifacts = dict(run_state.get("artifacts") or {})
-        artifacts["real"] = {
+        payload: dict[str, Any] = {
             "real_run_dir": str(out_dir.resolve()),
             "backend": backend_key,
             "status": "failed",
             "ended_at": ended_at,
             "overrides": list(overrides),
         }
+        if backend_key == "sarathi":
+            payload["ray_settings_json"] = str((out_dir / "ray_settings.json").resolve())
+        artifacts["real"] = payload
         run_state["artifacts"] = artifacts
         return run_state
 
@@ -468,11 +495,19 @@ def run_real(
         model_id = str(cfg.model.model_id)
         model_ref = Path(str(cfg.model.tokenizer_ref)).expanduser()
         device = str(cfg.hardware.device)
+        ray_settings_json: Path | None = None
         sarathi_chunk_size: int | None = None
         sarathi_max_num_seqs: int | None = None
         sarathi_max_tokens: int | None = None
         sarathi_ignore_eos: bool | None = None
         if backend_name == "sarathi":
+            cfg_ray_env = OmegaConf.select(cfg, "ray.env")
+            ray_settings = apply_ray_env_defaults(cfg_ray_env)
+            ray_settings_json = write_ray_settings_json(
+                out_dir / "ray_settings.json", stage="real", settings=ray_settings
+            )
+            _print_ray_settings_report(stage="real", settings=ray_settings)
+
             scheduler = getattr(cfg.backend, "scheduler", None)
             if scheduler is not None:
                 sarathi_chunk_size = int(getattr(scheduler, "chunk_size"))
@@ -505,6 +540,7 @@ def run_real(
             real_run_dir=out_dir,
             backend=backend_name,
             paper_fidelity_request_metrics_csv=paper_fidelity_csv,
+            ray_settings_json=ray_settings_json,
             overrides=overrides,
         )
         return out_dir.resolve()
@@ -750,6 +786,7 @@ def _update_run_state_profile_ok(
     *,
     run_dir: Path,
     profiling_root: Path,
+    ray_settings_json: Path | None,
     include_cpu_overhead: bool,
     overrides: list[str],
     mlp: dict[str, Any] | None = None,
@@ -763,6 +800,8 @@ def _update_run_state_profile_ok(
         "ended_at": utcnow_iso(),
         "overrides": list(overrides),
     }
+    if ray_settings_json is not None:
+        payload["ray_settings_json"] = str(ray_settings_json.resolve())
     if mlp is not None:
         payload["mlp"] = mlp
     artifacts["profile"] = payload
@@ -798,6 +837,7 @@ def _update_run_state_real_ok(
     real_run_dir: Path,
     backend: str,
     paper_fidelity_request_metrics_csv: Path | None,
+    ray_settings_json: Path | None,
     overrides: list[str],
 ) -> None:
     state = load_run_state(run_dir=run_dir)
@@ -811,9 +851,48 @@ def _update_run_state_real_ok(
     }
     if paper_fidelity_request_metrics_csv is not None:
         payload["paper_fidelity_request_metrics_csv"] = str(paper_fidelity_request_metrics_csv.resolve())
+    if ray_settings_json is not None:
+        payload["ray_settings_json"] = str(ray_settings_json.resolve())
     artifacts["real"] = payload
     state["artifacts"] = artifacts
     save_run_state(run_dir=run_dir, run_state=state)
+
+
+def _print_ray_settings_report(*, stage: str, settings: list[RaySetting]) -> None:
+    """Emit a stable effective Ray settings report to stderr."""
+
+    print(f"[ray-settings] stage={stage}", file=sys.stderr)
+    for setting in settings:
+        value = setting.effective_value if setting.effective_value is not None else "null"
+        print(f"[ray-settings] {setting.key}={value} source={setting.source}", file=sys.stderr)
+
+
+def _validate_no_ray_compute_profiling(
+    *,
+    num_gpus: int,
+    tensor_parallel_size: int,
+    include_cpu_overhead: bool,
+) -> None:
+    """Validate the supported scope of no-Ray compute profiling."""
+
+    if int(num_gpus) != 1:
+        raise UserFacingError(
+            "No-Ray compute profiling currently supports single-GPU only.",
+            hint="Set profiling.compute.use_ray=true (default) or run with a single GPU.",
+            context={"num_gpus": int(num_gpus)},
+        )
+    if int(tensor_parallel_size) != 1:
+        raise UserFacingError(
+            "No-Ray compute profiling does not support tensor parallel execution.",
+            hint="Set profiling.compute.use_ray=true (default) or set tensor_parallel_size=1.",
+            context={"tensor_parallel_size": int(tensor_parallel_size)},
+        )
+    if bool(include_cpu_overhead):
+        raise UserFacingError(
+            "No-Ray compute profiling does not support cpu overhead profiling.",
+            hint="Disable CPU overhead profiling or set profiling.compute.use_ray=true (default).",
+            context={"include_cpu_overhead": bool(include_cpu_overhead)},
+        )
 
 
 def _update_run_state_report_ok(

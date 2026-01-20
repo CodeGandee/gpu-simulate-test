@@ -2,6 +2,7 @@ defaults:
   - model: qwen3_0_6b
   - hardware: a100
   - vidur: default
+  - ray: default
   - _self_
 
 paths:
@@ -12,6 +13,9 @@ output:
   run_id: ${stable_id:vidur_profile,${model.model_id},${hardware.hardware_id}}
 
 profiling:
+  compute:
+    # If false, compute profiling must not start Ray (single-GPU only).
+    use_ray: true
   mlp:
     # REQUIRED (no default). How Vidur measures per-op time for MLP profiling:
     # - cuda_event: CUDA events around ops (recommended; stable GPU-time measurement).

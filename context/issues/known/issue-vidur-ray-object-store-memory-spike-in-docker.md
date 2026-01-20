@@ -104,7 +104,33 @@ pgrep -af 'raylet|plasma_store' || true
 
 ## Mitigations / workarounds
 
-### 1) Cap Ray’s default object store (recommended for this workflow)
+### 1) Cap Ray’s default object store via `vidur-cli` config (recommended)
+
+This repo supports configuring a small set of Ray runtime settings via Hydra config under `ray.env.*`
+with per-setting precedence:
+
+1. Environment (`RAY_*` already set)
+2. Configuration (`ray.env.*`)
+3. Ray defaults (no injection)
+
+Example (no manual `export RAY_*` required):
+
+```bash
+pixi run vidur-cli svr profile --run-dir <run_dir> \
+  profiling.mlp.profile_method=cuda_event \
+  ray.env.RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION=0.10 \
+  ray.env.RAY_DEFAULT_OBJECT_STORE_MAX_MEMORY_BYTES=20000000000 \
+  ray.env.RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE=true
+```
+
+Notes:
+- Defaults are opt-in: the repo default config leaves these values `null`.
+- For Ray-backed stages, `vidur-cli` emits an effective settings report to stderr and writes
+  `<run_dir>/<stage>/ray_settings.json` for reproducibility.
+
+### 1.1) (Power-user) Cap Ray via environment variables
+
+If you prefer to set env vars directly, they take precedence over config:
 
 Before running `vidur-cli` stages that use Ray (profiling + Sarathi), set one (or both):
 
@@ -116,20 +142,21 @@ export RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION=0.05        # 5% of system mem
 
 This keeps Ray from trying to reserve a ~200GB tmpfs object store.
 
-### 2) Disable Ray in Vidur profiling (if acceptable)
+### 2) Disable Ray in Vidur compute profiling (single-GPU only)
 
-Vidur’s MLP profiler has a `--disable_ray` flag (`extern/tracked/vidur/vidur/profiling/mlp/main.py`), but the
-current wrapper (`gpu_simulate_test.vidur_ext.vidur_profiling_mlp_main`) does not pass it through.
+For low-footprint runs, `vidur-cli` supports disabling Ray for Vidur compute profiling:
 
-If you need this routinely, add a wrapper/config knob to propagate `--disable_ray`.
+```bash
+pixi run vidur-cli svr profile --run-dir <run_dir> \
+  profiling.compute.use_ray=false \
+  profiling.mlp.profile_method=cuda_event
+```
 
-### 2.1) Planned: make Ray behavior consistent via repo configs
+Current limitations:
+- Single GPU only (no tensor-parallel).
+- CPU overhead profiling is rejected when Ray is disabled.
 
-Follow-up work (not implemented yet):
-
-- Add a `ray` config block to `vidur-cli` configs so we can set “important” Ray runtime knobs from Hydra config.
-- Apply those knobs with precedence: **env > config > Ray default** (never override user-provided `RAY_*` env vars).
-- Add an explicit `profiling.*` knob to disable Ray in Vidur compute profiling (MLP/attention) for low-footprint runs.
+### 2.1) Status: implemented via feature `006-vidur-cli-ray-config`
 
 Implementation plan: `context/plans/plan-vidur-cli-ray-runtime-config.md`.
 

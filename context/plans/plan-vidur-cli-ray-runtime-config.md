@@ -3,7 +3,7 @@
 ## HEADER
 
 - **Purpose**: Make Ray behavior consistent across host/container by allowing `vidur-cli` to set key Ray runtime knobs from Hydra config, while respecting user-provided `RAY_*` env vars; also add an option to avoid Ray in Vidur compute profiling where feasible.
-- **Status**: Draft
+- **Status**: Implemented
 - **Date**: 2026-01-20
 - **Dependencies**:
   - `context/issues/known/issue-vidur-ray-object-store-memory-spike-in-docker.md`
@@ -21,6 +21,17 @@
 - **Target**: `vidur-cli` users running sim-vs-real pipelines (host or Docker), plus maintainers who debug profiling/replay failures.
 
 ---
+
+## Update (2026-01-20)
+
+Implemented via `specs/006-vidur-cli-ray-config/`:
+
+- Added `ray` config group (`configs/compare_vidur_real/ray/default.yaml`) with supported `ray.env.*` keys and precedence env > config > defaults.
+- `vidur-cli` stages emit an effective settings report to stderr and write `<run_dir>/<stage>/ray_settings.json` for Ray-using stages.
+- Added `profiling.compute.use_ray=false` to disable Ray in compute profiling (single-GPU only; cpu overhead profiling is rejected).
+- Added unit tests: `tests/unit/test_ray_runtime_config.py`, `tests/unit/test_vidur_profile_no_ray.py`.
+
+See: `specs/006-vidur-cli-ray-config/plan.md` and `specs/006-vidur-cli-ray-config/tasks.md`.
 
 ## 1. Purpose and Outcome
 
@@ -103,11 +114,11 @@ sequenceDiagram
 
 ## 4. TODOs (Implementation Steps)
 
-- [ ] **Define config schema** Add a `ray` config group with `ray.env` (nullable fields) and decide which env vars are officially supported (start with object store sizing + slow storage + memory monitor).
-- [ ] **Add compare_vidur_real defaults** Include `ray: default` in `vidur_profile.yaml`, `real_bench.yaml`, and `vidur_sim.yaml`.
-- [ ] **Implement `ray_runtime` helper** Create `src/gpu_simulate_test/ray_runtime.py` with `apply_ray_env_defaults(cfg_ray_env)` that enforces env > config > Ray default.
-- [ ] **Integrate into `vidur-cli` stages** Call the helper in `run_profile()` and `run_real()` before any call that can import/start Ray (notably before `patch_sarathi_preserve_cuda_visible_devices()` and before Sarathi engine creation).
-- [ ] **Add `profiling.compute.use_ray` knob** Default `true`; when `false`, run MLP profiling without Ray and skip attention execution (use fallback CSV template directly).
-- [ ] **Decide how to implement no-Ray MLP profiling** Prefer an in-process sequential implementation based on Vidur’s `MlpWrapper` for the `num_gpus=1` case; document limitations for multi-GPU.
-- [ ] **Tests** Add unit tests that validate env precedence and that `None` values are treated as “no-op”.
-- [ ] **Docs** Update `context/issues/known/issue-vidur-ray-object-store-memory-spike-in-docker.md` to describe the new config knobs and include an example override command line for `vidur-cli` users.
+- [X] **Define config schema** Add a `ray` config group with `ray.env` (nullable fields) and decide which env vars are officially supported (start with object store sizing + slow storage + memory monitor).
+- [X] **Add compare_vidur_real defaults** Include `ray: default` in `vidur_profile.yaml`, `real_bench.yaml`, and `vidur_sim.yaml`.
+- [X] **Implement `ray_runtime` helper** Create `src/gpu_simulate_test/ray_runtime.py` with `apply_ray_env_defaults(cfg_ray_env)` that enforces env > config > Ray default.
+- [X] **Integrate into `vidur-cli` stages** Call the helper in `run_profile()` and `run_real()` before any call that can import/start Ray (notably before `patch_sarathi_preserve_cuda_visible_devices()` and before Sarathi engine creation).
+- [X] **Add `profiling.compute.use_ray` knob** Default `true`; when `false`, run MLP profiling without Ray and skip attention execution (use fallback CSV template directly).
+- [X] **Decide how to implement no-Ray MLP profiling** Prefer an in-process sequential implementation based on Vidur’s `MlpWrapper` for the `num_gpus=1` case; document limitations for multi-GPU.
+- [X] **Tests** Add unit tests that validate env precedence and that `None` values are treated as “no-op”.
+- [X] **Docs** Update `context/issues/known/issue-vidur-ray-object-store-memory-spike-in-docker.md` to describe the new config knobs and include an example override command line for `vidur-cli` users.

@@ -1,0 +1,39 @@
+.git
+.gitignore
+
+# Python caches / build outputs
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+
+# Pixi environment
+.pixi/
+
+# Test / tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.nox/
+.tox/
+
+# Local scratch / generated artifacts
+tmp/
+results/
+cache/
+vidur-cache/
+.codex/
+.gemini/
+
+# Local env vars (never commit)
+.env
+.env.*
+
+# Model weights are machine-local; keep metadata/scripts only
+models/**/source-data

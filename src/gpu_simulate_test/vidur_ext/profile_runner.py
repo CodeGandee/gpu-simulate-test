@@ -73,6 +73,9 @@ class VidurProfileInputs:
         Whether to run Vidur's CPU overhead profiler and stage its CSV into the profiling root.
         Disabled by default to match the Vidur paper's evaluation practice (optimized serving stack
         to eliminate unnecessary CPU overheads).
+    compute_use_ray
+        Whether compute profiling is allowed to use Ray-backed Vidur entrypoints. When false,
+        profiling must not start Ray and should use a restricted in-process path (single-GPU only).
     cpu_overhead_max_batch_size
         Maximum batch size to profile in the CPU overhead profiler. Vidur profiles a fixed grid of
         batch sizes up to this value.
@@ -112,6 +115,7 @@ class VidurProfileInputs:
     staging_root: Path | None = None
     include_network: bool = True
     include_cpu_overhead: bool = False
+    compute_use_ray: bool = True
     cpu_overhead_max_batch_size: int = 128
     cpu_overhead_validation: str = "strict"
     attention_backend: str | None = None
@@ -285,7 +289,8 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
     )
 
     apply_cuda_visible_devices_from_gsim(repo_root=repo_root)
-    patch_sarathi_preserve_cuda_visible_devices()
+    if inputs.compute_use_ray:
+        patch_sarathi_preserve_cuda_visible_devices()
 
     try:
         import torch  # type: ignore
@@ -382,6 +387,94 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
         mlp_df = pd.read_csv(mlp_src).drop_duplicates()
         mlp_df.to_csv(mlp_dst, index=False)
         return cmd
+
+    def _run_and_stage_mlp_no_ray(*, profile_method: str) -> None:
+        import pandas as pd
+        from vidur.profiling.common.model_config import ModelConfig
+        from vidur.profiling.mlp.mlp_wrapper import MlpWrapper
+        from vidur.profiling.utils import get_num_tokens_to_profile
+
+        if int(inputs.num_gpus) != 1:
+            raise ValueError("no-Ray compute profiling requires num_gpus=1")
+        if int(inputs.tensor_parallel_size) != 1:
+            raise ValueError("no-Ray compute profiling requires tensor_parallel_size=1")
+
+        model_cfg = ModelConfig.from_model_name(str(inputs.model_id))
+        wrapper = MlpWrapper(
+            model_cfg,
+            num_tensor_parallel_workers=1,
+            profile_method=_vidur_profile_method(requested_profile_method=str(profile_method)),
+            rank=0,
+            output_dir=str(staging),
+        )
+
+        results = [wrapper.profile(int(n)) for n in get_num_tokens_to_profile(int(inputs.max_tokens))]
+        time_stats = [r.get("time_stats", {}) for r in results]
+        meta = [{k: v for k, v in r.items() if k != "time_stats"} for r in results]
+
+        df = pd.json_normalize(time_stats).add_prefix("time_stats.").join(pd.DataFrame(meta)).drop_duplicates()
+        compute_dst_dir.mkdir(parents=True, exist_ok=True)
+        df.to_csv(mlp_dst, index=False)
+
+    if not inputs.compute_use_ray:
+        if inputs.include_cpu_overhead:
+            raise ValueError("no-Ray compute profiling does not support include_cpu_overhead")
+
+        extra: dict[str, Any] = {
+            "no_ray_compute_profiling": True,
+            "mlp_profile_method": str(inputs.mlp_profile_method),
+            "mlp_vidur_profile_method": _vidur_profile_method(
+                requested_profile_method=str(inputs.mlp_profile_method)
+            ),
+            "mlp_fallback": {
+                "enabled": bool(inputs.mlp_fallback_enabled),
+                "used": False,
+                "method": str(inputs.mlp_fallback_method),
+            },
+        }
+
+        if not mlp_dst.exists():
+            _run_and_stage_mlp_no_ray(profile_method=str(inputs.mlp_profile_method))
+        else:
+            extra["skipped_compute"] = True
+
+        template = _pick_attention_template(repo_root=repo_root, hardware_id=inputs.hardware_id)
+        _write_attention_fallback(
+            template_csv=template,
+            out_csv=attn_dst,
+            model_id=inputs.model_id,
+            tensor_parallel_size=int(inputs.tensor_parallel_size),
+            block_size=int(inputs.attention_block_size),
+        )
+        extra["attention_fallback_template"] = str(template)
+
+        try:
+            extra["mlp_validation"] = _validate_staged_mlp()
+        except MlpCsvValidationError as e:
+            extra["mlp_validation"] = e.result.as_jsonable()
+            if not inputs.mlp_fallback_enabled:
+                raise
+            _run_and_stage_mlp_no_ray(profile_method=str(inputs.mlp_fallback_method))
+            extra["mlp_profile_method"] = str(inputs.mlp_fallback_method)
+            extra["mlp_vidur_profile_method"] = _vidur_profile_method(
+                requested_profile_method=str(inputs.mlp_fallback_method)
+            )
+            extra["mlp_fallback"]["used"] = True
+            extra["mlp_validation"] = _validate_staged_mlp()
+
+        return VidurProfileResult(
+            profiling_root=inputs.profiling_root,
+            staging_root=staging,
+            mlp_csv=mlp_dst,
+            attention_csv=attn_dst,
+            attention_profiled=False,
+            cpu_overheads_csv=None,
+            cpu_overhead_profiled=False,
+            mlp_cmd=[],
+            attention_cmd=[],
+            cpu_overhead_cmd=[],
+            extra=extra,
+        )
 
     compute_ready = mlp_dst.exists() and attn_dst.exists()
     cpu_ready = (not inputs.include_cpu_overhead) or (

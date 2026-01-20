@@ -2,6 +2,7 @@ defaults:
   - model: qwen3_0_6b
   - hardware: a100
   - backend: transformers
+  - ray: default
   - workload: default
   - vidur: default
   - _self_
