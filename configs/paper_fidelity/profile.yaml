@@ -33,6 +33,8 @@ profiling:
       # - reject: always reject NaNs (ignores strict/non_strict for NaN handling).
       # - drop: allow NaNs and drop missing samples per target during consumption
       #   (ignores strict/non_strict for NaN handling).
+      # - zero: allow NaNs and fill missing targets with 0 during consumption
+      #   (ignores strict/non_strict for NaN handling; can bias predictors).
       nan_policy: auto
       small_input_threshold: 128
       zero_heavy_limit: 0.01

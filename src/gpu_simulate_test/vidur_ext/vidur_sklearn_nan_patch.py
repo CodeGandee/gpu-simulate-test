@@ -5,16 +5,13 @@ Vidur trains many per-op sklearn models from a single `mlp.csv`-derived datafram
 does not accept NaNs in the target array `y`, which means a single missing timing target for an
 op can cause training to fail.
 
-This module provides a local, opt-in monkey patch that drops NaN rows *per target column* during
-training:
+This module provides local, opt-in monkey patches for "best-effort" NaN handling during training:
 
-- For each `_train_model(model_name, df, feature_cols, target_col)` call, we filter the training
-  dataframe with `df.dropna(subset=[*feature_cols, target_col])`.
-- Other ops keep their own available rows; we do not require a global "drop rows with any NaN"
-  sanitization step.
+- `drop`: drop NaN rows *per target column* (and feature columns) before fitting.
+- `zero`: fill NaNs in the target column with 0 before fitting.
 
-This is intended for "best-effort" consumption of profiling roots when the effective NaN policy
-is configured as `drop`.
+These are intended for "best-effort" consumption of profiling roots when the effective NaN policy
+is configured as `drop` or `zero`.
 """
 
 from __future__ import annotations
@@ -90,3 +87,73 @@ def patch_vidur_sklearn_train_model_dropna(*, summary: dict[str, Any]) -> Iterat
         except AttributeError:  # pragma: no cover
             pass
 
+
+@contextmanager
+def patch_vidur_sklearn_train_model_fillna_zero(*, summary: dict[str, Any]) -> Iterator[None]:
+    """Patch Vidur's sklearn predictor to fill NaN targets with 0 during training.
+
+    Parameters
+    ----------
+    summary
+        Mutable dict populated with per-model fill statistics during the patched region.
+        The structure is JSON-serializable and safe to embed into run metadata.
+    """
+    try:
+        from vidur.execution_time_predictor.sklearn_execution_time_predictor import (
+            SklearnExecutionTimePredictor,
+        )
+    except Exception as e:  # pragma: no cover
+        raise RuntimeError("Failed to import Vidur's SklearnExecutionTimePredictor for patching.") from e
+
+    if getattr(SklearnExecutionTimePredictor, "__gpu_simulate_test_fillna_zero_patch__", None) is not None:
+        raise RuntimeError(
+            "Vidur sklearn fillna(0) patch is already active (nested patch contexts are not supported)."
+        )
+
+    original_train_model = SklearnExecutionTimePredictor._train_model
+
+    def _patched_train_model(self: Any, model_name: str, df: Any, feature_cols: Any, target_col: str) -> Any:
+        target = str(target_col)
+        total_rows = int(len(df))
+        filled = df.copy()
+
+        if target in filled.columns:
+            missing_before = int(filled[target].isna().sum())
+            filled[target] = filled[target].fillna(0.0)
+        else:
+            missing_before = 0
+
+        per_model = summary.setdefault("per_model", {})
+        if isinstance(per_model, dict):
+            per_model[str(model_name)] = {
+                "model_name": str(model_name),
+                "target_col": str(target_col),
+                "feature_cols": [str(c) for c in list(feature_cols)],
+                "rows_total": total_rows,
+                "cells_filled": int(missing_before),
+            }
+
+        if target in filled.columns and bool(filled[target].isna().any()):
+            raise RuntimeError(
+                "Vidur sklearn training still has NaN targets after nan_policy=zero fill. "
+                f"model_name={model_name} target_col={target_col} rows_total={total_rows}."
+            )
+
+        return original_train_model(
+            self,
+            model_name=model_name,
+            df=filled,
+            feature_cols=feature_cols,
+            target_col=target_col,
+        )
+
+    setattr(SklearnExecutionTimePredictor, "__gpu_simulate_test_fillna_zero_patch__", True)
+    SklearnExecutionTimePredictor._train_model = _patched_train_model  # type: ignore[assignment]
+    try:
+        yield
+    finally:
+        SklearnExecutionTimePredictor._train_model = original_train_model  # type: ignore[assignment]
+        try:
+            delattr(SklearnExecutionTimePredictor, "__gpu_simulate_test_fillna_zero_patch__")
+        except AttributeError:  # pragma: no cover
+            pass

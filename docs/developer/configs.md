@@ -123,6 +123,15 @@ pixi run vidur-sim \
   vidur.validation.mlp.nan_policy=drop
 ```
 
+Best-effort alternative (not recommended for fidelity): fill missing targets with 0:
+
+```bash
+pixi run vidur-sim \
+  vidur.profiling.root=tmp/vidur_profiling/a100/qwen3_0_6b \
+  workload.workload_dir=tmp/workloads/<workload_id> \
+  vidur.validation.mlp.nan_policy=zero
+```
+
 See `docs/manual/mlp-validation-and-fallback.md` for detailed behavior of `mode`, `nan_policy`, and `profiling.mlp.fallback.*` combinations.
 
 Paper fidelity overrides:

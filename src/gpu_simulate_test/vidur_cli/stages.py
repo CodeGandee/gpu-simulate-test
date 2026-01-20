@@ -234,9 +234,9 @@ def run_profile(
 
         mlp_nan_policy_val = OmegaConf.select(cfg, "profiling.mlp.validation.nan_policy")
         mlp_nan_policy = str(mlp_nan_policy_val or "auto").lower().strip()
-        if mlp_nan_policy not in {"auto", "reject", "drop"}:
+        if mlp_nan_policy not in {"auto", "reject", "drop", "zero"}:
             raise UserFacingError(
-                "profiling.mlp.validation.nan_policy must be one of auto|reject|drop "
+                "profiling.mlp.validation.nan_policy must be one of auto|reject|drop|zero "
                 f"(got {mlp_nan_policy!r})."
             )
 
@@ -376,9 +376,9 @@ def run_sim(
 
         mlp_nan_policy_val = OmegaConf.select(cfg, "vidur.validation.mlp.nan_policy")
         mlp_nan_policy = str(mlp_nan_policy_val or "auto").lower().strip()
-        if mlp_nan_policy not in {"auto", "reject", "drop"}:
+        if mlp_nan_policy not in {"auto", "reject", "drop", "zero"}:
             raise UserFacingError(
-                "vidur.validation.mlp.nan_policy must be one of auto|reject|drop "
+                "vidur.validation.mlp.nan_policy must be one of auto|reject|drop|zero "
                 f"(got {mlp_nan_policy!r})."
             )
 

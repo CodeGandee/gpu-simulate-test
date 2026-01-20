@@ -466,6 +466,9 @@ def write_paper_fidelity_style_report(
     mlp_selection = _load_profile_mlp_selection(run_dir=run_dir)
     sim_mlp_validation = sim_meta.get("mlp_validation") if isinstance(sim_meta.get("mlp_validation"), dict) else {}
     sim_mlp_nan_drop = sim_meta.get("mlp_nan_drop") if isinstance(sim_meta.get("mlp_nan_drop"), dict) else {}
+    sim_mlp_nan_fill_zero = (
+        sim_meta.get("mlp_nan_fill_zero") if isinstance(sim_meta.get("mlp_nan_fill_zero"), dict) else {}
+    )
 
     # Summary.md
     lines: list[str] = []
@@ -557,6 +560,25 @@ def write_paper_fidelity_style_report(
         )
     else:
         lines.append("  - nan_drop: `disabled`")
+
+    if sim_mlp_nan_fill_zero and bool(sim_mlp_nan_fill_zero.get("enabled")):
+        per_model = (
+            sim_mlp_nan_fill_zero.get("per_model") if isinstance(sim_mlp_nan_fill_zero.get("per_model"), dict) else {}
+        )
+        filled_total = 0
+        models_with_fills = 0
+        for stats in per_model.values():
+            if not isinstance(stats, dict):
+                continue
+            filled = int(stats.get("cells_filled") or 0)
+            filled_total += filled
+            if filled > 0:
+                models_with_fills += 1
+        lines.append(
+            f"  - nan_fill_zero: `enabled` models_with_fills=`{models_with_fills}` cells_filled_total=`{filled_total}`"
+        )
+    else:
+        lines.append("  - nan_fill_zero: `disabled`")
     lines.append("")
 
     lines.append("## Config (apple-to-apple)")

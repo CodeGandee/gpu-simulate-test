@@ -33,13 +33,14 @@ These knobs apply to `svr profile` (and other profiling entrypoints that stage `
 
 ### NaN policy (profiling)
 
-- `profiling.mlp.validation.nan_policy=auto|reject|drop`
+- `profiling.mlp.validation.nan_policy=auto|reject|drop|zero`
 
 Effective policy resolution:
 
 - `auto + strict` ⇒ **reject**
 - `auto + non_strict` ⇒ **drop**
 - explicit `reject|drop` overrides the mode for NaN handling
+- `zero` ⇒ **allow NaNs** during validation; consumers fill missing targets with 0 during training
 
 ### Fallback rerun (profiling)
 
@@ -58,7 +59,7 @@ Important semantics:
 These knobs apply to `svr sim` (and other consumers of a profiling root).
 
 - `vidur.validation.mlp.mode=strict|non_strict`
-- `vidur.validation.mlp.nan_policy=auto|reject|drop`
+- `vidur.validation.mlp.nan_policy=auto|reject|drop|zero`
 
 If the effective policy is `drop`, consumers apply a local patch so Vidur’s sklearn training drops NaNs **per target**
 column before fitting. If the filtered dataset becomes empty for any required target, the run still fails with a
@@ -78,6 +79,7 @@ This table focuses on *NaN/missing-cell* behavior. Missing required columns alwa
 | `mode=non_strict` + `nan_policy=auto` + `fallback.enabled=true` | NaNs present | Same as above: **PASS** with warnings; fallback is **not** triggered because validation does not fail |
 | any mode + `nan_policy=reject` + `fallback.enabled=false` | NaNs present | **FAIL** in `svr profile` |
 | any mode + `nan_policy=drop` + `fallback.enabled=false` | NaNs present | **PASS** in `svr profile` with warnings |
+| any mode + `nan_policy=zero` + `fallback.enabled=false` | NaNs present | **PASS** in `svr profile` with warnings |
 
 ### Consumption (sim) outcomes
 
@@ -86,6 +88,7 @@ This table focuses on *NaN/missing-cell* behavior. Missing required columns alwa
 | `mode=strict` + `nan_policy=auto` | NaNs present | **FAIL** in `svr sim` (effective policy is `reject`) |
 | `mode=non_strict` + `nan_policy=auto` | NaNs present | **PASS** (effective policy is `drop`; per-target dropna patch enabled) |
 | any mode + `nan_policy=drop` | NaNs present | **PASS** (per-target dropna patch enabled) |
+| any mode + `nan_policy=zero` | NaNs present | **PASS** (per-target fillna(0) patch enabled) |
 | any mode + `nan_policy=reject` | NaNs present | **FAIL** |
 
 ## Why these behaviors exist (and why they matter)
@@ -108,4 +111,5 @@ This table focuses on *NaN/missing-cell* behavior. Missing required columns alwa
   - Profiling: `profiling.mlp.validation.mode=non_strict profiling.mlp.validation.nan_policy=auto`
   - Sim: `vidur.validation.mlp.mode=non_strict vidur.validation.mlp.nan_policy=auto`
   - Understand that dropping NaNs reduces training data per target and can worsen the sim-vs-real gap.
-
+- Avoid `nan_policy=zero` unless you explicitly want “fill missing timings with 0” semantics for debugging; it is
+  generally less faithful than dropping NaNs per target.

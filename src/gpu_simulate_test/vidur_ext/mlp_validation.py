@@ -24,8 +24,8 @@ from typing import Any, Literal
 
 
 MlpValidationMode = Literal["strict", "non_strict"]
-MlpNanPolicy = Literal["auto", "reject", "drop"]
-MlpEffectiveNanPolicy = Literal["reject", "drop"]
+MlpNanPolicy = Literal["auto", "reject", "drop", "zero"]
+MlpEffectiveNanPolicy = Literal["reject", "drop", "zero"]
 
 
 @dataclass(frozen=True)
@@ -60,11 +60,15 @@ _CORE_TIME_STATS: frozenset[str] = frozenset({"min", "max", "mean", "median"})
 
 def resolve_nan_policy(*, mode: MlpValidationMode, nan_policy: MlpNanPolicy) -> MlpEffectiveNanPolicy:
     """Resolve the effective NaN policy based on mode and configuration."""
-    if nan_policy not in {"auto", "reject", "drop"}:
-        raise ValueError(f"Unsupported nan_policy: {nan_policy!r} (expected auto|reject|drop)")
+    if nan_policy not in {"auto", "reject", "drop", "zero"}:
+        raise ValueError(f"Unsupported nan_policy: {nan_policy!r} (expected auto|reject|drop|zero)")
     if nan_policy == "auto":
         return "reject" if mode == "strict" else "drop"
-    return "reject" if nan_policy == "reject" else "drop"
+    if nan_policy == "reject":
+        return "reject"
+    if nan_policy == "drop":
+        return "drop"
+    return "zero"
 
 
 def validate_mlp_csv(
@@ -155,6 +159,13 @@ def validate_mlp_csv(
             "consumers must drop NaN samples per target before training. Consider rerunning with "
             "`profiling.mlp.profile_method=cuda_event` (or enable fallback) for highest fidelity."
         )
+    if missing_cells_total > 0 and effective_nan_policy == "zero":
+        warnings.append(
+            "Missing (NaN) timing targets detected in mlp.csv. nan_policy=zero allows this, but "
+            "consumers will fill NaN targets with 0 during training. This can bias predictors and "
+            "worsen sim-vs-real fidelity. Consider rerunning with `profiling.mlp.profile_method=cuda_event` "
+            "(or enable fallback) for highest fidelity."
+        )
 
     if "num_tokens" in df.columns and time_cols:
         try:
@@ -193,9 +204,7 @@ def validate_mlp_csv(
         warnings=warnings,
     )
 
-    failed_missing = bool(missing_columns) or (
-        int(missing_cells_total) > 0 and effective_nan_policy == "reject"
-    )
+    failed_missing = bool(missing_columns) or (int(missing_cells_total) > 0 and effective_nan_policy == "reject")
     failed_zero_heavy = bool(zero_heavy_columns) and mode == "strict"
     if failed_missing or failed_zero_heavy:
         problems: list[str] = []

@@ -109,12 +109,14 @@ For a full sweep + discussion, see:
 
 Some profiling methods (historically `record_function` before the driver-kernel attribution fix) can produce missing (NaN) timing targets in `mlp.csv`. This repo supports an explicit policy for how to handle missing cells:
 
-- Profiling (staging): `profiling.mlp.validation.nan_policy=auto|reject|drop`
+- Profiling (staging): `profiling.mlp.validation.nan_policy=auto|reject|drop|zero`
   - `auto` (default): strict ⇒ reject; non_strict ⇒ drop during consumption
   - `reject`: always fail fast on NaNs
   - `drop`: allow NaNs (consumers drop missing samples per target before sklearn training)
-- Consumption (sim): `vidur.validation.mlp.nan_policy=auto|reject|drop`
+- `zero`: allow NaNs (consumers fill NaN targets with 0 during training; not recommended for fidelity)
+- Consumption (sim): `vidur.validation.mlp.nan_policy=auto|reject|drop|zero`
   - When the effective policy is `drop`, the simulator enables a local per-target dropna patch and records a drop summary in `sim/run_meta.json`.
+  - When the effective policy is `zero`, the simulator enables a per-target fillna(0) patch and records a fill summary in `sim/run_meta.json`.
 
 See `docs/manual/mlp-validation-and-fallback.md` for the full validation/fallback implication matrix (profiling vs consumption) and rationale.
 
