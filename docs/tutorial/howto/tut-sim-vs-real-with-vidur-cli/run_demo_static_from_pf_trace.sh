@@ -118,19 +118,26 @@ echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 # - docs/tutorial/in-depth/adv-tut-vidur-cli-mlp-profile-methods/
 export GSIM_VIDUR_MLP_PROFILE_METHOD="${GSIM_VIDUR_MLP_PROFILE_METHOD:-record_function}"
 
-# Automatically retry with a fallback method when validation fails.
-# Set `GSIM_VIDUR_MLP_FALLBACK_ENABLED=false` to disable.
-export GSIM_VIDUR_MLP_FALLBACK_ENABLED="${GSIM_VIDUR_MLP_FALLBACK_ENABLED:-true}"
+# Tutorial default: do not rerun MLP profiling automatically.
+#
+# This tutorial uses:
+# - `profiling.mlp.profile_method=record_function`
+# - `profiling.mlp.validation.mode=strict`
+# - `profiling.mlp.validation.nan_policy=zero`
+#
+# so the pipeline is deterministic about *how* missing timing targets are handled (fill with 0),
+# rather than silently switching profiling methods.
+export GSIM_VIDUR_MLP_FALLBACK_ENABLED="${GSIM_VIDUR_MLP_FALLBACK_ENABLED:-false}"
 export GSIM_VIDUR_MLP_FALLBACK_METHOD="${GSIM_VIDUR_MLP_FALLBACK_METHOD:-cuda_event}"
 
 # Missing-value handling for staged `mlp.csv`:
 # - auto (default): strict => reject; non_strict => drop (per-target) during consumption.
 # - reject: always fail on NaNs.
 # - drop: allow NaNs (consumers must handle them).
-export GSIM_VIDUR_MLP_NAN_POLICY="${GSIM_VIDUR_MLP_NAN_POLICY:-auto}"
+export GSIM_VIDUR_MLP_NAN_POLICY="${GSIM_VIDUR_MLP_NAN_POLICY:-zero}"
 
 # Missing-value handling when consuming a profiling root in `svr sim`.
-export GSIM_VIDUR_SIM_MLP_NAN_POLICY="${GSIM_VIDUR_SIM_MLP_NAN_POLICY:-auto}"
+export GSIM_VIDUR_SIM_MLP_NAN_POLICY="${GSIM_VIDUR_SIM_MLP_NAN_POLICY:-zero}"
 
 # 1) Create a fresh run directory with the chosen presets.
 RUN_DIR="$(
@@ -147,6 +154,7 @@ pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR" \
   "profiling.mlp.profile_method=${GSIM_VIDUR_MLP_PROFILE_METHOD}" \
   "profiling.mlp.fallback.enabled=${GSIM_VIDUR_MLP_FALLBACK_ENABLED}" \
   "profiling.mlp.fallback.method=${GSIM_VIDUR_MLP_FALLBACK_METHOD}" \
+  "profiling.mlp.validation.mode=strict" \
   "profiling.mlp.validation.nan_policy=${GSIM_VIDUR_MLP_NAN_POLICY}"
 
 # 4) Run the Vidur simulation using the imported trace + the freshly generated profiling bundle.

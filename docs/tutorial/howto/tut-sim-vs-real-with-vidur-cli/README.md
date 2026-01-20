@@ -18,7 +18,7 @@ The script:
 - creates a fresh workspace under `<repo>/tmp/`
 - runs: `init-run → trace(import) → profile → sim → real → report`
 - uses `profiling.mlp.profile_method=record_function` by default (see “MLP profiling method” below)
-- enables MLP profiling fallback to `cuda_event` when validation fails (set `GSIM_VIDUR_MLP_FALLBACK_ENABLED=false` to disable)
+- uses `profiling.mlp.validation.mode=strict profiling.mlp.validation.nan_policy=zero` with fallback disabled
 - prints the final report path (`<run_dir>/report/summary.md`)
 
 Tracked demo artifacts in this directory:
@@ -113,7 +113,7 @@ Some profiling methods (historically `record_function` before the driver-kernel 
   - `auto` (default): strict ⇒ reject; non_strict ⇒ drop during consumption
   - `reject`: always fail fast on NaNs
   - `drop`: allow NaNs (consumers drop missing samples per target before sklearn training)
-- `zero`: allow NaNs (consumers fill NaN targets with 0 during training; not recommended for fidelity)
+- `zero`: allow NaNs (consumers fill NaN targets with 0 during training; can bias predictors)
 - Consumption (sim): `vidur.validation.mlp.nan_policy=auto|reject|drop|zero`
   - When the effective policy is `drop`, the simulator enables a local per-target dropna patch and records a drop summary in `sim/run_meta.json`.
   - When the effective policy is `zero`, the simulator enables a per-target fillna(0) patch and records a fill summary in `sim/run_meta.json`.
