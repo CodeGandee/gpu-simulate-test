@@ -1,17 +1,11 @@
 from __future__ import annotations
 
 import os
-import sys
 
 
 def _enabled() -> bool:
     value = os.environ.get("GPU_SIMULATE_TEST_ENABLE_VIDUR_ATTENTION_COMPAT", "").strip().lower()
     return value in {"1", "true", "yes", "on"}
-
-
-def _is_attention_profiling_process() -> bool:
-    joined = " ".join(sys.argv).lower()
-    return "vidur_profiling_attention_main" in joined or "vidur.profiling.attention" in joined
 
 
 def _mlp_record_function_tracer_v2_enabled() -> bool:
@@ -106,7 +100,7 @@ def _patch_vidur_attention_backend() -> None:
     sarathi_attention.get_attention_wrapper = _get_attention_wrapper  # type: ignore[assignment]
 
 
-if _enabled() and _is_attention_profiling_process():
+if _enabled():
     try:
         _patch_vidur_attention_backend()
     except Exception as e:

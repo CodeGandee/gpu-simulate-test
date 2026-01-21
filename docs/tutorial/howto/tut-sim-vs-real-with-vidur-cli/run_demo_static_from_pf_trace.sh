@@ -54,11 +54,11 @@ fi
 # This repo's CLI runner expects GSIM_REPO_ROOT so it can resolve config + resource roots.
 export GSIM_REPO_ROOT="${GSIM_REPO_ROOT:-$REPO_ROOT}"
 
-# Enable a local Vidur/Sarathi compatibility patch for attention profiling by default.
+# Keep the attention-profiling compatibility patch disabled in this driver script.
 #
-# Note: This is implemented in `src/sitecustomize.py` and must be enabled via environment so it
-# applies in subprocesses as well (Vidur profiling entrypoints run as separate Python processes).
-export GPU_SIMULATE_TEST_ENABLE_VIDUR_ATTENTION_COMPAT="${GPU_SIMULATE_TEST_ENABLE_VIDUR_ATTENTION_COMPAT:-1}"
+# The profiling runner enables it only for the attention profiling subprocess to avoid interfering
+# with other stages (Sarathi replay, CPU overhead profiling).
+export GPU_SIMULATE_TEST_ENABLE_VIDUR_ATTENTION_COMPAT="0"
 
 # GPU pinning:
 # - This host reserves GPUs 4,5 for these experiments (see repo `.env`).

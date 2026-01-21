@@ -21,7 +21,7 @@ The script:
 - uses `profiling.mlp.validation.mode=strict profiling.mlp.validation.nan_policy=zero profiling.mlp.fallback.enabled=false` by default
 - uses `vidur.validation.mlp.mode=strict vidur.validation.mlp.nan_policy=zero` by default
 - disables CPU overhead profiling by default (`GSIM_VIDUR_INCLUDE_CPU_OVERHEAD=true` to enable)
-- enables `GPU_SIMULATE_TEST_ENABLE_VIDUR_ATTENTION_COMPAT=1` by default for attention profiling on Sarathi hosts
+- runs attention profiling with the repo’s Sarathi compatibility patch (enabled only for the attention profiling subprocess)
 - prints the final report path (`<run_dir>/report/summary.md`)
 
 Tracked demo artifacts in this directory:

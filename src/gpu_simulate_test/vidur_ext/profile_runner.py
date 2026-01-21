@@ -8,6 +8,7 @@ artifacts under `tmp/` and keep the final profiling root stable for reuse in sim
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
@@ -324,6 +325,11 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
         staging = inputs.staging_root
     staging.mkdir(parents=True, exist_ok=True)
 
+    def _subprocess_env(*, enable_attention_compat: bool) -> dict[str, str]:
+        env = dict(os.environ)
+        env["GPU_SIMULATE_TEST_ENABLE_VIDUR_ATTENTION_COMPAT"] = "1" if enable_attention_compat else "0"
+        return env
+
     compute_dst_dir = profiling_base / "compute" / inputs.hardware_id / inputs.model_id
     mlp_dst = compute_dst_dir / "mlp.csv"
     attn_dst = compute_dst_dir / "attention.csv"
@@ -374,7 +380,7 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
             "--profile_method",
             str(profile_method),
         ]
-        subprocess.check_call(cmd, cwd=repo_root)
+        subprocess.check_call(cmd, cwd=repo_root, env=_subprocess_env(enable_attention_compat=False))
 
         mlp_latest = _latest_dir(staging / "mlp")
         mlp_src = mlp_latest / inputs.model_id / "mlp.csv"
@@ -496,7 +502,7 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
 
         attn_exc: subprocess.CalledProcessError | None = None
         try:
-            subprocess.check_call(attn_cmd, cwd=repo_root)
+            subprocess.check_call(attn_cmd, cwd=repo_root, env=_subprocess_env(enable_attention_compat=True))
             attention_ok = True
         except subprocess.CalledProcessError as e:
             attention_ok = False
@@ -572,7 +578,11 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
             if inputs.model_ref is not None and inputs.model_ref.exists():
                 cpu_overhead_cmd.extend(["--model_path", str(inputs.model_ref.resolve())])
 
-            subprocess.check_call(cpu_overhead_cmd, cwd=repo_root)
+            subprocess.check_call(
+                cpu_overhead_cmd,
+                cwd=repo_root,
+                env=_subprocess_env(enable_attention_compat=False),
+            )
             cpu_latest = _latest_dir(staging / "cpu_overhead")
             cpu_src = cpu_latest / inputs.model_id / "cpu_overhead.csv"
             cpu_overheads_dst.parent.mkdir(parents=True, exist_ok=True)
