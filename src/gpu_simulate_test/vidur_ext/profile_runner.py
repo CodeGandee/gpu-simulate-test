@@ -93,8 +93,6 @@ class VidurProfileInputs:
         Maximum decode batch size to profile in the attention profiler.
     attention_profile_mode
         Which phase(s) to profile in the attention profiler: `decode`, `prefill`, or `both`.
-    allow_attention_fallback
-        Whether to fall back to a packaged template `attention.csv` when attention profiling fails.
     """
 
     model_id: str
@@ -121,7 +119,6 @@ class VidurProfileInputs:
     attention_min_batch_size: int = 1
     attention_max_batch_size: int = 1
     attention_profile_mode: str = "both"
-    allow_attention_fallback: bool = True
     model_ref: Path | None = None
 
 
@@ -185,77 +182,12 @@ def _latest_dir(base: Path) -> Path:
     return max(candidates, key=lambda p: p.stat().st_mtime)
 
 
-def _pick_attention_template(*, repo_root: Path, hardware_id: str) -> Path:
-    """Select a packaged attention profiling template CSV for a given hardware id.
-
-    This is used as a fallback when the attention profiling entrypoint fails, so that the
-    simulator can still run with a minimal attention CSV that matches the target model.
-    """
-    candidates = [
-        repo_root
-        / "extern"
-        / "tracked"
-        / "vidur"
-        / "data"
-        / "profiling"
-        / "compute"
-        / hardware_id
-        / "microsoft"
-        / "phi-2"
-        / "attention.csv",
-        repo_root
-        / "extern"
-        / "tracked"
-        / "vidur"
-        / "data"
-        / "profiling"
-        / "compute"
-        / hardware_id
-        / "meta-llama"
-        / "Llama-2-7b-hf"
-        / "attention.csv",
-    ]
-    for p in candidates:
-        if p.exists():
-            return p
-    raise FileNotFoundError(f"No attention.csv template found for hardware_id={hardware_id} under {candidates[0].parents[5]}")
-
-
 def _vidur_profile_method(*, requested_profile_method: str) -> str:
     """Map wrapper-level MLP profiling method names to Vidur-native values."""
     normalized = str(requested_profile_method).strip().lower()
     if normalized == "record_function_org":
         return "record_function"
     return str(requested_profile_method)
-
-
-def _write_attention_fallback(
-    *,
-    template_csv: Path,
-    out_csv: Path,
-    model_id: str,
-    tensor_parallel_size: int,
-    block_size: int,
-) -> None:
-    """Write a minimal attention profiling CSV derived from a packaged template.
-
-    The template rows are adjusted to match the target model and tensor-parallel setting so that
-    Vidur's predictor can filter the rows correctly.
-    """
-    import pandas as pd
-    from vidur.config.model_config import BaseModelConfig
-
-    model_cfg = BaseModelConfig.create_from_name(model_id)
-    df = pd.read_csv(template_csv).drop_duplicates()
-
-    df["n_embd"] = int(model_cfg.embedding_dim)
-    df["n_q_head"] = int(model_cfg.num_q_heads)
-    df["n_kv_head"] = int(model_cfg.num_kv_heads)
-    df["block_size"] = int(block_size)
-    df["num_tensor_parallel_workers"] = int(tensor_parallel_size)
-
-    out_csv.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(out_csv, index=False)
 
 
 def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> VidurProfileResult:
@@ -278,8 +210,7 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
     RuntimeError
         If `torch` is unavailable or CUDA is not accessible on this host.
     subprocess.CalledProcessError
-        If the MLP profiling entrypoint fails. (Attention profiling failures fall back to a
-        packaged template.)
+        If any profiling entrypoint fails.
     """
     from gpu_simulate_test.env_guard import (
         apply_cuda_visible_devices_from_gsim,
@@ -500,35 +431,11 @@ def run_vidur_profiling(inputs: VidurProfileInputs, *, repo_root: Path) -> Vidur
         elif mode == "prefill":
             attn_cmd.append("--profile_only_prefill")
 
-        attn_exc: subprocess.CalledProcessError | None = None
-        try:
-            subprocess.check_call(attn_cmd, cwd=repo_root, env=_subprocess_env(enable_attention_compat=True))
-            attention_ok = True
-        except subprocess.CalledProcessError as e:
-            attention_ok = False
-            attn_exc = e
-
-        if attention_ok:
-            attn_latest = _latest_dir(staging / "attention")
-            attn_src = attn_latest / inputs.model_id / "attention.csv"
-            shutil.copy2(attn_src, attn_dst)
-            attention_profiled = True
-        elif not inputs.allow_attention_fallback:
-            raise attn_exc if attn_exc is not None else subprocess.CalledProcessError(
-                returncode=1, cmd=attn_cmd
-            )
-        else:
-            template = _pick_attention_template(
-                repo_root=repo_root, hardware_id=inputs.hardware_id
-            )
-            _write_attention_fallback(
-                template_csv=template,
-                out_csv=attn_dst,
-                model_id=inputs.model_id,
-                tensor_parallel_size=int(inputs.tensor_parallel_size),
-                block_size=int(inputs.attention_block_size),
-            )
-            extra["attention_fallback_template"] = str(template)
+        subprocess.check_call(attn_cmd, cwd=repo_root, env=_subprocess_env(enable_attention_compat=True))
+        attn_latest = _latest_dir(staging / "attention")
+        attn_src = attn_latest / inputs.model_id / "attention.csv"
+        shutil.copy2(attn_src, attn_dst)
+        attention_profiled = True
 
         try:
             extra["mlp_validation"] = _validate_staged_mlp()

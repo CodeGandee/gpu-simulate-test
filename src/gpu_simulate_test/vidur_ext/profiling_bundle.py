@@ -158,7 +158,6 @@ def run_vidur_profiling_bundle(cfg: DictConfig, *, repo_root: Path) -> Path:
             attention_min_batch_size=int(cfg.profiling.attention.min_batch_size),
             attention_max_batch_size=int(cfg.profiling.attention.max_batch_size),
             attention_profile_mode=str(cfg.profiling.attention.profile_mode),
-            allow_attention_fallback=bool(cfg.profiling.allow_attention_fallback),
         ),
         repo_root=repo_root,
     )
