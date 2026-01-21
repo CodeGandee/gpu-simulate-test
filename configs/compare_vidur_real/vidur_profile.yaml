@@ -12,6 +12,32 @@ output:
   run_id: ${stable_id:vidur_profile,${model.model_id},${hardware.hardware_id}}
 
 profiling:
+  # General profiling runtime knobs (passed to Vidur profiling entrypoints).
+  num_gpus: 1
+  tensor_parallel_size: 1
+  max_tokens: 4096
+  include_network: true
+
+  cpu_overhead:
+    # Whether to profile CPU overheads and stage `cpu_overheads.csv` into the profiling root.
+    enabled: true
+    max_batch_size: 128
+    # Guardrails: `strict` rejects placeholder-like dummy CSVs.
+    validation: strict
+
+  attention:
+    # Which phase(s) to profile: decode | prefill | both.
+    profile_mode: both
+    # Sarathi attention backend name (Vidur expects Sarathi enums; keep this aligned with the real backend).
+    backend: FLASHINFER
+    # KV-cache page/block size (must match the real backend scheduler/block size).
+    block_size: 16
+    # Decode batch sizes to profile (inclusive).
+    min_batch_size: 1
+    # Tutorial default: match the serving batch cap (backend.scheduler.max_num_seqs=16) to avoid OOD extrapolation.
+    # For faster iteration, you can lower this (e.g. 1) at the cost of fidelity when decode batches > max_batch_size.
+    max_batch_size: 16
+
   mlp:
     # REQUIRED (no default). How Vidur measures per-op time for MLP profiling:
     # - cuda_event: CUDA events around ops (recommended; stable GPU-time measurement).

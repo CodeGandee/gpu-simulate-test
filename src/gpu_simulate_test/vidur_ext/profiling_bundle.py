@@ -112,9 +112,9 @@ def run_vidur_profiling_bundle(cfg: DictConfig, *, repo_root: Path) -> Path:
 
     mlp_nan_policy_val = OmegaConf.select(cfg, "profiling.mlp.validation.nan_policy")
     mlp_nan_policy = str(mlp_nan_policy_val or "auto").lower().strip()
-    if mlp_nan_policy not in {"auto", "reject", "drop"}:
+    if mlp_nan_policy not in {"auto", "reject", "drop", "zero"}:
         raise ValueError(
-            "profiling.mlp.validation.nan_policy must be one of auto|reject|drop "
+            "profiling.mlp.validation.nan_policy must be one of auto|reject|drop|zero "
             f"(got {mlp_nan_policy!r})."
         )
 
@@ -158,7 +158,6 @@ def run_vidur_profiling_bundle(cfg: DictConfig, *, repo_root: Path) -> Path:
             attention_min_batch_size=int(cfg.profiling.attention.min_batch_size),
             attention_max_batch_size=int(cfg.profiling.attention.max_batch_size),
             attention_profile_mode=str(cfg.profiling.attention.profile_mode),
-            allow_attention_fallback=bool(cfg.profiling.allow_attention_fallback),
         ),
         repo_root=repo_root,
     )

@@ -128,6 +128,30 @@ def test_validate_profiling_root_missing_values_drop_override_allows_in_strict(t
         validate_profiling_root(layout)
 
 
+def test_validate_profiling_root_missing_values_zero_override_allows_in_strict(tmp_path: Path) -> None:
+    model_id = "test/model"
+    df = pd.DataFrame(
+        {
+            "num_tokens": [256, 512],
+            "time_stats.op.min": [1.0, 2.0],
+            "time_stats.op.max": [1.0, 2.0],
+            "time_stats.op.mean": [1.0, None],
+            "time_stats.op.median": [1.0, 2.0],
+        }
+    )
+    _write_minimal_root(root=tmp_path, model_id=model_id, mlp_df=df)
+
+    layout = ProfilingRootLayout(
+        profiling_root=tmp_path,
+        device="a100",
+        model_id=model_id,
+        mlp_validation_mode="strict",
+        mlp_nan_policy="zero",
+    )
+    with pytest.warns(UserWarning):
+        validate_profiling_root(layout)
+
+
 def test_validate_profiling_root_returns_mlp_result_when_cpu_overhead_enabled(tmp_path: Path) -> None:
     model_id = "test/model"
     df = pd.DataFrame(

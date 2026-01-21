@@ -48,7 +48,7 @@ Success means:
    - `profiling.compute.use_ray` (default `true`).
    - When `false`:
      - Run MLP profiling sequentially in-process (no `ray.init`, no actors), limited to the `--num_gpus=1` case initially.
-     - Skip attention profiling execution and directly write the attention fallback CSV template (already supported in `profile_runner.py`).
+     - Attention profiling is still required for fidelity; do **not** fall back to template CSVs. If attention profiling cannot run without Ray in a given environment, fail fast with a clear error.
    - Keep CPU overhead profiling unchanged (still uses Ray), but it will benefit from the Ray object store cap applied by step (2).
 
 Key design choice: use env vars (not `ray.init(object_store_memory=...)`) as the “portable control plane”, because Vidur and Sarathi call `ray.init(...)` internally and we don’t want to maintain deep patches in submodules.
@@ -107,7 +107,7 @@ sequenceDiagram
 - [ ] **Add compare_vidur_real defaults** Include `ray: default` in `vidur_profile.yaml`, `real_bench.yaml`, and `vidur_sim.yaml`.
 - [ ] **Implement `ray_runtime` helper** Create `src/gpu_simulate_test/ray_runtime.py` with `apply_ray_env_defaults(cfg_ray_env)` that enforces env > config > Ray default.
 - [ ] **Integrate into `vidur-cli` stages** Call the helper in `run_profile()` and `run_real()` before any call that can import/start Ray (notably before `patch_sarathi_preserve_cuda_visible_devices()` and before Sarathi engine creation).
-- [ ] **Add `profiling.compute.use_ray` knob** Default `true`; when `false`, run MLP profiling without Ray and skip attention execution (use fallback CSV template directly).
+- [ ] **Add `profiling.compute.use_ray` knob** Default `true`; when `false`, run MLP profiling without Ray. Do not implement template-based attention fallbacks; attention profiling failures must surface to the user.
 - [ ] **Decide how to implement no-Ray MLP profiling** Prefer an in-process sequential implementation based on Vidur’s `MlpWrapper` for the `num_gpus=1` case; document limitations for multi-GPU.
 - [ ] **Tests** Add unit tests that validate env precedence and that `None` values are treated as “no-op”.
 - [ ] **Docs** Update `context/issues/known/issue-vidur-ray-object-store-memory-spike-in-docker.md` to describe the new config knobs and include an example override command line for `vidur-cli` users.

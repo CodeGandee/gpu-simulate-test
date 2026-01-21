@@ -213,7 +213,7 @@ Notes:
 
 - The exporter requires an explicit `output.dir` (useful outputs for the user). `output.cache_dir` is optional and defaults to `<output.dir>/cache` (debugging/intermediate outputs) (see `configs/vidur_profiling/bundle.yaml`, `src/gpu_simulate_test/vidur_ext/profiling_bundle.py`).
 - The `vidur-profiling` bundle defaults to **compute-only** (no network profiling, no CPU-overhead profiling) for TP=1/PP=1 workflows (matches the paper’s “optimized vLLM + CUDA graphs” setup). Enable CPU overhead profiling with `profiling.cpu_overhead.enabled=true` (and tune `profiling.cpu_overhead.max_batch_size`) when you want implementation-specific overhead modeling.
-- `vidur-profiling` defaults to `profiling.allow_attention_fallback=false` so failures in attention profiling surface early; set `profiling.allow_attention_fallback=true` to fall back to a packaged template `attention.csv` when needed.
+- Attention profiling failures are fatal (no template fallback). If profiling fails on a host, fix the profiler environment or Sarathi/Vidur compatibility rather than continuing with placeholder data.
 - `results/` is not ignored by git; avoid committing large profiling artifacts (prefer treating `results/raw/vidur-profiling/**` as local outputs unless you explicitly want to version them).
 
 ## 6. How the trace data is obtained (paper + repo assumptions)

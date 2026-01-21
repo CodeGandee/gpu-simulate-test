@@ -43,7 +43,7 @@
       "trace_csv": "<RUN_DIR>/trace/trace.csv"
     }
   },
-  "generated_at": "2026-01-15T09:18:58.293389+00:00",
+  "generated_at": "2026-01-21T10:43:44.008769+00:00",
   "inputs": {
     "real_request_metrics_csv": "<RUN_DIR>/report/inputs/real_request_metrics.csv",
     "sim_request_metrics_csv": "<RUN_DIR>/report/inputs/sim_request_metrics.csv"
@@ -58,24 +58,24 @@
       "fallback_enabled": false,
       "fallback_method": "cuda_event",
       "fallback_used": false,
-      "nan_policy": "auto",
+      "nan_policy": "zero",
       "profile_method": "record_function",
       "requested_profile_method": "record_function",
       "small_input_threshold": 128,
       "validation": {
-        "column_count": 123,
+        "column_count": 58,
         "csv_path": "<RUN_DIR>/profile/data/profiling/compute/a100/meta-llama/Llama-2-7b-hf/mlp.csv",
         "missing_cells_total": 0,
         "missing_columns": [],
         "mode": "strict",
-        "nan_policy": "auto",
-        "nan_policy_effective": "reject",
+        "nan_policy": "zero",
+        "nan_policy_effective": "zero",
         "row_count": 261,
         "thresholds": {
           "small_input_threshold": 128,
           "zero_heavy_limit": 0.01
         },
-        "time_column_count": 80,
+        "time_column_count": 40,
         "warnings": [],
         "zero_heavy_columns": []
       },

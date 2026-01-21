@@ -56,8 +56,7 @@ profiling:
   # Keep the exported bundle compute-only for TP=1/PP=1 experiments.
   include_network: false
 
-  # By default, fail if attention profiling cannot be measured on this host.
-  allow_attention_fallback: false
+  # Attention profiling failures are fatal (no template fallback).
 
   cpu_overhead:
     # Optional. Disabled by default to match the Vidur paper's evaluation practice

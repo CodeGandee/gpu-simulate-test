@@ -108,15 +108,17 @@ def build_parser() -> argparse.ArgumentParser:
     profile.add_argument(
         "--include-cpu-overhead",
         dest="include_cpu_overhead",
-        action="store_true",
-        default=True,
-        help="Include CPU overhead measurement during profiling (default).",
+        action="store_const",
+        const=True,
+        default=None,
+        help="Override config to include CPU overhead measurement during profiling.",
     )
     profile.add_argument(
         "--no-include-cpu-overhead",
         dest="include_cpu_overhead",
-        action="store_false",
-        help="Disable CPU overhead measurement during profiling.",
+        action="store_const",
+        const=False,
+        help="Override config to disable CPU overhead measurement during profiling.",
     )
 
     sim = svr_sub.add_parser("sim", help="Run Vidur simulation and record sim outputs.")
@@ -235,7 +237,7 @@ def _dispatch(*, args: argparse.Namespace, global_opts: GlobalOptions, overrides
             run_dir=run_dir,
             resources=resources,
             overrides=effective_overrides,
-            include_cpu_overhead=bool(args.include_cpu_overhead),
+            include_cpu_overhead=args.include_cpu_overhead,
         )
         print(str(out_dir))
         return

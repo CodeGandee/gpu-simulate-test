@@ -6,17 +6,27 @@
 
 ## Profiling
 - root: `<RUN_DIR>/profile`
+- settings:
+  - num_gpus: `1`
+  - tensor_parallel_size: `1`
+  - max_tokens: `4096`
+  - include_network: `True`
 - cpu_overhead:
   - modeling: `enabled`
+  - network_device: `a100_pairwise_nvlink`
+  - max_batch_size: `128`
+  - validation: `strict`
   - csv: `<RUN_DIR>/profile/data/profiling/cpu_overhead/a100_pairwise_nvlink/meta-llama/Llama-2-7b-hf/cpu_overheads.csv`
   - status: `ok`
+- attention: `profile_mode=both backend=FLASHINFER block_size=16 min_batch_size=1 max_batch_size=16`
 - mlp:
   - profile_method: `record_function`
-  - validation: `mode=strict nan_policy=auto small_input_threshold=128 zero_heavy_limit=0.01`
+  - validation: `mode=strict nan_policy=zero small_input_threshold=128 zero_heavy_limit=0.01`
   - fallback: `enabled=false method=cuda_event used=false`
 - mlp_consumer:
-  - nan_policy: `reject` (nan_policy=`auto` mode=`strict`)
+  - nan_policy: `zero` (nan_policy=`zero` mode=`strict`)
   - nan_drop: `disabled`
+  - nan_fill_zero: `enabled` models_with_fills=`0` cells_filled_total=`0`
 
 ## Config (apple-to-apple)
 - model_id: `meta-llama/Llama-2-7b-hf`
@@ -38,14 +48,14 @@
 ## Scores
 | Metric | Percentile | Sim | Real | Percent error |
 |--------|------------|-----|------|---------------|
-| request_execution_plus_preemption_time_normalized | p50 | 0.0390204 | 0.0348791 | 11.87% |
-| request_execution_plus_preemption_time_normalized | p95 | 0.0825792 | 0.0698994 | 18.14% |
-| request_e2e_time_normalized | p50 | 0.51677 | 0.447283 | 15.54% |
-| request_e2e_time_normalized | p95 | 1.29773 | 1.1346 | 14.38% |
-| prefill_time_execution_plus_preemption_normalized | p50 | 0.00124563 | 0.0010974 | 13.51% |
-| prefill_time_execution_plus_preemption_normalized | p95 | 0.00134502 | 0.00123913 | 8.54% |
-| decode_time_execution_plus_preemption_normalized | p50 | 0.0185211 | 0.0167377 | 10.65% |
-| decode_time_execution_plus_preemption_normalized | p95 | 0.0188312 | 0.0179082 | 5.15% |
+| request_execution_plus_preemption_time_normalized | p50 | 0.0427735 | 0.0369727 | 15.69% |
+| request_execution_plus_preemption_time_normalized | p95 | 0.0891475 | 0.0728787 | 22.32% |
+| request_e2e_time_normalized | p50 | 0.561863 | 0.504012 | 11.48% |
+| request_e2e_time_normalized | p95 | 1.41596 | 1.28585 | 10.12% |
+| prefill_time_execution_plus_preemption_normalized | p50 | 0.00136502 | 0.00115171 | 18.52% |
+| prefill_time_execution_plus_preemption_normalized | p95 | 0.00149412 | 0.00167709 | 10.91% |
+| decode_time_execution_plus_preemption_normalized | p50 | 0.0203625 | 0.0169286 | 20.28% |
+| decode_time_execution_plus_preemption_normalized | p95 | 0.0210189 | 0.0258159 | 18.58% |
 
 ## Figures
 ### Metric: request_execution_plus_preemption_time_normalized

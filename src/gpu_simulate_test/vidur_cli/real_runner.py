@@ -501,14 +501,9 @@ def _run_sarathi_token_length_replay(
     request_df = pd.concat(request_frames, ignore_index=True) if request_frames else pd.DataFrame()
     token_df = pd.concat(token_frames, ignore_index=True) if token_frames else pd.DataFrame()
 
-    from gpu_simulate_test.io import write_csv, write_json
-    from gpu_simulate_test.paper_fidelity.scoring import PAPER_FIDELITY_REQUEST_METRICS_REQUIRED_COLUMNS
     from gpu_simulate_test.real_bench.backends.sarathi_paper_fidelity_backend import (
         convert_sequence_metrics_to_request_metrics,
     )
-
-    paper_fidelity_dir = out_dir / "paper_fidelity"
-    paper_fidelity_csv = paper_fidelity_dir / "request_metrics.csv"
 
     metrics_store = engine.metrics_store
     all_seq_metrics = list(metrics_store.seq_metrics_time_distributions.values()) + list(
@@ -541,24 +536,6 @@ def _run_sarathi_token_length_replay(
                 f"Sarathi metrics decode token mismatch for request_id={rid}: expected={expected} got={got}."
             )
 
-    write_csv(paper_fidelity_csv, pf_df, required_columns=PAPER_FIDELITY_REQUEST_METRICS_REQUIRED_COLUMNS)
-    write_json(
-        paper_fidelity_dir / "run_meta.json",
-        {
-            "schema_version": "v1",
-            "run_type": "real",
-            "backend": "sarathi",
-            "generated_at": utcnow_iso(),
-            "trace_csv": str(trace_csv.resolve()),
-            "sequence_metrics_csv": str(sarathi_sequence_metrics_csv.resolve()),
-            "request_metrics_csv": str(paper_fidelity_csv.resolve()),
-            "scheduler": {"chunk_size": int(chunk_size), "max_num_seqs": int(max_num_seqs)},
-            "parallel": {"tensor_parallel_size": 1, "pipeline_parallel_size": 1},
-            "ignore_eos": bool(ignore_eos),
-            "max_tokens": int(max_tokens),
-        },
-    )
-
     run_meta = {
         "schema_version": "v1",
         "run_type": "real",
@@ -570,10 +547,7 @@ def _run_sarathi_token_length_replay(
         "parallel": {"tensor_parallel_size": 1, "pipeline_parallel_size": 1},
         "ignore_eos": bool(ignore_eos),
         "max_tokens": int(max_tokens),
-        "paper_fidelity": {
-            "request_metrics_csv": str(paper_fidelity_csv.resolve()),
-            "sequence_metrics_csv": str(sarathi_sequence_metrics_csv.resolve()),
-        },
+        "sarathi": {"sequence_metrics_csv": str(sarathi_sequence_metrics_csv.resolve())},
         "started_at": started_at,
         "ended_at": utcnow_iso(),
     }

@@ -54,6 +54,12 @@ fi
 # This repo's CLI runner expects GSIM_REPO_ROOT so it can resolve config + resource roots.
 export GSIM_REPO_ROOT="${GSIM_REPO_ROOT:-$REPO_ROOT}"
 
+# Keep the attention-profiling compatibility patch disabled in this driver script.
+#
+# The profiling runner enables it only for the attention profiling subprocess to avoid interfering
+# with other stages (Sarathi replay, CPU overhead profiling).
+export GPU_SIMULATE_TEST_ENABLE_VIDUR_ATTENTION_COMPAT="0"
+
 # GPU pinning:
 # - This host reserves GPUs 4,5 for these experiments (see repo `.env`).
 # - `GSIM_CUDA_VISIBLE_DEVICES` is used by repo code; `CUDA_VISIBLE_DEVICES` is used by CUDA/PyTorch.
@@ -107,6 +113,7 @@ echo "GSIM_REPO_ROOT=$GSIM_REPO_ROOT"
 echo "GSIM_VIDUR_WORKSPACE_DIR=$GSIM_VIDUR_WORKSPACE_DIR"
 echo "GSIM_CUDA_VISIBLE_DEVICES=$GSIM_CUDA_VISIBLE_DEVICES"
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+echo "GPU_SIMULATE_TEST_ENABLE_VIDUR_ATTENTION_COMPAT=$GPU_SIMULATE_TEST_ENABLE_VIDUR_ATTENTION_COMPAT"
 
 # MLP profiling method selection is REQUIRED (no hidden defaults).
 #
@@ -118,18 +125,41 @@ echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 # - docs/tutorial/in-depth/adv-tut-vidur-cli-mlp-profile-methods/
 export GSIM_VIDUR_MLP_PROFILE_METHOD="${GSIM_VIDUR_MLP_PROFILE_METHOD:-record_function}"
 
+# Attention profiling decode batch coverage (parity-critical):
+# - `backend.scheduler.max_num_seqs` caps the real run's batch size (default 16 in this tutorial).
+# - `profiling.attention.max_batch_size` must cover that cap to avoid extrapolating attention timing.
+#   Lower this (e.g. 1) only if you accept the fidelity loss for faster profiling.
+export GSIM_VIDUR_ATTENTION_MAX_BATCH_SIZE="${GSIM_VIDUR_ATTENTION_MAX_BATCH_SIZE:-16}"
+
+# MLP validation mode for staged `mlp.csv`.
+export GSIM_VIDUR_MLP_VALIDATION_MODE="${GSIM_VIDUR_MLP_VALIDATION_MODE:-strict}"
+
 # Optional: automatically retry with a fallback method when validation fails.
 export GSIM_VIDUR_MLP_FALLBACK_ENABLED="${GSIM_VIDUR_MLP_FALLBACK_ENABLED:-false}"
 export GSIM_VIDUR_MLP_FALLBACK_METHOD="${GSIM_VIDUR_MLP_FALLBACK_METHOD:-cuda_event}"
 
 # Missing-value handling for staged `mlp.csv`:
-# - auto (default): strict => reject; non_strict => drop (per-target) during consumption.
+# - auto: strict => reject; non_strict => drop (per-target) during consumption.
 # - reject: always fail on NaNs.
 # - drop: allow NaNs (consumers must handle them).
-export GSIM_VIDUR_MLP_NAN_POLICY="${GSIM_VIDUR_MLP_NAN_POLICY:-auto}"
+# - zero: allow NaNs (consumers fill missing targets with 0.0 per target).
+export GSIM_VIDUR_MLP_NAN_POLICY="${GSIM_VIDUR_MLP_NAN_POLICY:-zero}"
 
 # Missing-value handling when consuming a profiling root in `svr sim`.
-export GSIM_VIDUR_SIM_MLP_NAN_POLICY="${GSIM_VIDUR_SIM_MLP_NAN_POLICY:-auto}"
+export GSIM_VIDUR_SIM_MLP_VALIDATION_MODE="${GSIM_VIDUR_SIM_MLP_VALIDATION_MODE:-strict}"
+export GSIM_VIDUR_SIM_MLP_NAN_POLICY="${GSIM_VIDUR_SIM_MLP_NAN_POLICY:-zero}"
+
+# CPU overhead profiling improves sim-vs-real parity, but can be flaky on some hosts
+# (Ray worker startup, CUDA init issues, OOM at large batch sizes).
+#
+# This tutorial defaults to enabling it. Disable explicitly if you are debugging compute-only behavior
+# or if CPU overhead profiling is failing on your machine.
+export GSIM_VIDUR_INCLUDE_CPU_OVERHEAD="${GSIM_VIDUR_INCLUDE_CPU_OVERHEAD:-true}"
+
+CPU_OVERHEAD_ENABLED="false"
+case "$(echo "$GSIM_VIDUR_INCLUDE_CPU_OVERHEAD" | tr '[:upper:]' '[:lower:]')" in
+  1|true|yes|on) CPU_OVERHEAD_ENABLED="true" ;;
+esac
 
 # 1) Create a fresh run directory with the chosen presets.
 RUN_DIR="$(
@@ -143,13 +173,17 @@ pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr trace --run-dir "$RUN_DIR" --import-
 
 # 3) Profile on THIS host, to generate profiling data used by the simulator (GPU kernels + CPU overhead).
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR" \
+  "profiling.cpu_overhead.enabled=${CPU_OVERHEAD_ENABLED}" \
+  "profiling.attention.max_batch_size=${GSIM_VIDUR_ATTENTION_MAX_BATCH_SIZE}" \
   "profiling.mlp.profile_method=${GSIM_VIDUR_MLP_PROFILE_METHOD}" \
+  "profiling.mlp.validation.mode=${GSIM_VIDUR_MLP_VALIDATION_MODE}" \
   "profiling.mlp.fallback.enabled=${GSIM_VIDUR_MLP_FALLBACK_ENABLED}" \
   "profiling.mlp.fallback.method=${GSIM_VIDUR_MLP_FALLBACK_METHOD}" \
   "profiling.mlp.validation.nan_policy=${GSIM_VIDUR_MLP_NAN_POLICY}"
 
 # 4) Run the Vidur simulation using the imported trace + the freshly generated profiling bundle.
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr sim --run-dir "$RUN_DIR" \
+  "vidur.validation.mlp.mode=${GSIM_VIDUR_SIM_MLP_VALIDATION_MODE}" \
   "vidur.validation.mlp.nan_policy=${GSIM_VIDUR_SIM_MLP_NAN_POLICY}"
 
 # 5) Run the real replay (Sarathi) using the SAME trace, so sim-vs-real is comparable.

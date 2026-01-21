@@ -226,6 +226,28 @@ def _load_profile_mlp_selection(*, run_dir: Path) -> dict[str, Any] | None:
     return out
 
 
+def _load_profile_resolved(*, run_dir: Path) -> dict[str, Any] | None:
+    """Load resolved profiling settings recorded by `svr profile` (best effort)."""
+    run_state_path = run_dir / "run_state.json"
+    if not run_state_path.exists():
+        return None
+
+    state = read_json(run_state_path)
+    if not isinstance(state, dict):
+        return None
+    artifacts = state.get("artifacts")
+    if not isinstance(artifacts, dict):
+        return None
+    profile = artifacts.get("profile")
+    if not isinstance(profile, dict):
+        return None
+
+    resolved = profile.get("resolved")
+    if isinstance(resolved, dict) and resolved:
+        return dict(resolved)
+    return None
+
+
 def _load_trace_csv_summary(*, run_dir: Path) -> dict[str, Any]:
     """Return a small summary of the canonical trace (counts + token maxima)."""
     from gpu_simulate_test.io import read_csv
@@ -278,41 +300,60 @@ def _arrival_params(trace_meta: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def _detect_sim_pf_metrics_csv(*, sim_run_dir: Path) -> Path:
-    # Preferred: materialized by `svr sim` under sim/paper_fidelity/request_metrics.csv
-    candidate = sim_run_dir / "paper_fidelity" / "request_metrics.csv"
-    if candidate.exists():
-        return candidate
+def _write_sim_request_metrics_csv(*, sim_run_dir: Path, out_csv: Path) -> None:
+    """Write paper-fidelity-style request metrics for sim into the report inputs directory.
 
-    # Fallback: derive from Vidur's raw outputs under sim/run_meta.json -> vidur_raw_dir.
+    Note: we intentionally avoid writing any derived artifacts under `<run_dir>/sim/` so users
+    don't confuse "paper_fidelity" the metric schema with the separate `paper-fidelity` pipeline.
+    """
+    # Back-compat: if older runs materialized this file already, just copy it.
+    legacy = sim_run_dir / "paper_fidelity" / "request_metrics.csv"
+    if legacy.exists():
+        out_csv.write_bytes(legacy.read_bytes())
+        return
+
     meta = read_json(sim_run_dir / "run_meta.json")
     raw_dir_value = meta.get("vidur_raw_dir") if isinstance(meta, dict) else None
     if not isinstance(raw_dir_value, str) or not raw_dir_value:
         raise UserFacingError(
-            "sim/run_meta.json is missing vidur_raw_dir; cannot build paper-fidelity request_metrics.csv.",
+            "sim/run_meta.json is missing vidur_raw_dir; cannot build paper-fidelity request metrics.",
             hint="Re-run `vidur-cli svr sim --run-dir <run_dir>`.",
         )
+
     raw_csv = Path(raw_dir_value).expanduser() / "request_metrics.csv"
     if not raw_csv.exists():
         raise UserFacingError(
-            "Vidur raw request_metrics.csv is missing; cannot build paper-fidelity request_metrics.csv.",
+            "Vidur raw request_metrics.csv is missing; cannot build paper-fidelity request metrics.",
             hint="Re-run `vidur-cli svr sim --run-dir <run_dir>`.",
             context={"raw_csv": str(raw_csv)},
         )
+
     df = convert_vidur_request_metrics_to_paper_fidelity(raw_csv)
-    write_csv(candidate, df, required_columns=PAPER_FIDELITY_REQUEST_METRICS_REQUIRED_COLUMNS)
-    return candidate
+    write_csv(out_csv, df, required_columns=PAPER_FIDELITY_REQUEST_METRICS_REQUIRED_COLUMNS)
 
 
-def _detect_real_pf_metrics_csv(*, real_run_dir: Path) -> Path:
-    candidate = real_run_dir / "paper_fidelity" / "request_metrics.csv"
-    if not candidate.exists():
+def _write_real_request_metrics_csv(*, real_run_dir: Path, out_csv: Path) -> None:
+    """Write paper-fidelity-style request metrics for real into the report inputs directory."""
+    # Back-compat: if older runs materialized this file already, just copy it.
+    legacy = real_run_dir / "paper_fidelity" / "request_metrics.csv"
+    if legacy.exists():
+        out_csv.write_bytes(legacy.read_bytes())
+        return
+
+    sarathi_sequence_metrics_csv = real_run_dir / "sarathi" / "replica_0" / "sequence_metrics.csv"
+    if not sarathi_sequence_metrics_csv.exists():
         raise UserFacingError(
-            "Missing prerequisite: Sarathi paper-fidelity request metrics are missing.",
+            "Missing prerequisite: Sarathi sequence_metrics.csv is missing.",
             hint="Re-run `vidur-cli svr real --run-dir <run_dir>` using backend=sarathi.",
-            context={"expected_path": str(candidate)},
+            context={"expected_path": str(sarathi_sequence_metrics_csv)},
         )
-    return candidate
+
+    from gpu_simulate_test.real_bench.backends.sarathi_paper_fidelity_backend import (
+        convert_sequence_metrics_to_request_metrics,
+    )
+
+    df = convert_sequence_metrics_to_request_metrics(sarathi_sequence_metrics_csv)
+    write_csv(out_csv, df, required_columns=PAPER_FIDELITY_REQUEST_METRICS_REQUIRED_COLUMNS)
 
 
 def write_paper_fidelity_style_report(
@@ -343,9 +384,6 @@ def write_paper_fidelity_style_report(
     arrival_params = _arrival_params(trace_meta)
     trace_summary = _load_trace_csv_summary(run_dir=run_dir)
 
-    sim_pf_csv_src = _detect_sim_pf_metrics_csv(sim_run_dir=sim_run_dir)
-    real_pf_csv_src = _detect_real_pf_metrics_csv(real_run_dir=real_run_dir)
-
     paths.report_dir.mkdir(parents=True, exist_ok=True)
     paths.inputs_dir.mkdir(parents=True, exist_ok=True)
     paths.figs_dir.mkdir(parents=True, exist_ok=True)
@@ -353,9 +391,9 @@ def write_paper_fidelity_style_report(
 
     sim_pf_csv = paths.inputs_dir / "sim_request_metrics.csv"
     real_pf_csv = paths.inputs_dir / "real_request_metrics.csv"
-    # Use stable copies inside the report directory for reproducibility.
-    sim_pf_csv.write_bytes(sim_pf_csv_src.read_bytes())
-    real_pf_csv.write_bytes(real_pf_csv_src.read_bytes())
+    # Materialize stable inputs inside the report directory for reproducibility.
+    _write_sim_request_metrics_csv(sim_run_dir=sim_run_dir, out_csv=sim_pf_csv)
+    _write_real_request_metrics_csv(real_run_dir=real_run_dir, out_csv=real_pf_csv)
 
     sim_df = load_metrics_csv(sim_pf_csv)
     real_df = load_metrics_csv(real_pf_csv)
@@ -448,12 +486,17 @@ def write_paper_fidelity_style_report(
         return str(value)
 
     profiling_root = profiling_root.expanduser().resolve()
+    profile_resolved = _load_profile_resolved(run_dir=run_dir)
+    resolved_network_device = (
+        profile_resolved.get("network_device") if isinstance(profile_resolved, dict) else None
+    )
+    network_device = str(resolved_network_device) if resolved_network_device else "a100_pairwise_nvlink"
     cpu_overheads_csv = (
         profiling_root
         / "data"
         / "profiling"
         / "cpu_overhead"
-        / "a100_pairwise_nvlink"
+        / network_device
         / str(model_id)
         / "cpu_overheads.csv"
     )
@@ -466,6 +509,9 @@ def write_paper_fidelity_style_report(
     mlp_selection = _load_profile_mlp_selection(run_dir=run_dir)
     sim_mlp_validation = sim_meta.get("mlp_validation") if isinstance(sim_meta.get("mlp_validation"), dict) else {}
     sim_mlp_nan_drop = sim_meta.get("mlp_nan_drop") if isinstance(sim_meta.get("mlp_nan_drop"), dict) else {}
+    sim_mlp_nan_fill_zero = (
+        sim_meta.get("mlp_nan_fill_zero") if isinstance(sim_meta.get("mlp_nan_fill_zero"), dict) else {}
+    )
 
     # Summary.md
     lines: list[str] = []
@@ -478,10 +524,36 @@ def write_paper_fidelity_style_report(
 
     lines.append("## Profiling")
     lines.append(f"- root: `{profiling_root}`")
+    if profile_resolved is not None:
+        lines.append("- settings:")
+        for key in ["num_gpus", "tensor_parallel_size", "max_tokens", "include_network"]:
+            if key in profile_resolved:
+                lines.append(f"  - {key}: `{profile_resolved.get(key)}`")
     lines.append(f"- cpu_overhead:")
     lines.append(f"  - modeling: `{'enabled' if include_cpu_overhead else 'disabled'}`")
+    lines.append(f"  - network_device: `{network_device}`")
+    if (
+        profile_resolved is not None
+        and isinstance(profile_resolved.get("cpu_overhead"), dict)
+    ):
+        cpu_cfg = profile_resolved["cpu_overhead"]
+        if "max_batch_size" in cpu_cfg:
+            lines.append(f"  - max_batch_size: `{cpu_cfg.get('max_batch_size')}`")
+        if "validation" in cpu_cfg:
+            lines.append(f"  - validation: `{cpu_cfg.get('validation')}`")
     lines.append(f"  - csv: `{cpu_overheads_csv}`")
     lines.append(f"  - status: `{cpu_overheads_status}`")
+    if (
+        profile_resolved is not None
+        and isinstance(profile_resolved.get("attention"), dict)
+    ):
+        attn_cfg = profile_resolved["attention"]
+        parts: list[str] = []
+        for key in ["profile_mode", "backend", "block_size", "min_batch_size", "max_batch_size"]:
+            if key in attn_cfg and attn_cfg.get(key) is not None:
+                parts.append(f"{key}={attn_cfg.get(key)}")
+        if parts:
+            lines.append(f"- attention: `{' '.join(parts)}`")
     lines.append("- mlp:")
     if mlp_selection is None:
         lines.append("  - profile_method: `unknown`")
@@ -557,6 +629,27 @@ def write_paper_fidelity_style_report(
         )
     else:
         lines.append("  - nan_drop: `disabled`")
+
+    if sim_mlp_nan_fill_zero and bool(sim_mlp_nan_fill_zero.get("enabled")):
+        per_model = (
+            sim_mlp_nan_fill_zero.get("per_model")
+            if isinstance(sim_mlp_nan_fill_zero.get("per_model"), dict)
+            else {}
+        )
+        filled_total = 0
+        models_with_fills = 0
+        for stats in per_model.values():
+            if not isinstance(stats, dict):
+                continue
+            filled = int(stats.get("cells_filled") or 0)
+            filled_total += filled
+            if filled > 0:
+                models_with_fills += 1
+        lines.append(
+            f"  - nan_fill_zero: `enabled` models_with_fills=`{models_with_fills}` cells_filled_total=`{filled_total}`"
+        )
+    else:
+        lines.append("  - nan_fill_zero: `disabled`")
     lines.append("")
 
     lines.append("## Config (apple-to-apple)")

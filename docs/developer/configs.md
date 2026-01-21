@@ -117,10 +117,17 @@ pixi run vidur-profile \
   profiling.mlp.profile_method=cuda_event
 
 # Best-effort consumption of legacy profiling roots with missing (NaN) MLP timings:
+# See: docs/manual/mlp-validation-and-fallback.md
 pixi run vidur-sim \
   vidur.profiling.root=tmp/vidur_profiling/a100/qwen3_0_6b \
   workload.workload_dir=tmp/workloads/<workload_id> \
   vidur.validation.mlp.nan_policy=drop
+
+# Alternative: fill missing targets with 0.0 per target during training:
+pixi run vidur-sim \
+  vidur.profiling.root=tmp/vidur_profiling/a100/qwen3_0_6b \
+  workload.workload_dir=tmp/workloads/<workload_id> \
+  vidur.validation.mlp.nan_policy=zero
 ```
 
 Paper fidelity overrides:
