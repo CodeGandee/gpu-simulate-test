@@ -579,12 +579,10 @@ def run_sim(
             },
         }
         run_vidur_sim(inputs, out_dir=out_dir, run_meta=run_meta)
-
-        paper_fidelity_csv = _maybe_write_sim_paper_fidelity_metrics(sim_run_dir=out_dir)
         _update_run_state_sim_ok(
             run_dir=run_dir,
             sim_run_dir=out_dir,
-            paper_fidelity_request_metrics_csv=paper_fidelity_csv,
+            paper_fidelity_request_metrics_csv=None,
             overrides=overrides,
         )
         return out_dir.resolve()
@@ -1046,48 +1044,3 @@ def _enrich_summary_md(summary_md: Path, *, arrival_kind: str, include_cpu_overh
 
     summary_md.write_text("\n".join(updated) + "\n", encoding="utf-8")
 
-
-def _maybe_write_sim_paper_fidelity_metrics(*, sim_run_dir: Path) -> Path:
-    """Materialize paper-fidelity-style `request_metrics.csv` for Vidur sim outputs.
-
-    This keeps the canonical `sim/request_metrics.csv` (ttft-based schema) intact, while
-    writing an additional CSV with Vidur's normalized paper-fidelity columns under:
-
-        <sim_run_dir>/paper_fidelity/request_metrics.csv
-    """
-    from gpu_simulate_test.io import read_json, utcnow_iso, write_csv, write_json
-    from gpu_simulate_test.paper_fidelity.scoring import PAPER_FIDELITY_REQUEST_METRICS_REQUIRED_COLUMNS
-    from gpu_simulate_test.vidur_ext.sim_runner import convert_vidur_request_metrics_to_paper_fidelity
-
-    meta = read_json(sim_run_dir / "run_meta.json")
-    raw_dir_value = meta.get("vidur_raw_dir")
-    if not isinstance(raw_dir_value, str) or not raw_dir_value:
-        raise UserFacingError(
-            "sim/run_meta.json is missing vidur_raw_dir; cannot build paper-fidelity request_metrics.csv.",
-            hint="Re-run `vidur-cli svr sim --run-dir <run_dir>`.",
-        )
-
-    raw_dir = Path(raw_dir_value).expanduser()
-    raw_csv = raw_dir / "request_metrics.csv"
-    if not raw_csv.exists():
-        raise UserFacingError(
-            "Vidur raw request_metrics.csv is missing; cannot build paper-fidelity request_metrics.csv.",
-            hint="Re-run `vidur-cli svr sim --run-dir <run_dir>`.",
-            context={"raw_csv": str(raw_csv)},
-        )
-
-    df = convert_vidur_request_metrics_to_paper_fidelity(raw_csv)
-    out_dir = sim_run_dir / "paper_fidelity"
-    out_csv = out_dir / "request_metrics.csv"
-    write_csv(out_csv, df, required_columns=PAPER_FIDELITY_REQUEST_METRICS_REQUIRED_COLUMNS)
-    write_json(
-        out_dir / "run_meta.json",
-        {
-            "schema_version": "v1",
-            "run_type": "sim",
-            "generated_at": utcnow_iso(),
-            "raw_request_metrics_csv": str(raw_csv.resolve()),
-            "request_metrics_csv": str(out_csv.resolve()),
-        },
-    )
-    return out_csv.resolve()

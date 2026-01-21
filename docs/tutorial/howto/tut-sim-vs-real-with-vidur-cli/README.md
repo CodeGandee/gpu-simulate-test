@@ -22,6 +22,7 @@ The script:
 - uses `vidur.validation.mlp.mode=strict vidur.validation.mlp.nan_policy=zero` by default
 - enables CPU overhead profiling by default (`GSIM_VIDUR_INCLUDE_CPU_OVERHEAD=false` to disable; wired via `profiling.cpu_overhead.enabled`)
 - runs attention profiling with the repo’s Sarathi compatibility patch (enabled only for the attention profiling subprocess)
+- profiles attention decode batches up to `GSIM_VIDUR_ATTENTION_MAX_BATCH_SIZE` (default `16`, matching `backend.scheduler.max_num_seqs`)
 - fails fast if attention profiling fails (no template/placeholder fallback), because placeholder profiling data can silently degrade sim-vs-real fidelity
 - prints the final report path (`<run_dir>/report/summary.md`)
 
@@ -344,7 +345,7 @@ This tutorial is designed to be reproducible. The table below summarizes the par
 | Config | `profiling.attention.backend` | `FLASHINFER` | `configs/compare_vidur_real/vidur_profile.yaml` | Sarathi attention backend used during profiling (should match real backend). |
 | Config | `profiling.attention.block_size` | `16` | `configs/compare_vidur_real/vidur_profile.yaml` | KV-cache block/page size used in attention profiling. |
 | Config | `profiling.attention.min_batch_size` | `1` | `configs/compare_vidur_real/vidur_profile.yaml` | Min decode batch size profiled for attention. |
-| Config | `profiling.attention.max_batch_size` | `1` | `configs/compare_vidur_real/vidur_profile.yaml` | Max decode batch size profiled for attention (kept small to reduce tutorial runtime). |
+| Config | `profiling.attention.max_batch_size` | `16` | `configs/compare_vidur_real/vidur_profile.yaml` | Max decode batch size profiled for attention (the demo script also passes an override via `GSIM_VIDUR_ATTENTION_MAX_BATCH_SIZE`). |
 | Env (→ override) | `GSIM_VIDUR_MLP_PROFILE_METHOD → profiling.mlp.profile_method` | `record_function` | script env → `svr profile` arg | How MLP op timings are measured for `mlp.csv`. |
 | Env (→ override) | `GSIM_VIDUR_MLP_VALIDATION_MODE → profiling.mlp.validation.mode` | `strict` | script env → `svr profile` arg | Fails fast on suspicious/zero-heavy profiling signals. |
 | Env (→ override) | `GSIM_VIDUR_MLP_NAN_POLICY → profiling.mlp.validation.nan_policy` | `zero` | script env → `svr profile` arg | Allows NaNs and fills missing timing targets with 0.0 per target during training. |
@@ -360,7 +361,7 @@ This tutorial is designed to be reproducible. The table below summarizes the par
 Notes:
 
 - If CPU overhead profiling fails on a host, set `GSIM_VIDUR_INCLUDE_CPU_OVERHEAD=false` and rerun the tutorial.
-- For stronger fidelity at large batches, increase `profiling.attention.max_batch_size` (at the cost of profiling time).
+- If you change `backend.scheduler.max_num_seqs`, also keep `profiling.attention.max_batch_size` in sync (at the cost of profiling time).
 
 ### (Optional) Match `paper-fidelity` dynamic arrivals exactly
 

@@ -43,7 +43,7 @@
       "trace_csv": "<RUN_DIR>/trace/trace.csv"
     }
   },
-  "generated_at": "2026-01-21T07:30:03.538812+00:00",
+  "generated_at": "2026-01-21T10:43:44.008769+00:00",
   "inputs": {
     "real_request_metrics_csv": "<RUN_DIR>/report/inputs/real_request_metrics.csv",
     "sim_request_metrics_csv": "<RUN_DIR>/report/inputs/sim_request_metrics.csv"

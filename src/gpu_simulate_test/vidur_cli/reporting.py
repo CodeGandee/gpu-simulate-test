@@ -300,41 +300,60 @@ def _arrival_params(trace_meta: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def _detect_sim_pf_metrics_csv(*, sim_run_dir: Path) -> Path:
-    # Preferred: materialized by `svr sim` under sim/paper_fidelity/request_metrics.csv
-    candidate = sim_run_dir / "paper_fidelity" / "request_metrics.csv"
-    if candidate.exists():
-        return candidate
+def _write_sim_request_metrics_csv(*, sim_run_dir: Path, out_csv: Path) -> None:
+    """Write paper-fidelity-style request metrics for sim into the report inputs directory.
 
-    # Fallback: derive from Vidur's raw outputs under sim/run_meta.json -> vidur_raw_dir.
+    Note: we intentionally avoid writing any derived artifacts under `<run_dir>/sim/` so users
+    don't confuse "paper_fidelity" the metric schema with the separate `paper-fidelity` pipeline.
+    """
+    # Back-compat: if older runs materialized this file already, just copy it.
+    legacy = sim_run_dir / "paper_fidelity" / "request_metrics.csv"
+    if legacy.exists():
+        out_csv.write_bytes(legacy.read_bytes())
+        return
+
     meta = read_json(sim_run_dir / "run_meta.json")
     raw_dir_value = meta.get("vidur_raw_dir") if isinstance(meta, dict) else None
     if not isinstance(raw_dir_value, str) or not raw_dir_value:
         raise UserFacingError(
-            "sim/run_meta.json is missing vidur_raw_dir; cannot build paper-fidelity request_metrics.csv.",
+            "sim/run_meta.json is missing vidur_raw_dir; cannot build paper-fidelity request metrics.",
             hint="Re-run `vidur-cli svr sim --run-dir <run_dir>`.",
         )
+
     raw_csv = Path(raw_dir_value).expanduser() / "request_metrics.csv"
     if not raw_csv.exists():
         raise UserFacingError(
-            "Vidur raw request_metrics.csv is missing; cannot build paper-fidelity request_metrics.csv.",
+            "Vidur raw request_metrics.csv is missing; cannot build paper-fidelity request metrics.",
             hint="Re-run `vidur-cli svr sim --run-dir <run_dir>`.",
             context={"raw_csv": str(raw_csv)},
         )
+
     df = convert_vidur_request_metrics_to_paper_fidelity(raw_csv)
-    write_csv(candidate, df, required_columns=PAPER_FIDELITY_REQUEST_METRICS_REQUIRED_COLUMNS)
-    return candidate
+    write_csv(out_csv, df, required_columns=PAPER_FIDELITY_REQUEST_METRICS_REQUIRED_COLUMNS)
 
 
-def _detect_real_pf_metrics_csv(*, real_run_dir: Path) -> Path:
-    candidate = real_run_dir / "paper_fidelity" / "request_metrics.csv"
-    if not candidate.exists():
+def _write_real_request_metrics_csv(*, real_run_dir: Path, out_csv: Path) -> None:
+    """Write paper-fidelity-style request metrics for real into the report inputs directory."""
+    # Back-compat: if older runs materialized this file already, just copy it.
+    legacy = real_run_dir / "paper_fidelity" / "request_metrics.csv"
+    if legacy.exists():
+        out_csv.write_bytes(legacy.read_bytes())
+        return
+
+    sarathi_sequence_metrics_csv = real_run_dir / "sarathi" / "replica_0" / "sequence_metrics.csv"
+    if not sarathi_sequence_metrics_csv.exists():
         raise UserFacingError(
-            "Missing prerequisite: Sarathi paper-fidelity request metrics are missing.",
+            "Missing prerequisite: Sarathi sequence_metrics.csv is missing.",
             hint="Re-run `vidur-cli svr real --run-dir <run_dir>` using backend=sarathi.",
-            context={"expected_path": str(candidate)},
+            context={"expected_path": str(sarathi_sequence_metrics_csv)},
         )
-    return candidate
+
+    from gpu_simulate_test.real_bench.backends.sarathi_paper_fidelity_backend import (
+        convert_sequence_metrics_to_request_metrics,
+    )
+
+    df = convert_sequence_metrics_to_request_metrics(sarathi_sequence_metrics_csv)
+    write_csv(out_csv, df, required_columns=PAPER_FIDELITY_REQUEST_METRICS_REQUIRED_COLUMNS)
 
 
 def write_paper_fidelity_style_report(
@@ -365,9 +384,6 @@ def write_paper_fidelity_style_report(
     arrival_params = _arrival_params(trace_meta)
     trace_summary = _load_trace_csv_summary(run_dir=run_dir)
 
-    sim_pf_csv_src = _detect_sim_pf_metrics_csv(sim_run_dir=sim_run_dir)
-    real_pf_csv_src = _detect_real_pf_metrics_csv(real_run_dir=real_run_dir)
-
     paths.report_dir.mkdir(parents=True, exist_ok=True)
     paths.inputs_dir.mkdir(parents=True, exist_ok=True)
     paths.figs_dir.mkdir(parents=True, exist_ok=True)
@@ -375,9 +391,9 @@ def write_paper_fidelity_style_report(
 
     sim_pf_csv = paths.inputs_dir / "sim_request_metrics.csv"
     real_pf_csv = paths.inputs_dir / "real_request_metrics.csv"
-    # Use stable copies inside the report directory for reproducibility.
-    sim_pf_csv.write_bytes(sim_pf_csv_src.read_bytes())
-    real_pf_csv.write_bytes(real_pf_csv_src.read_bytes())
+    # Materialize stable inputs inside the report directory for reproducibility.
+    _write_sim_request_metrics_csv(sim_run_dir=sim_run_dir, out_csv=sim_pf_csv)
+    _write_real_request_metrics_csv(real_run_dir=real_run_dir, out_csv=real_pf_csv)
 
     sim_df = load_metrics_csv(sim_pf_csv)
     real_df = load_metrics_csv(real_pf_csv)

@@ -34,8 +34,9 @@ profiling:
     block_size: 16
     # Decode batch sizes to profile (inclusive).
     min_batch_size: 1
-    # Default to batch=1 for fast iteration; increase (e.g. 16/128) for better fidelity at larger batches.
-    max_batch_size: 1
+    # Tutorial default: match the serving batch cap (backend.scheduler.max_num_seqs=16) to avoid OOD extrapolation.
+    # For faster iteration, you can lower this (e.g. 1) at the cost of fidelity when decode batches > max_batch_size.
+    max_batch_size: 16
 
   mlp:
     # REQUIRED (no default). How Vidur measures per-op time for MLP profiling:

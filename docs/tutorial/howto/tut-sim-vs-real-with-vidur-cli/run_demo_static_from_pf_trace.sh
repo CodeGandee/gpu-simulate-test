@@ -125,6 +125,12 @@ echo "GPU_SIMULATE_TEST_ENABLE_VIDUR_ATTENTION_COMPAT=$GPU_SIMULATE_TEST_ENABLE_
 # - docs/tutorial/in-depth/adv-tut-vidur-cli-mlp-profile-methods/
 export GSIM_VIDUR_MLP_PROFILE_METHOD="${GSIM_VIDUR_MLP_PROFILE_METHOD:-record_function}"
 
+# Attention profiling decode batch coverage (parity-critical):
+# - `backend.scheduler.max_num_seqs` caps the real run's batch size (default 16 in this tutorial).
+# - `profiling.attention.max_batch_size` must cover that cap to avoid extrapolating attention timing.
+#   Lower this (e.g. 1) only if you accept the fidelity loss for faster profiling.
+export GSIM_VIDUR_ATTENTION_MAX_BATCH_SIZE="${GSIM_VIDUR_ATTENTION_MAX_BATCH_SIZE:-16}"
+
 # MLP validation mode for staged `mlp.csv`.
 export GSIM_VIDUR_MLP_VALIDATION_MODE="${GSIM_VIDUR_MLP_VALIDATION_MODE:-strict}"
 
@@ -168,6 +174,7 @@ pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr trace --run-dir "$RUN_DIR" --import-
 # 3) Profile on THIS host, to generate profiling data used by the simulator (GPU kernels + CPU overhead).
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR" \
   "profiling.cpu_overhead.enabled=${CPU_OVERHEAD_ENABLED}" \
+  "profiling.attention.max_batch_size=${GSIM_VIDUR_ATTENTION_MAX_BATCH_SIZE}" \
   "profiling.mlp.profile_method=${GSIM_VIDUR_MLP_PROFILE_METHOD}" \
   "profiling.mlp.validation.mode=${GSIM_VIDUR_MLP_VALIDATION_MODE}" \
   "profiling.mlp.fallback.enabled=${GSIM_VIDUR_MLP_FALLBACK_ENABLED}" \
