@@ -137,6 +137,15 @@ A: Yes — you should interpret the comparison as **simulated GPU latency predic
 - `real-bench` replays requests sequentially; if your workload has `arrival_time_ns=0` for many requests, later requests’ `ttft_ns` will include queueing behind earlier ones, which can distort direct TTFT comparisons.
 - For a “no queueing” baseline with `real-bench`, set `workload.arrival.inter_arrival_ns` large enough that each request completes before the next arrives (check `completion_time_ns[i] <= arrival_time_ns[i+1]` in the real run’s `request_metrics.csv`).
 
+## Known issue: network profiling on host
+
+This repo’s current Vidur profiling flows do not *generate* network (collectives) profiles on the current host; they
+only copy vendor-provided `all_reduce.csv` / `send_recv.csv` by `hardware.network_device`. For TP/PP>1, you must
+manually profile and stage these CSVs into your profiling root.
+
+- Howto: `context/summaries/vidur-kb/howto-profile-vidur-network-collectives.md`
+- Issue: `context/issues/known/issue-vidur-network-profiling-not-generated-on-host.md`
+
 ## Repo Layout
 
 - `src/gpu_simulate_test/`: Python package code (src layout).
