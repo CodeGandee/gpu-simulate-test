@@ -22,6 +22,7 @@ The script:
 - uses `vidur.validation.mlp.mode=strict vidur.validation.mlp.nan_policy=zero` by default
 - disables CPU overhead profiling by default (`GSIM_VIDUR_INCLUDE_CPU_OVERHEAD=true` to enable)
 - runs attention profiling with the repo’s Sarathi compatibility patch (enabled only for the attention profiling subprocess)
+- fails fast if attention profiling fails (no template/placeholder fallback), because placeholder profiling data can silently degrade sim-vs-real fidelity
 - prints the final report path (`<run_dir>/report/summary.md`)
 
 Tracked demo artifacts in this directory:
