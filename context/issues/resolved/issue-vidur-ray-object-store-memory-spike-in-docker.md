@@ -1,4 +1,13 @@
-# Known issue: Vidur/Sarathi Ray object store reserves huge `/dev/shm` (looks like “all RAM”)
+# Resolved issue: Vidur/Sarathi Ray object store reserves huge `/dev/shm` (looks like “all RAM”)
+
+## Resolution status
+
+Resolved in this repo by setting a safe default cap for Ray’s object store via env var
+`RAY_DEFAULT_OBJECT_STORE_MAX_MEMORY_BYTES` (without overriding user-provided values).
+
+- Fix: `src/gpu_simulate_test/env_guard.py` (`apply_ray_object_store_defaults`)
+- Effect: Vidur/Sarathi runs that call `apply_cuda_visible_devices_from_gsim()` will get the cap by default, avoiding
+  the “Ray reserves ~200GB in `/dev/shm`” surprise on large-memory hosts / `--ipc=host` containers.
 
 ## Summary
 

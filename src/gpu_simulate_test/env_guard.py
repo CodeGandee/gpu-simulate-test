@@ -6,6 +6,16 @@ from pathlib import Path
 
 GSIM_CUDA_VISIBLE_DEVICES_ENV = "GSIM_CUDA_VISIBLE_DEVICES"
 RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO_ENV = "RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO"
+RAY_DEFAULT_OBJECT_STORE_MAX_MEMORY_BYTES_ENV = "RAY_DEFAULT_OBJECT_STORE_MAX_MEMORY_BYTES"
+
+# Ray can default to a very large object store (e.g. 200GB) on machines with large RAM + large `/dev/shm`,
+# which is surprising in containerized workflows (looks like "all memory" is being used).
+#
+# We cap Ray's default object store size unless the user explicitly sets a value.
+#
+# Prefer env var control here because Sarathi and Vidur call `ray.init(...)` internally.
+DEFAULT_RAY_OBJECT_STORE_MAX_MEMORY_BYTES_CAP = 20_000_000_000  # 20 GB
+DEFAULT_RAY_OBJECT_STORE_SHM_FRACTION = 0.8
 
 
 def find_repo_root(start: Path | None = None) -> Path | None:
@@ -98,7 +108,40 @@ def apply_cuda_visible_devices_from_gsim(*, repo_root: Path | None = None) -> st
     # (which Sarathi uses), which can make GPU work fail inside Ray workers. This knob tells Ray to
     # preserve the existing env var instead. The warning emitted by Ray suggests this exact setting.
     os.environ.setdefault(RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO_ENV, "0")
+    apply_ray_object_store_defaults()
     return desired
+
+
+def apply_ray_object_store_defaults(
+    *,
+    max_bytes_cap: int = DEFAULT_RAY_OBJECT_STORE_MAX_MEMORY_BYTES_CAP,
+    shm_fraction: float = DEFAULT_RAY_OBJECT_STORE_SHM_FRACTION,
+) -> None:
+    """Set safe Ray object-store defaults unless the user already configured them.
+
+    Ray's object store is typically placed under `/dev/shm`. On large-memory hosts (or containers with `--ipc=host`),
+    Ray can choose an unexpectedly large object store by default. This function caps the default size via env var
+    `RAY_DEFAULT_OBJECT_STORE_MAX_MEMORY_BYTES`, without overriding user intent.
+    """
+    if os.environ.get(RAY_DEFAULT_OBJECT_STORE_MAX_MEMORY_BYTES_ENV):
+        return
+
+    shm_bytes: int | None = None
+    try:
+        st = os.statvfs("/dev/shm")
+        shm_bytes = int(st.f_frsize) * int(st.f_blocks)
+    except Exception:
+        shm_bytes = None
+
+    candidate = int(max_bytes_cap)
+    if shm_bytes and shm_bytes > 0 and 0.0 < float(shm_fraction) <= 1.0:
+        candidate = min(candidate, int(shm_bytes * float(shm_fraction)))
+
+    # Ray will reject non-positive values; if `/dev/shm` is extremely small, fall back to leaving the env unset.
+    if candidate <= 0:
+        return
+
+    os.environ[RAY_DEFAULT_OBJECT_STORE_MAX_MEMORY_BYTES_ENV] = str(candidate)
 
 
 def patch_sarathi_preserve_cuda_visible_devices() -> None:
