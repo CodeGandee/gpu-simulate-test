@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import shutil
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -40,6 +41,157 @@ from gpu_simulate_test.vidur_ext.profile_runner import VidurProfileInputs, run_v
 from gpu_simulate_test.vidur_ext.qwen3_model_config import Qwen3ModelRef, register_qwen3_0_6b
 from gpu_simulate_test.vidur_ext.sim_runner import VidurSimInputs, run_vidur_sim
 from gpu_simulate_test.workloads.arrival_schedule import ArrivalScheduleConfig
+
+
+@dataclass(frozen=True)
+class ResolvedProfilingSettings:
+    """Resolved `svr profile` settings derived from Hydra config + CLI overrides."""
+
+    num_gpus: int
+    tensor_parallel_size: int
+    max_tokens: int
+    include_network: bool
+    network_device: str
+    include_cpu_overhead: bool
+    cpu_overhead_max_batch_size: int
+    cpu_overhead_validation: str
+    attention_profile_mode: str
+    attention_backend: str | None
+    attention_block_size: int
+    attention_min_batch_size: int
+    attention_max_batch_size: int
+
+    def as_jsonable(self) -> dict[str, Any]:
+        return {
+            "num_gpus": int(self.num_gpus),
+            "tensor_parallel_size": int(self.tensor_parallel_size),
+            "max_tokens": int(self.max_tokens),
+            "include_network": bool(self.include_network),
+            "network_device": str(self.network_device),
+            "cpu_overhead": {
+                "enabled": bool(self.include_cpu_overhead),
+                "max_batch_size": int(self.cpu_overhead_max_batch_size),
+                "validation": str(self.cpu_overhead_validation),
+            },
+            "attention": {
+                "profile_mode": str(self.attention_profile_mode),
+                "backend": self.attention_backend,
+                "block_size": int(self.attention_block_size),
+                "min_batch_size": int(self.attention_min_batch_size),
+                "max_batch_size": int(self.attention_max_batch_size),
+            },
+        }
+
+
+def _resolve_profiling_settings(
+    cfg: object, *, include_cpu_overhead_override: bool | None
+) -> ResolvedProfilingSettings:
+    """Resolve `svr profile` settings from Hydra config + an optional CLI override."""
+    num_gpus_val = OmegaConf.select(cfg, "profiling.num_gpus")
+    num_gpus = int(num_gpus_val or 1)
+    if num_gpus < 1:
+        raise UserFacingError(f"profiling.num_gpus must be >= 1 (got {num_gpus!r}).")
+
+    tensor_parallel_size_val = OmegaConf.select(cfg, "profiling.tensor_parallel_size")
+    tensor_parallel_size = int(tensor_parallel_size_val or 1)
+    if tensor_parallel_size < 1:
+        raise UserFacingError(
+            f"profiling.tensor_parallel_size must be >= 1 (got {tensor_parallel_size!r})."
+        )
+
+    max_tokens_val = OmegaConf.select(cfg, "profiling.max_tokens")
+    max_tokens = int(max_tokens_val or 4096)
+    if max_tokens < 1:
+        raise UserFacingError(f"profiling.max_tokens must be >= 1 (got {max_tokens!r}).")
+
+    include_network_val = OmegaConf.select(cfg, "profiling.include_network")
+    include_network = bool(include_network_val) if include_network_val is not None else True
+
+    cpu_overhead_enabled_val = OmegaConf.select(cfg, "profiling.cpu_overhead.enabled")
+    cpu_overhead_enabled_cfg = bool(cpu_overhead_enabled_val) if cpu_overhead_enabled_val is not None else True
+    include_cpu_overhead_effective = (
+        bool(cpu_overhead_enabled_cfg)
+        if include_cpu_overhead_override is None
+        else bool(include_cpu_overhead_override)
+    )
+
+    cpu_overhead_max_batch_size_val = OmegaConf.select(cfg, "profiling.cpu_overhead.max_batch_size")
+    cpu_overhead_max_batch_size = int(cpu_overhead_max_batch_size_val or 128)
+    if cpu_overhead_max_batch_size < 1:
+        raise UserFacingError(
+            "profiling.cpu_overhead.max_batch_size must be >= 1 "
+            f"(got {cpu_overhead_max_batch_size!r})."
+        )
+
+    cpu_overhead_validation_val = OmegaConf.select(cfg, "profiling.cpu_overhead.validation")
+    cpu_overhead_validation = str(cpu_overhead_validation_val or "strict").lower().strip()
+    if cpu_overhead_validation not in {"strict", "warn", "off"}:
+        raise UserFacingError(
+            "profiling.cpu_overhead.validation must be one of strict|warn|off "
+            f"(got {cpu_overhead_validation!r})."
+        )
+
+    attention_profile_mode_val = OmegaConf.select(cfg, "profiling.attention.profile_mode")
+    attention_profile_mode = str(attention_profile_mode_val or "both").lower().strip()
+    if attention_profile_mode not in {"decode", "prefill", "both"}:
+        raise UserFacingError(
+            "profiling.attention.profile_mode must be one of decode|prefill|both "
+            f"(got {attention_profile_mode!r})."
+        )
+
+    attention_backend_val = OmegaConf.select(cfg, "profiling.attention.backend")
+    attention_backend = (
+        str(attention_backend_val).strip() if attention_backend_val is not None else None
+    )
+    if attention_backend == "":
+        attention_backend = None
+
+    attention_block_size_val = OmegaConf.select(cfg, "profiling.attention.block_size")
+    attention_block_size = int(attention_block_size_val or 16)
+    if attention_block_size < 1:
+        raise UserFacingError(
+            f"profiling.attention.block_size must be >= 1 (got {attention_block_size!r})."
+        )
+
+    attention_min_batch_size_val = OmegaConf.select(cfg, "profiling.attention.min_batch_size")
+    attention_min_batch_size = int(attention_min_batch_size_val or 1)
+    if attention_min_batch_size < 1:
+        raise UserFacingError(
+            "profiling.attention.min_batch_size must be >= 1 "
+            f"(got {attention_min_batch_size!r})."
+        )
+
+    attention_max_batch_size_val = OmegaConf.select(cfg, "profiling.attention.max_batch_size")
+    attention_max_batch_size = int(attention_max_batch_size_val or 1)
+    if attention_max_batch_size < attention_min_batch_size:
+        raise UserFacingError(
+            "profiling.attention.max_batch_size must be >= profiling.attention.min_batch_size "
+            f"(got min={attention_min_batch_size!r} max={attention_max_batch_size!r})."
+        )
+
+    network_device_val = OmegaConf.select(cfg, "hardware.network_device")
+    if network_device_val is None:
+        raise UserFacingError(
+            "hardware.network_device is required for profiling (no default).",
+            hint="Set hardware.network_device in your hardware preset YAML (e.g. a100_pairwise_nvlink).",
+        )
+    network_device = str(network_device_val)
+
+    return ResolvedProfilingSettings(
+        num_gpus=num_gpus,
+        tensor_parallel_size=tensor_parallel_size,
+        max_tokens=max_tokens,
+        include_network=include_network,
+        network_device=network_device,
+        include_cpu_overhead=include_cpu_overhead_effective,
+        cpu_overhead_max_batch_size=cpu_overhead_max_batch_size,
+        cpu_overhead_validation=cpu_overhead_validation,
+        attention_profile_mode=attention_profile_mode,
+        attention_backend=attention_backend,
+        attention_block_size=attention_block_size,
+        attention_min_batch_size=attention_min_batch_size,
+        attention_max_batch_size=attention_max_batch_size,
+    )
 
 
 def run_init_run(
@@ -148,7 +300,7 @@ def run_profile(
     run_dir: Path,
     resources: ResourceMapV1,
     overrides: list[str],
-    include_cpu_overhead: bool,
+    include_cpu_overhead: bool | None,
 ) -> Path:
     """Run Vidur profiling and record the profiling root in `run_state.json`."""
     run_dir = run_dir.expanduser().resolve()
@@ -158,7 +310,7 @@ def run_profile(
         artifacts = dict(run_state.get("artifacts") or {})
         artifacts["profile"] = {
             "profiling_root": str(out_dir.resolve()),
-            "include_cpu_overhead": bool(include_cpu_overhead),
+            "include_cpu_overhead": include_cpu_overhead,
             "status": "failed",
             "ended_at": ended_at,
             "overrides": list(overrides),
@@ -234,6 +386,10 @@ def run_profile(
         mlp_fallback_method_val = OmegaConf.select(cfg, "profiling.mlp.fallback.method")
         mlp_fallback_method = str(mlp_fallback_method_val or "cuda_event").strip()
 
+        settings = _resolve_profiling_settings(
+            cfg, include_cpu_overhead_override=include_cpu_overhead
+        )
+
         out_dir.mkdir(parents=True, exist_ok=True)
         inputs = VidurProfileInputs(
             model_id=model_id,
@@ -246,7 +402,19 @@ def run_profile(
             mlp_zero_heavy_limit=mlp_zero_heavy_limit,
             mlp_fallback_enabled=mlp_fallback_enabled,
             mlp_fallback_method=mlp_fallback_method,
-            include_cpu_overhead=bool(include_cpu_overhead),
+            network_device=settings.network_device,
+            num_gpus=settings.num_gpus,
+            tensor_parallel_size=settings.tensor_parallel_size,
+            max_tokens=settings.max_tokens,
+            include_network=settings.include_network,
+            include_cpu_overhead=settings.include_cpu_overhead,
+            cpu_overhead_max_batch_size=settings.cpu_overhead_max_batch_size,
+            cpu_overhead_validation=settings.cpu_overhead_validation,
+            attention_backend=settings.attention_backend,
+            attention_block_size=settings.attention_block_size,
+            attention_min_batch_size=settings.attention_min_batch_size,
+            attention_max_batch_size=settings.attention_max_batch_size,
+            attention_profile_mode=settings.attention_profile_mode,
             model_ref=model_ref,
         )
         result = run_vidur_profiling(inputs, repo_root=resources.repo_root.value)
@@ -277,9 +445,10 @@ def run_profile(
         _update_run_state_profile_ok(
             run_dir=run_dir,
             profiling_root=out_dir,
-            include_cpu_overhead=bool(include_cpu_overhead),
+            include_cpu_overhead=settings.include_cpu_overhead,
             overrides=overrides,
             mlp=mlp_summary,
+            resolved_profile=settings.as_jsonable(),
         )
         return out_dir.resolve()
 
@@ -753,6 +922,7 @@ def _update_run_state_profile_ok(
     include_cpu_overhead: bool,
     overrides: list[str],
     mlp: dict[str, Any] | None = None,
+    resolved_profile: dict[str, Any] | None = None,
 ) -> None:
     state = load_run_state(run_dir=run_dir)
     artifacts = dict(state.get("artifacts") or {})
@@ -765,6 +935,8 @@ def _update_run_state_profile_ok(
     }
     if mlp is not None:
         payload["mlp"] = mlp
+    if resolved_profile is not None:
+        payload["resolved"] = resolved_profile
     artifacts["profile"] = payload
     state["artifacts"] = artifacts
     save_run_state(run_dir=run_dir, run_state=state)

@@ -226,6 +226,28 @@ def _load_profile_mlp_selection(*, run_dir: Path) -> dict[str, Any] | None:
     return out
 
 
+def _load_profile_resolved(*, run_dir: Path) -> dict[str, Any] | None:
+    """Load resolved profiling settings recorded by `svr profile` (best effort)."""
+    run_state_path = run_dir / "run_state.json"
+    if not run_state_path.exists():
+        return None
+
+    state = read_json(run_state_path)
+    if not isinstance(state, dict):
+        return None
+    artifacts = state.get("artifacts")
+    if not isinstance(artifacts, dict):
+        return None
+    profile = artifacts.get("profile")
+    if not isinstance(profile, dict):
+        return None
+
+    resolved = profile.get("resolved")
+    if isinstance(resolved, dict) and resolved:
+        return dict(resolved)
+    return None
+
+
 def _load_trace_csv_summary(*, run_dir: Path) -> dict[str, Any]:
     """Return a small summary of the canonical trace (counts + token maxima)."""
     from gpu_simulate_test.io import read_csv
@@ -448,12 +470,17 @@ def write_paper_fidelity_style_report(
         return str(value)
 
     profiling_root = profiling_root.expanduser().resolve()
+    profile_resolved = _load_profile_resolved(run_dir=run_dir)
+    resolved_network_device = (
+        profile_resolved.get("network_device") if isinstance(profile_resolved, dict) else None
+    )
+    network_device = str(resolved_network_device) if resolved_network_device else "a100_pairwise_nvlink"
     cpu_overheads_csv = (
         profiling_root
         / "data"
         / "profiling"
         / "cpu_overhead"
-        / "a100_pairwise_nvlink"
+        / network_device
         / str(model_id)
         / "cpu_overheads.csv"
     )
@@ -481,10 +508,36 @@ def write_paper_fidelity_style_report(
 
     lines.append("## Profiling")
     lines.append(f"- root: `{profiling_root}`")
+    if profile_resolved is not None:
+        lines.append("- settings:")
+        for key in ["num_gpus", "tensor_parallel_size", "max_tokens", "include_network"]:
+            if key in profile_resolved:
+                lines.append(f"  - {key}: `{profile_resolved.get(key)}`")
     lines.append(f"- cpu_overhead:")
     lines.append(f"  - modeling: `{'enabled' if include_cpu_overhead else 'disabled'}`")
+    lines.append(f"  - network_device: `{network_device}`")
+    if (
+        profile_resolved is not None
+        and isinstance(profile_resolved.get("cpu_overhead"), dict)
+    ):
+        cpu_cfg = profile_resolved["cpu_overhead"]
+        if "max_batch_size" in cpu_cfg:
+            lines.append(f"  - max_batch_size: `{cpu_cfg.get('max_batch_size')}`")
+        if "validation" in cpu_cfg:
+            lines.append(f"  - validation: `{cpu_cfg.get('validation')}`")
     lines.append(f"  - csv: `{cpu_overheads_csv}`")
     lines.append(f"  - status: `{cpu_overheads_status}`")
+    if (
+        profile_resolved is not None
+        and isinstance(profile_resolved.get("attention"), dict)
+    ):
+        attn_cfg = profile_resolved["attention"]
+        parts: list[str] = []
+        for key in ["profile_mode", "backend", "block_size", "min_batch_size", "max_batch_size"]:
+            if key in attn_cfg and attn_cfg.get(key) is not None:
+                parts.append(f"{key}={attn_cfg.get(key)}")
+        if parts:
+            lines.append(f"- attention: `{' '.join(parts)}`")
     lines.append("- mlp:")
     if mlp_selection is None:
         lines.append("  - profile_method: `unknown`")

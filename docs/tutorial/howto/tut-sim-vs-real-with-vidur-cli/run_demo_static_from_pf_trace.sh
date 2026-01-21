@@ -143,13 +143,16 @@ export GSIM_VIDUR_MLP_NAN_POLICY="${GSIM_VIDUR_MLP_NAN_POLICY:-zero}"
 export GSIM_VIDUR_SIM_MLP_VALIDATION_MODE="${GSIM_VIDUR_SIM_MLP_VALIDATION_MODE:-strict}"
 export GSIM_VIDUR_SIM_MLP_NAN_POLICY="${GSIM_VIDUR_SIM_MLP_NAN_POLICY:-zero}"
 
-# CPU overhead profiling can be flaky on some hosts (Ray worker startup, CUDA init issues, OOM at large batch sizes).
-# Default to disabling it for a tutorial run; enable explicitly if you want tighter sim-vs-real parity.
-export GSIM_VIDUR_INCLUDE_CPU_OVERHEAD="${GSIM_VIDUR_INCLUDE_CPU_OVERHEAD:-false}"
+# CPU overhead profiling improves sim-vs-real parity, but can be flaky on some hosts
+# (Ray worker startup, CUDA init issues, OOM at large batch sizes).
+#
+# This tutorial defaults to enabling it. Disable explicitly if you are debugging compute-only behavior
+# or if CPU overhead profiling is failing on your machine.
+export GSIM_VIDUR_INCLUDE_CPU_OVERHEAD="${GSIM_VIDUR_INCLUDE_CPU_OVERHEAD:-true}"
 
-PROFILE_CPU_FLAG="--no-include-cpu-overhead"
+CPU_OVERHEAD_ENABLED="false"
 case "$(echo "$GSIM_VIDUR_INCLUDE_CPU_OVERHEAD" | tr '[:upper:]' '[:lower:]')" in
-  1|true|yes|on) PROFILE_CPU_FLAG="--include-cpu-overhead" ;;
+  1|true|yes|on) CPU_OVERHEAD_ENABLED="true" ;;
 esac
 
 # 1) Create a fresh run directory with the chosen presets.
@@ -163,7 +166,8 @@ echo "RUN_DIR=$RUN_DIR"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr trace --run-dir "$RUN_DIR" --import-trace "$TRACE_IMPORT_CSV"
 
 # 3) Profile on THIS host, to generate profiling data used by the simulator (GPU kernels + CPU overhead).
-pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR" $PROFILE_CPU_FLAG \
+pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr profile --run-dir "$RUN_DIR" \
+  "profiling.cpu_overhead.enabled=${CPU_OVERHEAD_ENABLED}" \
   "profiling.mlp.profile_method=${GSIM_VIDUR_MLP_PROFILE_METHOD}" \
   "profiling.mlp.validation.mode=${GSIM_VIDUR_MLP_VALIDATION_MODE}" \
   "profiling.mlp.fallback.enabled=${GSIM_VIDUR_MLP_FALLBACK_ENABLED}" \

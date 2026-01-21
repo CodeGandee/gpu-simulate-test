@@ -20,7 +20,7 @@ The script:
 - uses `profiling.mlp.profile_method=record_function` by default (see “MLP profiling method” below)
 - uses `profiling.mlp.validation.mode=strict profiling.mlp.validation.nan_policy=zero profiling.mlp.fallback.enabled=false` by default
 - uses `vidur.validation.mlp.mode=strict vidur.validation.mlp.nan_policy=zero` by default
-- disables CPU overhead profiling by default (`GSIM_VIDUR_INCLUDE_CPU_OVERHEAD=true` to enable)
+- enables CPU overhead profiling by default (`GSIM_VIDUR_INCLUDE_CPU_OVERHEAD=false` to disable; wired via `profiling.cpu_overhead.enabled`)
 - runs attention profiling with the repo’s Sarathi compatibility patch (enabled only for the attention profiling subprocess)
 - fails fast if attention profiling fails (no template/placeholder fallback), because placeholder profiling data can silently degrade sim-vs-real fidelity
 - prints the final report path (`<run_dir>/report/summary.md`)
@@ -314,6 +314,53 @@ pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr sim     --run-dir "$RUN_DIR_DYN"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr real    --run-dir "$RUN_DIR_DYN"
 pixi run -m "$GSIM_REPO_ROOT" vidur-cli svr report  --run-dir "$RUN_DIR_DYN"
 ```
+
+## Appendix: Tutorial parameter summary
+
+This tutorial is designed to be reproducible. The table below summarizes the parameters used by
+`docs/tutorial/howto/tut-sim-vs-real-with-vidur-cli/run_demo_static_from_pf_trace.sh` and where they come from.
+
+| Category | Key | Tutorial default | Where set | What it controls / why it matters |
+|---|---|---:|---|---|
+| Preset | `model` | `llama2_7b` | `svr init-run` arg | Selects the model preset (HF model id + tokenizer ref). |
+| Preset | `hardware` | `a100` | `svr init-run` arg | Selects the hardware preset used for profiling + sim. |
+| Preset | `backend` | `sarathi` | `svr init-run` arg | Chooses the real replay backend and sim parity knobs. |
+| Preset | `workload` | `default` | `svr init-run` arg | Workload preset (unused for this script’s trace import, but required by the run schema). |
+| Preset | `vidur` | `default` | `svr init-run` arg | Vidur preset group (sim consumption settings + profiling root path templates). |
+| Env | `GSIM_REPO_ROOT` | `<repo_root>` | script export | Lets `scripts/vidur_cli_task.sh` locate repo resources/config roots deterministically. |
+| Env | `GSIM_VIDUR_WORKSPACE_DIR` | `<repo>/tmp/<EXP_NAME>` | script export | Workspace root that holds all per-run directories for this tutorial. |
+| Env | `GSIM_CUDA_VISIBLE_DEVICES` | `4,5` | script export | Pins which GPUs are visible to the pipeline (repo-specific convention). |
+| Env | `CUDA_VISIBLE_DEVICES` | `$GSIM_CUDA_VISIBLE_DEVICES` | script export | CUDA/PyTorch GPU pinning (standard CUDA convention). |
+| Env | `GPU_SIMULATE_TEST_ENABLE_VIDUR_ATTENTION_COMPAT` | `0` | script export | Keeps the Sarathi/Vidur attention compat patch disabled globally; profiling enables it only for the attention subprocess. |
+| Config | `hardware.network_device` | `a100_pairwise_nvlink` | `configs/compare_vidur_real/hardware/a100.yaml` | Places CPU-overhead CSVs under the correct network topology directory. |
+| Config | `profiling.num_gpus` | `1` | `configs/compare_vidur_real/vidur_profile.yaml` | How many GPUs Vidur’s profilers use (affects Ray actor fanout). |
+| Config | `profiling.tensor_parallel_size` | `1` | `configs/compare_vidur_real/vidur_profile.yaml` | TP degree for profiling (filters rows and affects CPU overhead schema). |
+| Config | `profiling.max_tokens` | `4096` | `configs/compare_vidur_real/vidur_profile.yaml` | Max sequence length used during profiling. |
+| Config | `profiling.include_network` | `true` | `configs/compare_vidur_real/vidur_profile.yaml` | Whether profiling includes network timing; keep aligned with whether your sim/stack models network communication. |
+| Env (→ override) | `GSIM_VIDUR_INCLUDE_CPU_OVERHEAD → profiling.cpu_overhead.enabled` | `true` | script env → `svr profile` arg | Whether CPU overhead profiling runs and whether sim models CPU overhead (parity-critical). |
+| Config | `profiling.cpu_overhead.max_batch_size` | `128` | `configs/compare_vidur_real/vidur_profile.yaml` | Upper bound for CPU overhead batch-size grid. |
+| Config | `profiling.cpu_overhead.validation` | `strict` | `configs/compare_vidur_real/vidur_profile.yaml` | Guardrails for placeholder-like CPU overhead CSVs. |
+| Config | `profiling.attention.profile_mode` | `both` | `configs/compare_vidur_real/vidur_profile.yaml` | Profiles both prefill and decode attention phases. |
+| Config | `profiling.attention.backend` | `FLASHINFER` | `configs/compare_vidur_real/vidur_profile.yaml` | Sarathi attention backend used during profiling (should match real backend). |
+| Config | `profiling.attention.block_size` | `16` | `configs/compare_vidur_real/vidur_profile.yaml` | KV-cache block/page size used in attention profiling. |
+| Config | `profiling.attention.min_batch_size` | `1` | `configs/compare_vidur_real/vidur_profile.yaml` | Min decode batch size profiled for attention. |
+| Config | `profiling.attention.max_batch_size` | `1` | `configs/compare_vidur_real/vidur_profile.yaml` | Max decode batch size profiled for attention (kept small to reduce tutorial runtime). |
+| Env (→ override) | `GSIM_VIDUR_MLP_PROFILE_METHOD → profiling.mlp.profile_method` | `record_function` | script env → `svr profile` arg | How MLP op timings are measured for `mlp.csv`. |
+| Env (→ override) | `GSIM_VIDUR_MLP_VALIDATION_MODE → profiling.mlp.validation.mode` | `strict` | script env → `svr profile` arg | Fails fast on suspicious/zero-heavy profiling signals. |
+| Env (→ override) | `GSIM_VIDUR_MLP_NAN_POLICY → profiling.mlp.validation.nan_policy` | `zero` | script env → `svr profile` arg | Allows NaNs and fills missing timing targets with 0.0 per target during training. |
+| Env (→ override) | `GSIM_VIDUR_MLP_FALLBACK_ENABLED → profiling.mlp.fallback.enabled` | `false` | script env → `svr profile` arg | Disables automatic re-profiling with a fallback method. |
+| Env (→ override) | `GSIM_VIDUR_MLP_FALLBACK_METHOD → profiling.mlp.fallback.method` | `cuda_event` | script env → `svr profile` arg | Fallback method to use if fallback is enabled. |
+| Env (→ override) | `GSIM_VIDUR_SIM_MLP_VALIDATION_MODE → vidur.validation.mlp.mode` | `strict` | script env → `svr sim` arg | Consumer-side validation mode when training predictors from `mlp.csv`. |
+| Env (→ override) | `GSIM_VIDUR_SIM_MLP_NAN_POLICY → vidur.validation.mlp.nan_policy` | `zero` | script env → `svr sim` arg | Consumer-side NaN handling policy (kept consistent with profiling’s `nan_policy`). |
+| Config | `backend.scheduler.chunk_size` | `16` | `configs/compare_vidur_real/backend/sarathi.yaml` | Scheduler parity knob used by both sim and real replay. |
+| Config | `backend.scheduler.max_num_seqs` | `16` | `configs/compare_vidur_real/backend/sarathi.yaml` | Scheduler batch cap (affects batching → latency/throughput). |
+| Config | `backend.scheduler.block_size` | `16` | `configs/compare_vidur_real/backend/sarathi.yaml` | KV-cache block size (must match attention profiling block size). |
+| Config | `backend.scheduler.watermark_blocks_fraction` | `0.01` | `configs/compare_vidur_real/backend/sarathi.yaml` | Scheduler watermark for memory pressure / preemption behavior. |
+
+Notes:
+
+- If CPU overhead profiling fails on a host, set `GSIM_VIDUR_INCLUDE_CPU_OVERHEAD=false` and rerun the tutorial.
+- For stronger fidelity at large batches, increase `profiling.attention.max_batch_size` (at the cost of profiling time).
 
 ### (Optional) Match `paper-fidelity` dynamic arrivals exactly
 
